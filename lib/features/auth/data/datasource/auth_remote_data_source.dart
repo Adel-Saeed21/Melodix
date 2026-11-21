@@ -63,7 +63,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         message: 'Sign-in succeeded but no user was returned.',
       );
     }
-    await SecureStorageService.saveToken(user.refreshToken!);
+    await _saveSession(user);
     return UserModel.fromFirebase(_auth.currentUser!);
   }
 
@@ -94,7 +94,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       );
     }
 
-    await SecureStorageService.saveToken(user.refreshToken!);
+    await _saveSession(user);
     return UserModel.fromFirebase(user);
+  }
+
+  /// `User.refreshToken` is always null on Android/iOS, so store the
+  /// Firebase ID token instead to mark the session as signed in.
+  Future<void> _saveSession(User user) async {
+    final token = await user.getIdToken();
+    if (token != null && token.isNotEmpty) {
+      await SecureStorageService.saveToken(token);
+    }
   }
 }

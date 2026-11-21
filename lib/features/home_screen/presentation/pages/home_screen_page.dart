@@ -1,7 +1,4 @@
 import 'package:material_ui/material_ui.dart';
-
-import 'package:flutter_bloc/flutter_bloc.dart';
-
 class HomeScreenPage extends StatelessWidget {
   const HomeScreenPage({super.key});
 
