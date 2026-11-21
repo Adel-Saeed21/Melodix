@@ -31,4 +31,18 @@ class AppStrings {
   static const String recoveryPassword = 'Recovery Password';
   static const String notAMember = 'Not A Member ?';
   static const String registerNow = 'Register Now';
+
+  // Main navigation
+  static const String music = 'Music';
+  static const String video = 'Video';
+  static const String settings = 'Settings';
+
+  // Video
+  static const String noVideosTitle = 'No videos yet';
+  static const String noVideosSubtitle =
+      'Videos stored on your device will appear here.';
+
+  // Settings
+  static const String appearance = 'Appearance';
+  static const String systemModeText = 'System';
 }

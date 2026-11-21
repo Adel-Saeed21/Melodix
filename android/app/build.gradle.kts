@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.example.spotify"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

@@ -7,7 +7,7 @@ import 'package:melodix/features/auth/presentation/pages/register_screen.dart';
 import 'package:melodix/features/auth/presentation/pages/sign_in_screen.dart';
 import 'package:melodix/features/choose_mode_screen/presentation/choose_mode_screen.dart';
 import 'package:melodix/features/get_start_screen/presentation/get_start_screen.dart';
-import 'package:melodix/features/home_screen/presentation/pages/home_screen_page.dart';
+import 'package:melodix/features/navigation/presentation/pages/main_nav_shell.dart';
 import 'package:melodix/features/splash /presentation/splash_screen.dart';
 
 class AppRoute {
@@ -107,7 +107,7 @@ class AppRoute {
         pageBuilder: (context, state) {
           return _buildPageWithTransition(
             key: state.pageKey,
-            child: const HomeScreenPage(),
+            child: const MainNavShell(),
           );
         },
       ),
