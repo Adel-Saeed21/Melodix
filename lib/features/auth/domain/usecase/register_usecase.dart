@@ -1,9 +1,9 @@
 import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
-import 'package:spotify/core/errors/failures.dart';
-import 'package:spotify/core/usecase/usecase.dart';
-import 'package:spotify/features/auth/domain/entities/user_entity.dart';
-import 'package:spotify/features/auth/domain/repo/auth_repo.dart';
+import 'package:melodix/core/errors/failures.dart';
+import 'package:melodix/core/usecase/usecase.dart';
+import 'package:melodix/features/auth/domain/entities/user_entity.dart';
+import 'package:melodix/features/auth/domain/repo/auth_repo.dart';
 
 class RegisterUseCase implements UseCase<UserEntity, RegisterParams> {
   RegisterUseCase(this._repo);

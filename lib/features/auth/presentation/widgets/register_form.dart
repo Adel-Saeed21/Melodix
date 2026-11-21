@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:spotify/core/config/assets/app_strings.dart';
-import 'package:spotify/core/service/spacing.dart';
-import 'package:spotify/features/auth/presentation/logic/auth_bloc.dart';
-import 'package:spotify/features/auth/presentation/logic/auth_event.dart';
-import 'package:spotify/features/auth/presentation/logic/auth_state.dart';
-import 'package:spotify/features/auth/presentation/widgets/auth_text_field.dart';
+import 'package:material_ui/material_ui.dart';
+import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/service/spacing.dart';
+import 'package:melodix/features/auth/presentation/logic/auth_bloc.dart';
+import 'package:melodix/features/auth/presentation/logic/auth_event.dart';
+import 'package:melodix/features/auth/presentation/logic/auth_state.dart';
+import 'package:melodix/features/auth/presentation/widgets/auth_text_field.dart';
 
 class RegisterForm extends StatefulWidget {
   const RegisterForm({super.key});

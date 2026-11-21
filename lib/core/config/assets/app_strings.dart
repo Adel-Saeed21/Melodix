@@ -11,7 +11,7 @@ class AppStrings {
   static const String darkModeText = 'Dark Mode';
   static const String enjoyListeningToMusicText = 'Enjoy Listening To Music';
   static const String enjoyListeningToMusicSecondText =
-      'Spotify is a proprietary Swedish audio\nstreaming and media services provider.';
+      'Melodix brings your favorite music,\nartists and playlists together in one place.';
   static const String register = 'Register';
   static const String signIn = 'Sign In';
   static const String ifYouNeedAnySupport = 'If You Need Any Support';

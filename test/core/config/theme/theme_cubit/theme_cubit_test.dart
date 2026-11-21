@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:spotify/core/config/theme/theme_cubit/theme_cubit.dart';
+import 'package:melodix/core/config/theme/theme_cubit/theme_cubit.dart';
 
 class MockStorage extends Mock implements Storage {}
 

@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "spotify (dev)",
+      "name": "Melodix (dev)",
       "request": "launch",
       "type": "dart",
       "flutterMode": "debug",
@@ -10,7 +10,7 @@
       "args": ["--flavor", "dev"]
     },
     {
-      "name": "spotify (production)",
+      "name": "Melodix (production)",
       "request": "launch",
       "type": "dart",
       "flutterMode": "release",

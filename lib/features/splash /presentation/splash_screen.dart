@@ -1,9 +1,10 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:spotify/core/config/assets/app_vector.dart';
-import 'package:spotify/core/config/routing/routes.dart';
-import 'package:spotify/core/service/secure_storage_service.dart';
+import 'package:melodix/core/config/assets/app_vector.dart';
+import 'package:melodix/core/config/routing/routes.dart';
+import 'package:melodix/core/service/secure_storage_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -30,7 +31,9 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(child: SvgPicture.asset(AppVector.spotifyLogo)),
+      body: Center(
+        child: SvgPicture.asset(AppVector.appLogo, width: 120, height: 120),
+      ),
     );
   }
 }

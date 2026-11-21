@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:spotify/core/config/theme/app_colors.dart';
-import 'package:spotify/core/config/theme/app_text_sizes.dart';
-import 'package:spotify/core/config/theme/font_weight_helper.dart';
+import 'package:melodix/core/config/theme/app_colors.dart';
+import 'package:melodix/core/config/theme/app_text_sizes.dart';
+import 'package:melodix/core/config/theme/font_weight_helper.dart';
 
 class AppTheme {
   AppTheme._();

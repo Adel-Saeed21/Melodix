@@ -1,5 +1,5 @@
 import 'package:dartz/dartz.dart';
-import 'package:spotify/core/errors/failures.dart';
+import 'package:melodix/core/errors/failures.dart';
 
 // ignore: avoid_types_as_parameter_names
 abstract class UseCase<Type, Params> {

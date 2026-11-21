@@ -1,8 +1,9 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:spotify/spotify_app.dart';
+import 'package:melodix/melodix_app.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,5 +16,5 @@ Future<void> main() async {
           ),
   );
 
-  runApp(const SpotifyApp());
+  runApp(const MelodixApp());
 }

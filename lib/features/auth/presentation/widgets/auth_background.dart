@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
-import 'package:spotify/core/config/assets/app_assets.dart';
+import 'package:material_ui/material_ui.dart';
+
+import 'package:melodix/core/config/assets/app_assets.dart';
 
 class AuthBackground extends StatelessWidget {
   const AuthBackground({super.key});

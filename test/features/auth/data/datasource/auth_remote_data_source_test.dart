@@ -1,8 +1,8 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:spotify/features/auth/data/datasource/auth_remote_data_source.dart';
-import 'package:spotify/features/auth/data/model/user_model.dart';
+import 'package:melodix/features/auth/data/datasource/auth_remote_data_source.dart';
+import 'package:melodix/features/auth/data/model/user_model.dart';
 
 class MockFirebaseAuth extends Mock implements FirebaseAuth {}
 

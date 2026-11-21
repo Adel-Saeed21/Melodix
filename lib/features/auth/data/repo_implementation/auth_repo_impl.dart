@@ -1,10 +1,10 @@
 import 'package:dartz/dartz.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:spotify/core/errors/failures.dart';
-import 'package:spotify/features/auth/data/datasource/auth_remote_data_source.dart';
-import 'package:spotify/features/auth/domain/entities/user_entity.dart';
-import 'package:spotify/features/auth/domain/repo/auth_repo.dart';
-import 'package:spotify/features/auth/domain/usecase/sign_in_usecase.dart';
+import 'package:melodix/core/errors/failures.dart';
+import 'package:melodix/features/auth/data/datasource/auth_remote_data_source.dart';
+import 'package:melodix/features/auth/domain/entities/user_entity.dart';
+import 'package:melodix/features/auth/domain/repo/auth_repo.dart';
+import 'package:melodix/features/auth/domain/usecase/sign_in_usecase.dart';
 
 class AuthRepoImpl implements AuthRepo {
   AuthRepoImpl(this._remote);

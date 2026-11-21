@@ -34,8 +34,8 @@ class Assets {
   /// assets/images/UperDesign.png
   static const String assetsImagesUperDesign = "assets/images/UperDesign.png";
 
-  /// Assets for assetsImagesVector
-  /// assets/images/Vector.png
-  static const String assetsImagesVector = "assets/images/Vector.png";
+  /// Assets for assetsImagesAppLogo
+  /// assets/images/app_logo.png
+  static const String assetsImagesAppLogo = "assets/images/app_logo.png";
 }
 

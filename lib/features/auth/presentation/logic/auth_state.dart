@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:spotify/features/auth/domain/entities/user_entity.dart';
+import 'package:melodix/features/auth/domain/entities/user_entity.dart';
 
 sealed class AuthState extends Equatable {
   const AuthState();

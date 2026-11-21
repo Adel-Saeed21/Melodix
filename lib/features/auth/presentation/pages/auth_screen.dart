@@ -1,12 +1,13 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:go_router/go_router.dart';
-import 'package:spotify/core/config/routing/routes.dart';
-import 'package:spotify/core/service/spacing.dart';
-import 'package:spotify/features/auth/presentation/widgets/auth_background.dart';
-import 'package:spotify/features/auth/presentation/widgets/auth_buttons.dart';
-import 'package:spotify/features/auth/presentation/widgets/auth_header.dart';
-import 'package:spotify/features/auth/presentation/widgets/back_circle_button.dart';
+import 'package:melodix/core/config/routing/routes.dart';
+import 'package:melodix/core/service/spacing.dart';
+import 'package:melodix/features/auth/presentation/widgets/auth_background.dart';
+import 'package:melodix/features/auth/presentation/widgets/auth_buttons.dart';
+import 'package:melodix/features/auth/presentation/widgets/auth_header.dart';
+import 'package:melodix/features/auth/presentation/widgets/back_circle_button.dart';
 
 class AuthScreen extends StatelessWidget {
   const AuthScreen({super.key});
@@ -40,7 +41,8 @@ class AuthScreen extends StatelessWidget {
                           const AuthHeader(),
                           verticalSpace(40),
                           AuthButtons(
-                            onRegister: () => context.push(Routes.registerScreen),
+                            onRegister: () =>
+                                context.push(Routes.registerScreen),
                             onSignIn: () => context.push(Routes.signInScreen),
                           ),
                           const Spacer(),

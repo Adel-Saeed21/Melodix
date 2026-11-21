@@ -1,5 +1,5 @@
-name: spotify
-description: "A new Flutter project."
+name: melodix
+description: "Melodix - a music streaming app built with Flutter."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -30,6 +30,7 @@ environment:
 dependencies:
   cupertino_icons: ^1.0.8
   dartz: ^0.10.1
+  dio: ^5.11.1
   equatable: ^2.1.0
   firebase_auth: ^7.0.0
   firebase_core: ^5.0.0
@@ -45,6 +46,7 @@ dependencies:
   go_router: ^18.0.2
   hydrated_bloc: ^11.0.0
   json_annotation: ^4.12.0
+  material_ui: ^1.11.1
   mocktail: ^1.0.5
   path_provider: ^2.1.6
   retrofit: ^4.10.0

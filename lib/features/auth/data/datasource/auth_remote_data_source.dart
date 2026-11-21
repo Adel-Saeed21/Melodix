@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:spotify/core/service/secure_storage_service.dart';
-import 'package:spotify/features/auth/data/model/user_model.dart';
+import 'package:melodix/core/service/secure_storage_service.dart';
+import 'package:melodix/features/auth/data/model/user_model.dart';
 
 abstract class AuthRemoteDataSource {
   Future<UserModel> register({

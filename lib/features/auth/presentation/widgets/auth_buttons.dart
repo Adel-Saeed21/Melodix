@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:spotify/core/config/assets/app_strings.dart';
-import 'package:spotify/core/config/theme/font_weight_helper.dart';
-import 'package:spotify/core/service/spacing.dart';
+import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/config/theme/font_weight_helper.dart';
+import 'package:melodix/core/service/spacing.dart';
 
 class AuthButtons extends StatelessWidget {
   final VoidCallback onRegister;

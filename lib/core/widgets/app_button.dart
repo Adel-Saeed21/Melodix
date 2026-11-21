@@ -1,15 +1,12 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 
 class AppButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
 
-  const AppButton({
-    super.key,
-    required this.text,
-    this.onPressed,
-  });
+  const AppButton({super.key, required this.text, this.onPressed});
 
   @override
   Widget build(BuildContext context) {
@@ -18,10 +15,7 @@ class AppButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          padding: EdgeInsets.symmetric(
-            horizontal: 24.w,
-            vertical: 30.h,
-          ),
+          padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 30.h),
         ),
         child: Text(
           text,
