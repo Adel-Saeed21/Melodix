@@ -13,15 +13,12 @@ class SocialAuthRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _SocialIcon(
-          asset: Assets.assetsImagesGoogleIcon,
-          onTap: onGoogleTap,
-        ),
+        _SocialIcon(asset: Assets.assetsImagesGoogleIcon, onTap: onGoogleTap),
         SizedBox(width: 48.w),
         _SocialIcon(
           asset: Assets.assetsImagesAppleIcon,
           onTap: onAppleTap,
-          tintByTheme: true, 
+          tintByTheme: true,
         ),
       ],
     );

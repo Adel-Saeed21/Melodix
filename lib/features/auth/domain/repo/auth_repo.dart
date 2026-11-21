@@ -10,8 +10,7 @@ abstract class AuthRepo {
     required String password,
   });
 
-  Future<Either<Failure, UserEntity>> signIn({
-    required SignInParams params,
-  });
+  Future<Either<Failure, UserEntity>> signIn({required SignInParams params});
 
+  Future<Either<Failure, UserEntity>> signInWithGoogle();
 }

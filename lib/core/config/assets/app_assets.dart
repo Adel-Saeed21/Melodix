@@ -1,7 +1,7 @@
 // ignore_for_file: prefer_single_quotes
 class Assets {
   Assets._();
-  
+
   /// Assets for assetsImagesAppleIcon
   /// assets/images/AppleIcon.png
   static const String assetsImagesAppleIcon = "assets/images/AppleIcon.png";
@@ -12,7 +12,8 @@ class Assets {
 
   /// Assets for assetsImagesChooseModeBg
   /// assets/images/choose_mode_bg.png
-  static const String assetsImagesChooseModeBg = "assets/images/choose_mode_bg.png";
+  static const String assetsImagesChooseModeBg =
+      "assets/images/choose_mode_bg.png";
 
   /// Assets for assetsImagesGoogleIcon
   /// assets/images/googleIcon.png
@@ -38,4 +39,3 @@ class Assets {
   /// assets/images/app_logo.png
   static const String assetsImagesAppLogo = "assets/images/app_logo.png";
 }
-

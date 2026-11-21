@@ -5,9 +5,7 @@ import 'package:melodix/features/home_screen/domain/entities/home_entity.dart';
 import 'package:melodix/features/home_screen/domain/repositories/home_screen_repository.dart';
 
 class HomeScreenRepositoryImpl implements HomeScreenRepository {
-  const HomeScreenRepositoryImpl({
-    required this.localDataSource,
-  });
+  const HomeScreenRepositoryImpl({required this.localDataSource});
 
   final HomeScreenLocalDataSource localDataSource;
 
@@ -16,5 +14,4 @@ class HomeScreenRepositoryImpl implements HomeScreenRepository {
     // TODO: implement getHomeEntities
     throw UnimplementedError();
   }
-
 }

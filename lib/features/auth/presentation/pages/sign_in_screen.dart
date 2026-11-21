@@ -11,6 +11,7 @@ import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/navigation_extension.dart';
 import 'package:melodix/core/service/spacing.dart';
 import 'package:melodix/features/auth/presentation/logic/auth_bloc.dart';
+import 'package:melodix/features/auth/presentation/logic/auth_event.dart';
 import 'package:melodix/features/auth/presentation/logic/auth_state.dart';
 import 'package:melodix/features/auth/presentation/widgets/auth_app_bar.dart';
 import 'package:melodix/features/auth/presentation/widgets/or_divider.dart';
@@ -76,7 +77,13 @@ class SignInScreen extends StatelessWidget {
                     verticalSpace(24),
                     const OrDivider(),
                     verticalSpace(24),
-                    const SocialAuthRow(),
+                    Builder(
+                      builder: (context) => SocialAuthRow(
+                        onGoogleTap: () => context.read<AuthBloc>().add(
+                          const GoogleSignInRequested(),
+                        ),
+                      ),
+                    ),
                     verticalSpace(32),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,

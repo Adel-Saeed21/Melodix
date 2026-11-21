@@ -31,3 +31,9 @@ class AuthFailure extends AuthState {
   @override
   List<Object?> get props => [message];
 }
+
+/// Emitted after a Google sign-in. Google accounts are signed in immediately,
+/// so screens should go straight to home (even from the register screen).
+class GoogleAuthSuccess extends AuthSuccess {
+  const GoogleAuthSuccess(super.user);
+}

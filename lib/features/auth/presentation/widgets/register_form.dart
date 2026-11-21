@@ -43,12 +43,12 @@ class _RegisterFormState extends State<RegisterForm> {
     if (_formKey.currentState!.validate()) {
       FocusScope.of(context).unfocus();
       context.read<AuthBloc>().add(
-            RegisterRequested(
-              name: _nameController.text.trim(),
-              email: _emailController.text.trim(),
-              password: _passwordController.text,
-            ),
-          );
+        RegisterRequested(
+          name: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        ),
+      );
     }
   }
 
@@ -78,7 +78,8 @@ class _RegisterFormState extends State<RegisterForm> {
             textInputAction: TextInputAction.next,
             onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
             validator: (v) {
-              if (v == null || v.trim().isEmpty) return AppStrings.emailRequired;
+              if (v == null || v.trim().isEmpty)
+                return AppStrings.emailRequired;
               if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim())) {
                 return AppStrings.emailInvalid;
               }

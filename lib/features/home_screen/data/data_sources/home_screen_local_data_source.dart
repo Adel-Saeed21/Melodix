@@ -1,5 +1,3 @@
-
-
 import 'package:melodix/features/home_screen/domain/entities/home_entity.dart';
 
 abstract interface class HomeScreenLocalDataSource {}
@@ -11,6 +9,6 @@ class HomeScreenLocalDataSourceImpl implements HomeScreenLocalDataSource {
   @override
   Future<List<HomeEntity>> getHomeEntities() async {
     //TODO: implement getHomeEntities
-    throw UnimplementedError(); 
+    throw UnimplementedError();
   }
 }
