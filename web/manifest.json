@@ -1,11 +1,11 @@
 {
-    "name": "spotify",
-    "short_name": "spotify",
+    "name": "Melodix",
+    "short_name": "Melodix",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#42C83C",
+    "theme_color": "#42C83C",
+    "description": "Melodix - a music streaming app.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -1,18 +1,25 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:spotify/features/auth/domain/usecase/register_usecase.dart';
-import 'package:spotify/features/auth/domain/usecase/sign_in_usecase.dart';
-import 'package:spotify/features/auth/presentation/logic/auth_event.dart';
-import 'package:spotify/features/auth/presentation/logic/auth_state.dart';
+import 'package:melodix/core/usecase/usecase.dart';
+import 'package:melodix/features/auth/domain/usecase/google_sign_in_usecase.dart';
+import 'package:melodix/features/auth/domain/usecase/register_usecase.dart';
+import 'package:melodix/features/auth/domain/usecase/sign_in_usecase.dart';
+import 'package:melodix/features/auth/presentation/logic/auth_event.dart';
+import 'package:melodix/features/auth/presentation/logic/auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  AuthBloc({required this.registerUseCase, required this.signInUsecase})
-    : super(const AuthInitial()) {
+  AuthBloc({
+    required this.registerUseCase,
+    required this.signInUsecase,
+    required this.googleSignInUseCase,
+  }) : super(const AuthInitial()) {
     on<RegisterRequested>(_onRegisterRequested);
     on<SignInRequested>(_onSignInRequested);
+    on<GoogleSignInRequested>(_onGoogleSignInRequested);
   }
 
   final RegisterUseCase registerUseCase;
   final SignInUsecase signInUsecase;
+  final GoogleSignInUseCase googleSignInUseCase;
 
   Future<void> _onRegisterRequested(
     RegisterRequested event,
@@ -49,6 +56,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     result.fold(
       (failure) => emit(AuthFailure(failure.message)),
       (user) => emit(AuthSuccess(user)),
+    );
+  }
+
+  Future<void> _onGoogleSignInRequested(
+    GoogleSignInRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    if (state is AuthLoading) return;
+
+    emit(const AuthLoading());
+
+    final result = await googleSignInUseCase(const NoParams());
+
+    result.fold(
+      (failure) => emit(AuthFailure(failure.message)),
+      (user) => emit(GoogleAuthSuccess(user)),
     );
   }
 }

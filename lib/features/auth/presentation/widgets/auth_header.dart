@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:spotify/core/config/assets/app_assets.dart';
-import 'package:spotify/core/config/assets/app_strings.dart';
-import 'package:spotify/core/config/theme/app_colors.dart';
-import 'package:spotify/core/config/theme/font_weight_helper.dart';
-import 'package:spotify/core/service/spacing.dart';
+import 'package:melodix/core/config/assets/app_assets.dart';
+import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/config/theme/app_colors.dart';
+import 'package:melodix/core/config/theme/font_weight_helper.dart';
+import 'package:melodix/core/service/spacing.dart';
 
 class AuthHeader extends StatelessWidget {
   const AuthHeader({super.key});
@@ -17,7 +18,7 @@ class AuthHeader extends StatelessWidget {
     return Column(
       children: [
         Image.asset(
-          Assets.assetsImagesVector,
+          Assets.assetsImagesAppLogo,
           width: size.width * 0.55,
           fit: BoxFit.contain,
         ),

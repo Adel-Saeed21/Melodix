@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:spotify/core/config/assets/app_strings.dart';
-import 'package:spotify/core/config/theme/theme_cubit/theme_cubit.dart';
+import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/config/theme/theme_cubit/theme_cubit.dart';
 
 import 'choose_mode_button.dart';
 

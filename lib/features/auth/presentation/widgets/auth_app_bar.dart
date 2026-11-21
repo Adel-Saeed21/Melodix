@@ -1,7 +1,8 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'package:go_router/go_router.dart';
-import 'package:spotify/core/config/assets/app_assets.dart';
-import 'package:spotify/features/auth/presentation/widgets/back_circle_button.dart';
+import 'package:melodix/core/config/assets/app_assets.dart';
+import 'package:melodix/features/auth/presentation/widgets/back_circle_button.dart';
 
 class AuthAppBar extends StatelessWidget {
   const AuthAppBar({super.key});
@@ -22,7 +23,7 @@ class AuthAppBar extends StatelessWidget {
           ),
         ),
         Image.asset(
-          Assets.assetsImagesVector,
+          Assets.assetsImagesAppLogo,
           width: width * 0.3,
           fit: BoxFit.contain,
         ),

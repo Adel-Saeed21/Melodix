@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:spotify/core/config/assets/app_assets.dart';
+import 'package:melodix/core/config/assets/app_assets.dart';
 
 class SocialAuthRow extends StatelessWidget {
   const SocialAuthRow({super.key, this.onGoogleTap, this.onAppleTap});
@@ -13,15 +13,12 @@ class SocialAuthRow extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        _SocialIcon(
-          asset: Assets.assetsImagesGoogleIcon,
-          onTap: onGoogleTap,
-        ),
+        _SocialIcon(asset: Assets.assetsImagesGoogleIcon, onTap: onGoogleTap),
         SizedBox(width: 48.w),
         _SocialIcon(
           asset: Assets.assetsImagesAppleIcon,
           onTap: onAppleTap,
-          tintByTheme: true, 
+          tintByTheme: true,
         ),
       ],
     );

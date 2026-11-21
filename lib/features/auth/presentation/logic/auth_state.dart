@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:spotify/features/auth/domain/entities/user_entity.dart';
+import 'package:melodix/features/auth/domain/entities/user_entity.dart';
 
 sealed class AuthState extends Equatable {
   const AuthState();
@@ -30,4 +30,10 @@ class AuthFailure extends AuthState {
 
   @override
   List<Object?> get props => [message];
+}
+
+/// Emitted after a Google sign-in. Google accounts are signed in immediately,
+/// so screens should go straight to home (even from the register screen).
+class GoogleAuthSuccess extends AuthSuccess {
+  const GoogleAuthSuccess(super.user);
 }

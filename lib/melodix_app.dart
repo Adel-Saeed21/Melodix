@@ -1,13 +1,13 @@
+import 'package:material_ui/material_ui.dart';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:spotify/core/config/routing/app_route.dart';
-import 'package:spotify/core/config/theme/app_theme.dart';
-import 'package:spotify/core/config/theme/theme_cubit/theme_cubit.dart';
+import 'package:melodix/core/config/routing/app_route.dart';
+import 'package:melodix/core/config/theme/app_theme.dart';
+import 'package:melodix/core/config/theme/theme_cubit/theme_cubit.dart';
 
-class SpotifyApp extends StatelessWidget {
-  const SpotifyApp({super.key});
+class MelodixApp extends StatelessWidget {
+  const MelodixApp({super.key});
 
   @override
   Widget build(BuildContext context) {

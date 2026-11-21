@@ -1,14 +1,15 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:go_router/go_router.dart';
-import 'package:spotify/core/config/assets/app_assets.dart';
-import 'package:spotify/core/config/assets/app_strings.dart';
-import 'package:spotify/core/config/routing/routes.dart';
-import 'package:spotify/core/config/theme/font_weight_helper.dart';
-import 'package:spotify/core/service/spacing.dart';
-import 'package:spotify/core/widgets/app_button.dart';
-import 'package:spotify/features/choose_mode_screen/presentation/widgets/choose_mode_widget.dart';
-import 'package:spotify/features/get_start_screen/presentation/widgets/get_start_logo.dart';
+import 'package:melodix/core/config/assets/app_assets.dart';
+import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/config/routing/routes.dart';
+import 'package:melodix/core/config/theme/font_weight_helper.dart';
+import 'package:melodix/core/service/spacing.dart';
+import 'package:melodix/core/widgets/app_button.dart';
+import 'package:melodix/features/choose_mode_screen/presentation/widgets/choose_mode_widget.dart';
+import 'package:melodix/features/get_start_screen/presentation/widgets/get_start_logo.dart';
 
 class ChooseModeScreen extends StatelessWidget {
   const ChooseModeScreen({super.key});

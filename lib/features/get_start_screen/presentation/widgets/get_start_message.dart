@@ -1,8 +1,9 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:spotify/core/config/assets/app_strings.dart';
-import 'package:spotify/core/config/theme/app_colors.dart';
-import 'package:spotify/core/service/spacing.dart';
+import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/config/theme/app_colors.dart';
+import 'package:melodix/core/service/spacing.dart';
 
 class GetStartMessage extends StatelessWidget {
   const GetStartMessage({super.key});

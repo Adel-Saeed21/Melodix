@@ -1,8 +1,11 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:spotify/features/auth/data/datasource/auth_remote_data_source.dart';
-import 'package:spotify/features/auth/data/model/user_model.dart';
+import 'package:melodix/features/auth/data/datasource/auth_remote_data_source.dart';
+import 'package:melodix/features/auth/data/model/user_model.dart';
+
+class MockGoogleSignIn extends Mock implements GoogleSignIn {}
 
 class MockFirebaseAuth extends Mock implements FirebaseAuth {}
 
@@ -21,7 +24,7 @@ void main() {
     mockUserCredential = MockUserCredential();
     mockUser = MockUser();
 
-    dataSource = AuthRemoteDataSourceImpl(mockFirebaseAuth);
+    dataSource = AuthRemoteDataSourceImpl(mockFirebaseAuth, MockGoogleSignIn());
   });
 
   const tName = 'Ahmed';
@@ -70,28 +73,28 @@ void main() {
       },
     );
 
-  test(
-  'should throw FirebaseAuthException when credential.user is null',
-  () async {
-    when(
-      () => mockFirebaseAuth.createUserWithEmailAndPassword(
-        email: any(named: 'email'),
-        password: any(named: 'password'),
-      ),
-    ).thenAnswer((_) async => mockUserCredential);
-    when(() => mockUserCredential.user).thenReturn(null);
+    test(
+      'should throw FirebaseAuthException when credential.user is null',
+      () async {
+        when(
+          () => mockFirebaseAuth.createUserWithEmailAndPassword(
+            email: any(named: 'email'),
+            password: any(named: 'password'),
+          ),
+        ).thenAnswer((_) async => mockUserCredential);
+        when(() => mockUserCredential.user).thenReturn(null);
 
-    await expectLater(
-      () => dataSource.register(
-        name: tName,
-        email: tEmail,
-        password: tPassword,
-      ),
-      throwsA(isA<FirebaseAuthException>()),
+        await expectLater(
+          () => dataSource.register(
+            name: tName,
+            email: tEmail,
+            password: tPassword,
+          ),
+          throwsA(isA<FirebaseAuthException>()),
+        );
+      },
     );
-  },
-);
-  test(
+    test(
       'should rethrow FirebaseAuthException when email is already in use',
       () async {
         // Arrange
@@ -110,8 +113,11 @@ void main() {
             password: tPassword,
           ),
           throwsA(
-            isA<FirebaseAuthException>()
-                .having((e) => e.code, 'code', 'email-already-in-use'),
+            isA<FirebaseAuthException>().having(
+              (e) => e.code,
+              'code',
+              'email-already-in-use',
+            ),
           ),
         );
         verifyNever(() => mockUser.updateDisplayName(any()));
