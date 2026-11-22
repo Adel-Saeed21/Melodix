@@ -72,6 +72,7 @@ class AuthRepoImpl implements AuthRepo {
       case 'invalid-email':
         return 'The email address is not valid';
       case 'weak-password':
+      case 'password-does-not-meet-requirements':
         return 'The password is too weak';
       case 'operation-not-allowed':
         return 'Email/password sign up is not enabled';
