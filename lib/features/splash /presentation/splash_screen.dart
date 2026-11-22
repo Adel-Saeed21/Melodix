@@ -4,7 +4,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:melodix/core/config/assets/app_vector.dart';
 import 'package:melodix/core/config/routing/routes.dart';
-import 'package:melodix/core/service/secure_storage_service.dart';
+import 'package:melodix/core/service/onboarding_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -22,10 +22,10 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _navigateFromSplash() async {
     await Future<void>.delayed(const Duration(seconds: 2));
-    final hasToken = await SecureStorageService.hasValidToken();
-
     if (!mounted) return;
-    context.go(hasToken ? Routes.homeScreen : Routes.getStartScreen);
+    context.go(
+      OnboardingService.isCompleted ? Routes.homeScreen : Routes.getStartScreen,
+    );
   }
 
   @override

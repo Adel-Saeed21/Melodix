@@ -2,9 +2,6 @@ import 'package:material_ui/material_ui.dart';
 
 import 'package:go_router/go_router.dart';
 import 'package:melodix/core/config/routing/routes.dart';
-import 'package:melodix/features/auth/presentation/pages/auth_screen.dart';
-import 'package:melodix/features/auth/presentation/pages/register_screen.dart';
-import 'package:melodix/features/auth/presentation/pages/sign_in_screen.dart';
 import 'package:melodix/features/choose_mode_screen/presentation/choose_mode_screen.dart';
 import 'package:melodix/features/get_start_screen/presentation/get_start_screen.dart';
 import 'package:melodix/features/navigation/presentation/pages/main_nav_shell.dart';
@@ -65,38 +62,6 @@ class AppRoute {
           return _buildPageWithTransition(
             key: state.pageKey,
             child: const ChooseModeScreen(),
-          );
-        },
-      ),
-
-      GoRoute(
-        path: Routes.authScreen,
-        name: Routes.authScreen,
-        pageBuilder: (context, state) {
-          return _buildPageWithTransition(
-            key: state.pageKey,
-            child: const AuthScreen(),
-          );
-        },
-      ),
-
-      GoRoute(
-        path: Routes.registerScreen,
-        name: Routes.registerScreen,
-        pageBuilder: (context, state) {
-          return _buildPageWithTransition(
-            key: state.pageKey,
-            child: const RegisterScreen(),
-          );
-        },
-      ),
-      GoRoute(
-        path: Routes.signInScreen,
-        name: Routes.signInScreen,
-        pageBuilder: (context, state) {
-          return _buildPageWithTransition(
-            key: state.pageKey,
-            child: const SignInScreen(),
           );
         },
       ),

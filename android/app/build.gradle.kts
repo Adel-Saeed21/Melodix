@@ -1,8 +1,5 @@
 plugins {
     id("com.android.application")
-    // START: FlutterFire Configuration
-    id("com.google.gms.google-services")
-    // END: FlutterFire Configuration
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -41,10 +38,8 @@ android {
     }
     flavorDimensions += "default"
     productFlavors {
-        // Both flavors share the application id registered in Firebase
-        // (com.example.spotify). To give a flavor its own id again, register
-        // that package name in Firebase and download a matching
-        // google-services.json before adding an applicationIdSuffix here.
+        // Both flavors currently share the application id. Add an
+        // applicationIdSuffix here to install dev and production side by side.
         create("dev") {
             dimension = "default"
         }

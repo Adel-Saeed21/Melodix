@@ -6,6 +6,7 @@ import 'package:melodix/core/config/assets/app_assets.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/core/config/routing/routes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
+import 'package:melodix/core/service/onboarding_service.dart';
 import 'package:melodix/core/service/spacing.dart';
 import 'package:melodix/core/widgets/app_button.dart';
 import 'package:melodix/features/choose_mode_screen/presentation/widgets/choose_mode_widget.dart';
@@ -52,8 +53,10 @@ class ChooseModeScreen extends StatelessWidget {
                               constraints: BoxConstraints(maxWidth: 360.w),
                               child: AppButton(
                                 text: AppStrings.containueButtonText,
-                                onPressed: () {
-                                  context.pushNamed(Routes.authScreen);
+                                onPressed: () async {
+                                  await OnboardingService.markCompleted();
+                                  if (!context.mounted) return;
+                                  context.go(Routes.homeScreen);
                                 },
                               ),
                             ),
