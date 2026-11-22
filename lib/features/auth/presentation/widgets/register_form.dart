@@ -3,10 +3,12 @@ import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/core/service/spacing.dart';
+import 'package:melodix/features/auth/domain/validators/password_policy.dart';
 import 'package:melodix/features/auth/presentation/logic/auth_bloc.dart';
 import 'package:melodix/features/auth/presentation/logic/auth_event.dart';
 import 'package:melodix/features/auth/presentation/logic/auth_state.dart';
 import 'package:melodix/features/auth/presentation/widgets/auth_text_field.dart';
+import 'package:melodix/features/auth/presentation/widgets/password_requirements.dart';
 
 class RegisterForm extends StatefulWidget {
   const RegisterForm({super.key});
@@ -106,11 +108,13 @@ class _RegisterFormState extends State<RegisterForm> {
                     : Colors.black38,
               ),
             ),
-            validator: (v) => (v == null || v.length < 6)
-                ? AppStrings.passwordTooShort
-                : null,
+            validator: (v) => PasswordPolicy.isValid(v ?? '')
+                ? null
+                : AppStrings.passwordPolicyNotMet,
           ),
-          verticalSpace(28),
+          verticalSpace(12),
+          PasswordRequirements(controller: _passwordController),
+          verticalSpace(16),
           BlocBuilder<AuthBloc, AuthState>(
             builder: (context, state) {
               final isLoading = state is AuthLoading;

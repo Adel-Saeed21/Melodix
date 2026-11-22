@@ -25,6 +25,12 @@ class AppStrings {
   static const String emailRequired = 'Enter your email';
   static const String emailInvalid = 'Enter a valid email';
   static const String passwordTooShort = 'At least 6 characters';
+  static const String passwordPolicyNotMet =
+      'Password does not meet all requirements';
+  static const String passwordRuleMinLength = 'At least 8 characters';
+  static const String passwordRuleUpperLower = 'Upper & lowercase';
+  static const String passwordRuleNumber = 'A number';
+  static const String passwordRuleSymbol = 'A symbol (!@#...)';
   static const String or = "Or";
 
   static const String usernameOrEmail = 'Enter Username Or Email';
