@@ -1,4 +1,3 @@
-import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -175,5 +174,21 @@ void main() {
 
     expect(find.text('Delete'), findsNothing);
     expect(find.text('Hide'), findsOneWidget);
+  });
+
+  testWidgets('the select icon stays in place whatever the sort label', (
+    tester,
+  ) async {
+    await pumpTab(tester);
+    Offset iconAt() => tester.getCenter(find.byTooltip('Select songs'));
+
+    final withRecentlyAdded = iconAt(); // longest label
+    for (final label in ['A–Z', 'Most played', 'Recently added']) {
+      await tester.tap(find.byTooltip('Sort by'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text(label).last);
+      await tester.pumpAndSettle();
+      expect(iconAt(), withRecentlyAdded, reason: label);
+    }
   });
 }

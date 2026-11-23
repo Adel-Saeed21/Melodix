@@ -30,9 +30,16 @@ import 'package:melodix/features/music_library/domain/usecases/delete_playlist_u
 import 'package:melodix/features/music_library/domain/usecases/rename_playlist_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/toggle_playlist_favorite_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/watch_playlists_usecase.dart';
+import 'package:melodix/features/music_library/presentation/widgets/library_tabs.dart';
 import 'package:melodix/features/music_library/presentation/widgets/music_home_view.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:melodix/core/utils/debug_counters.dart';
+import 'package:melodix/features/player/domain/entities/now_playing.dart';
+import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
+import 'package:melodix/features/player/presentation/widgets/equalizer_bars.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../player/player_fixtures.dart';
 
 class MockMusicLibraryBloc extends Mock implements MusicLibraryBloc {}
 
@@ -78,10 +85,12 @@ final _songs = [
 void main() {
   late MockMusicLibraryBloc bloc;
   late MockGetAlbums albums;
+  late MockGetArtwork artwork;
   late StreamController<List<Playlist>> playlists;
   late MockSearchLibrary searchLibrary;
 
   setUpAll(() {
+    registerPlayerFallbacks();
     registerFallbackValue(const SongArtworkParams(0));
     registerFallbackValue(const NoParams());
     registerFallbackValue(const MusicLibraryRefreshRequested());
@@ -93,7 +102,7 @@ void main() {
     when(() => storage.read(any())).thenReturn(null);
     when(() => storage.write(any(), any<dynamic>())).thenAnswer((_) async {});
     HydratedBloc.storage = storage;
-    final artwork = MockGetArtwork();
+    artwork = MockGetArtwork();
     when(() => artwork(any())).thenAnswer((_) async => null);
     albums = MockGetAlbums();
     playlists = StreamController<List<Playlist>>.broadcast();
@@ -495,5 +504,192 @@ void main() {
     await tester.pumpAndSettle();
     expect(order(), ['Charlie', 'Bravo', 'Alpha']);
     expect(find.text('Artist · 7 plays'), findsOneWidget);
+  });
+
+  group('switching home tabs', () {
+    final manySongs = [
+      for (var i = 1; i <= 60; i++)
+        Song(
+          id: i,
+          title: 'Track ${i.toString().padLeft(2, '0')}',
+          artist: 'Artist',
+          album: 'Album',
+          albumId: 1,
+          duration: const Duration(minutes: 3),
+          path: '/m/$i.mp3',
+          playbackUri: Uri.parse('content://media/external/audio/media/$i'),
+          isFavorite: false,
+          playCount: 0,
+        ),
+    ];
+
+    /// Advances a second of time. (Waiting for every animation to finish
+    /// would never end while music plays: the playing song's equalizer bars
+    /// animate continuously by design.)
+    Future<void> settle(WidgetTester tester) async {
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    /// Songs → Albums → Songs, after scrolling the songs list down.
+    Future<Map<String, Object>> switchAway(WidgetTester tester) async {
+      tester.view
+        ..physicalSize = const Size(1080, 2340)
+        ..devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+      when(() => albums(any())).thenAnswer(
+        (_) async => Right([
+          for (var i = 1; i <= 6; i++)
+            const Album(
+              albumId: 1,
+              title: 'Album',
+              artist: 'Artist',
+              songCount: 1,
+              duration: Duration(minutes: 3),
+              artworkSongId: 1,
+            ),
+        ]),
+      );
+      await pumpView(
+        tester,
+        MusicLibraryState(status: MusicLibraryStatus.ready, songs: manySongs),
+      );
+      await settle(tester);
+
+      Finder songsScrollable() => find
+          .descendant(
+            of: find.byType(SongsTab),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      await tester.drag(songsScrollable(), const Offset(0, -600));
+      await settle(tester);
+      double songsOffset() =>
+          tester.state<ScrollableState>(songsScrollable()).position.pixels;
+      final offsetBefore = songsOffset();
+
+      DebugCounters.reset();
+      clearInteractions(artwork);
+      // Switch through the tab controller (the scrollable tab bar may have
+      // scrolled a label off-screen).
+      final tabs = DefaultTabController.of(tester.element(find.byType(TabBar)));
+      for (final index in [2, 0, 2, 0]) {
+        tabs.animateTo(index); // 0 = Songs, 2 = Albums
+        await settle(tester);
+      }
+
+      return {
+        'sorts': DebugCounters.of('songsSort'),
+        'artworkRequests': verify(() => artwork(any())).callCount,
+        'offsetBefore': offsetBefore,
+        'offsetAfter': songsOffset(),
+      };
+    }
+
+    // Baseline before keeping tabs alive (same steps): 2 re-sorts, 40 cover
+    // requests, and the Songs scroll position reset from 580 to 0.
+    testWidgets(
+      'keeps pages alive: no re-sort, no cover reloads, same scroll',
+      (tester) async {
+        final result = await switchAway(tester);
+
+        expect(result['sorts'], 0);
+        // Only the Albums tab's first appearance loads its covers.
+        expect(result['artworkRequests'] as int, lessThanOrEqualTo(6));
+        expect(result['offsetAfter'], result['offsetBefore']);
+        expect(result['offsetBefore'] as double, greaterThan(0));
+      },
+    );
+
+    testWidgets('works the same while music is playing', (tester) async {
+      final harness = PlayerHarness();
+      addTearDown(harness.dispose);
+      getIt.registerSingleton<PlayerCubit>(harness.cubit);
+      harness.states.add(
+        NowPlaying(queue: manySongs, currentIndex: 0, isPlaying: true),
+      );
+
+      final result = await switchAway(tester);
+
+      expect(result['sorts'], 0);
+      expect(result['offsetAfter'], result['offsetBefore']);
+      // Scroll back up: the playing song is still marked.
+      final tabs = DefaultTabController.of(tester.element(find.byType(TabBar)));
+      expect(tabs.index, 0);
+      await tester.drag(
+        find
+            .descendant(
+              of: find.byType(SongsTab),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+        const Offset(0, 2000),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(EqualizerBars), findsOneWidget);
+    });
+
+    testWidgets('library changes still reach a kept-alive tab', (tester) async {
+      final updates = StreamController<MusicLibraryState>.broadcast();
+      addTearDown(updates.close);
+      when(() => bloc.stream).thenAnswer((_) => updates.stream);
+      await switchAway(tester);
+
+      // A new song arrives while the user is on another tab.
+      final tabs = DefaultTabController.of(tester.element(find.byType(TabBar)));
+      tabs.animateTo(2);
+      await tester.pumpAndSettle();
+      final newState = MusicLibraryState(
+        status: MusicLibraryStatus.ready,
+        songs: [
+          Song(
+            id: 999,
+            title: 'Aaa brand new',
+            artist: 'Artist',
+            album: 'Album',
+            albumId: 1,
+            duration: const Duration(minutes: 3),
+            path: '/m/999.mp3',
+            playbackUri: Uri.parse('content://media/external/audio/media/999'),
+            isFavorite: false,
+            playCount: 0,
+          ),
+          ...manySongs,
+        ],
+      );
+      when(() => bloc.state).thenReturn(newState);
+      updates.add(newState);
+      await tester.pumpAndSettle();
+
+      tabs.animateTo(0);
+      await tester.pumpAndSettle();
+      expect(find.text('61 songs'), findsOneWidget);
+    });
+
+    testWidgets('selecting songs does not re-sort; changing the order does', (
+      tester,
+    ) async {
+      await pumpView(
+        tester,
+        MusicLibraryState(status: MusicLibraryStatus.ready, songs: manySongs),
+      );
+      await tester.pumpAndSettle();
+      DebugCounters.reset();
+
+      await tester.tap(find.byTooltip('Select songs'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Track 01'));
+      await tester.pumpAndSettle();
+      expect(DebugCounters.of('songsSort'), 0);
+
+      await tester.tap(find.byTooltip('Cancel selection'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Sort by'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('A–Z').last);
+      await tester.pumpAndSettle();
+      expect(DebugCounters.of('songsSort'), 1);
+    });
   });
 }
