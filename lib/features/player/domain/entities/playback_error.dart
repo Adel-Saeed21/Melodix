@@ -1,0 +1,1 @@
+enum PlaybackError { cannotPlay }
