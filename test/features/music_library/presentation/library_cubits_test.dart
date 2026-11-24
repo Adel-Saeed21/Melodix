@@ -5,15 +5,10 @@ import 'package:melodix/core/usecase/usecase.dart';
 import 'package:melodix/features/music_library/domain/entities/album.dart';
 import 'package:melodix/features/music_library/domain/entities/artist.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
-import 'package:melodix/features/music_library/domain/usecases/get_albums_usecase.dart';
-import 'package:melodix/features/music_library/domain/usecases/get_artists_usecase.dart';
+import 'package:melodix/features/music_library/domain/usecases/build_library_catalog_usecase.dart';
 import 'package:melodix/features/music_library/presentation/logic/library_collections_cubit.dart';
 import 'package:melodix/features/music_library/presentation/logic/song_list_cubit.dart';
 import 'package:mocktail/mocktail.dart';
-
-class MockGetAlbums extends Mock implements GetAlbumsUseCase {}
-
-class MockGetArtists extends Mock implements GetArtistsUseCase {}
 
 const _album = Album(
   albumId: 1,
@@ -34,25 +29,31 @@ void main() {
   setUpAll(() => registerFallbackValue(const NoParams()));
 
   group('LibraryCollectionsCubit', () {
-    late MockGetAlbums getAlbums;
-    late MockGetArtists getArtists;
+    Song song(
+      int id, {
+      String album = 'Album',
+      int? albumId = 1,
+      int playCount = 0,
+      bool isFavorite = false,
+    }) => Song(
+      id: id,
+      title: 'Song $id',
+      artist: 'Artist',
+      album: album,
+      albumId: albumId,
+      duration: const Duration(minutes: 3),
+      path: '/m/$id.mp3',
+      playbackUri: Uri.parse('content://media/external/audio/media/$id'),
+      isFavorite: isFavorite,
+      playCount: playCount,
+    );
 
-    setUp(() {
-      getAlbums = MockGetAlbums();
-      getArtists = MockGetArtists();
-    });
-
-    test('loads albums and artists', () async {
-      when(() => getAlbums(any()))
-          .thenAnswer((_) async => const Right([_album]));
-      when(() => getArtists(any()))
-          .thenAnswer((_) async => const Right([_artist]));
+    test('builds albums and artists from the songs it is given', () async {
       final cubit = LibraryCollectionsCubit(
-        getAlbums: getAlbums,
-        getArtists: getArtists,
+        buildCatalog: const BuildLibraryCatalogUseCase(),
       );
 
-      await cubit.load();
+      await cubit.onLibraryChanged([song(1), song(2)]);
 
       expect(cubit.state.status, LoadStatus.ready);
       expect(cubit.state.albums, [_album]);
@@ -60,24 +61,23 @@ void main() {
       await cubit.close();
     });
 
-    test('reports a failure and keeps previous data', () async {
-      when(() => getAlbums(any()))
-          .thenAnswer((_) async => const Right([_album]));
-      when(() => getArtists(any()))
-          .thenAnswer((_) async => const Right([_artist]));
+    test('regroups only when the catalog changed', () async {
       final cubit = LibraryCollectionsCubit(
-        getAlbums: getAlbums,
-        getArtists: getArtists,
+        buildCatalog: const BuildLibraryCatalogUseCase(),
       );
-      await cubit.load();
+      await cubit.onLibraryChanged([song(1), song(2)]);
+      final built = cubit.state;
 
-      when(() => getAlbums(any()))
-          .thenAnswer((_) async => const Left(LibraryFailure('db')));
-      await cubit.load();
+      // A play count / favourite change: same albums, no new state.
+      await cubit.onLibraryChanged([
+        song(1, playCount: 3, isFavorite: true),
+        song(2),
+      ]);
+      expect(identical(cubit.state, built), isTrue);
 
-      expect(cubit.state.status, LoadStatus.failure);
-      expect(cubit.state.errorMessage, 'db');
-      expect(cubit.state.albums, [_album]);
+      // A song moved to another album: rebuilt.
+      await cubit.onLibraryChanged([song(1), song(2, album: 'B', albumId: 2)]);
+      expect(cubit.state.albums, hasLength(2));
       await cubit.close();
     });
   });

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:melodix/core/errors/exceptions.dart';
 import 'package:melodix/core/service/music_service.dart';
@@ -58,7 +59,7 @@ void main() {
   }
 
   test('throws when permission is denied and does not query', () async {
-    when(() => permissionService.requestAudio())
+    when(() => permissionService.audioStatus())
         .thenAnswer((_) async => MediaPermissionStatus.denied);
 
     await expectLater(
@@ -82,7 +83,7 @@ void main() {
   });
 
   test('reports permanently denied permission', () async {
-    when(() => permissionService.requestAudio())
+    when(() => permissionService.audioStatus())
         .thenAnswer((_) async => MediaPermissionStatus.permanentlyDenied);
 
     await expectLater(
@@ -98,7 +99,7 @@ void main() {
   });
 
   test('maps songs and skips non-music and empty files', () async {
-    when(() => permissionService.requestAudio())
+    when(() => permissionService.audioStatus())
         .thenAnswer((_) async => MediaPermissionStatus.granted);
     stubQuery([
       _song(1, title: 'Hello', artist: '<unknown>'),
@@ -118,6 +119,58 @@ void main() {
     expect(
       song.dateAdded,
       DateTime.fromMillisecondsSinceEpoch(1767225600 * 1000),
+    );
+  });
+
+  test('never shows a permission dialog', () async {
+    when(() => permissionService.audioStatus())
+        .thenAnswer((_) async => MediaPermissionStatus.denied);
+
+    await expectLater(
+      service.getAllSongs(),
+      throwsA(isA<MediaPermissionException>()),
+    );
+    verifyNever(() => permissionService.requestAudio());
+  });
+
+  test(
+    'maps on_audio_query MissingPermissions to a permission error',
+    () async {
+      when(() => permissionService.audioStatus())
+          .thenAnswer((_) async => MediaPermissionStatus.granted);
+      when(
+        () => audioQuery.querySongs(
+          sortType: any(named: 'sortType'),
+          orderType: any(named: 'orderType'),
+          uriType: any(named: 'uriType'),
+          ignoreCase: any(named: 'ignoreCase'),
+        ),
+      ).thenThrow(PlatformException(code: 'MissingPermissions'));
+
+      await expectLater(
+        service.getAllSongs(),
+        throwsA(isA<MediaPermissionException>()),
+      );
+    },
+  );
+
+  test('artwork is not queried without permission (double reply)', () async {
+    registerFallbackValue(ArtworkType.AUDIO);
+    registerFallbackValue(ArtworkFormat.JPEG);
+    when(() => permissionService.audioStatus())
+        .thenAnswer((_) async => MediaPermissionStatus.denied);
+
+    await expectLater(
+      service.getArtwork(1),
+      throwsA(isA<MediaPermissionException>()),
+    );
+    verifyNever(
+      () => audioQuery.queryArtwork(
+        any(),
+        any(),
+        format: any(named: 'format'),
+        size: any(named: 'size'),
+      ),
     );
   });
 }

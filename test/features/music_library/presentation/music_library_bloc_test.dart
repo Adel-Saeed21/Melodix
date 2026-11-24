@@ -4,9 +4,9 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:melodix/core/errors/failures.dart';
 import 'package:melodix/core/service/app_lifecycle_service.dart';
-import 'package:melodix/core/usecase/usecase.dart';
 import 'package:melodix/features/music_library/domain/entities/library_permission.dart';
 import 'package:melodix/features/music_library/domain/entities/library_sync_result.dart';
+import 'package:melodix/features/music_library/domain/entities/library_update.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/music_library/domain/usecases/check_library_permission_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/get_last_library_sync_usecase.dart';
@@ -60,7 +60,7 @@ final _syncResult = LibrarySyncResult(
 );
 
 void main() {
-  setUpAll(() => registerFallbackValue(const NoParams()));
+  setUpAll(() => registerFallbackValue(const SyncLibraryParams()));
 
   late MockCheck check;
   late MockRequest request;
@@ -75,8 +75,10 @@ void main() {
   void savedLibrary(List<Song> initial) {
     when(() => watch()).thenAnswer(
       (_) => Stream.multi((controller) {
-        controller.addSync(initial);
-        final sub = songs.stream.listen(controller.add);
+        controller.addSync(LibraryReloaded(initial));
+        final sub = songs.stream.listen(
+          (list) => controller.add(LibraryReloaded(list)),
+        );
         controller.onCancel = sub.cancel;
       }),
     );
@@ -90,7 +92,9 @@ void main() {
     watch = MockWatch();
     lifecycle = FakeLifecycle();
     songs = StreamController<List<Song>>.broadcast();
-    when(() => watch()).thenAnswer((_) => songs.stream);
+    when(
+      () => watch(),
+    ).thenAnswer((_) => songs.stream.map<LibraryUpdate>(LibraryReloaded.new));
     when(() => sync(any())).thenAnswer((_) async => Right(_syncResult));
   });
 
@@ -140,7 +144,6 @@ void main() {
 
     expect(statuses, contains(MusicLibraryStatus.scanning));
     expect(bloc.state.status, MusicLibraryStatus.ready);
-    expect(bloc.state.lastSyncResult, _syncResult);
     expect(bloc.state.isSyncing, isFalse);
     await sub.cancel();
     await bloc.close();
@@ -249,6 +252,85 @@ void main() {
     await settle();
 
     verify(() => sync(any())).called(1);
+    await bloc.close();
+  });
+
+  test('startup checks cheaply; manual refresh forces a full scan', () async {
+    when(() => lastSync()).thenAnswer((_) async => DateTime.now());
+    when(() => check()).thenAnswer((_) async => LibraryPermission.granted);
+    final bloc = build()..add(const MusicLibraryStarted());
+    await settle();
+    final startup =
+        verify(() => sync(captureAny())).captured.single as SyncLibraryParams;
+    expect(startup.force, isFalse);
+
+    bloc.add(const MusicLibraryRefreshRequested());
+    await settle();
+    final refresh =
+        verify(() => sync(captureAny())).captured.single as SyncLibraryParams;
+    expect(refresh.force, isTrue);
+    await bloc.close();
+  });
+
+  test('refresh during a background sync still forces a full scan', () async {
+    when(() => lastSync()).thenAnswer((_) async => DateTime.now());
+    when(() => check()).thenAnswer((_) async => LibraryPermission.granted);
+    final background = Completer<Either<Failure, LibrarySyncResult>>();
+    final forced = Completer<Either<Failure, LibrarySyncResult>>();
+    when(() => sync(any())).thenAnswer(
+      (invocation) =>
+          (invocation.positionalArguments.single as SyncLibraryParams).force
+          ? forced.future
+          : background.future,
+    );
+    final bloc = build()..add(const MusicLibraryStarted());
+    await settle();
+    expect(bloc.state.isSyncing, isTrue);
+
+    bloc.add(const MusicLibraryRefreshRequested());
+    // A second pull while it waits adds no extra scan.
+    bloc.add(const MusicLibraryRefreshRequested());
+    await settle();
+    final forces = verify(() => sync(captureAny())).captured
+        .cast<SyncLibraryParams>()
+        .map((p) => p.force);
+    expect(forces, [false, true]);
+
+    // The background sync ends first: still syncing (the rescan runs).
+    background.complete(Right(_syncResult));
+    await settle();
+    expect(bloc.state.isSyncing, isTrue);
+
+    forced.complete(Right(_syncResult));
+    await settle();
+    expect(bloc.state.isSyncing, isFalse);
+    expect(bloc.state.status, MusicLibraryStatus.ready);
+    await bloc.close();
+  });
+
+  test('a library stream error is reported, not thrown', () async {
+    when(() => lastSync()).thenAnswer((_) async => DateTime.now());
+    when(() => check()).thenAnswer((_) async => LibraryPermission.granted);
+    final updates = StreamController<LibraryUpdate>();
+    when(() => watch()).thenAnswer((_) => updates.stream);
+    final bloc = build()..add(const MusicLibraryStarted());
+    await settle();
+    updates.add(LibraryReloaded([_song]));
+    await settle();
+
+    final errors = <Object>[];
+    final sub = bloc.stream.listen(null, onError: errors.add);
+    updates.addError(StateError('read failed'));
+    await settle();
+
+    // Songs already shown stay; later updates still arrive.
+    expect(bloc.state.songs, [_song]);
+    updates.add(const LibraryReloaded([]));
+    await settle();
+    expect(bloc.state.songs, isEmpty);
+    expect(errors, isEmpty);
+    await sub.cancel();
+    await updates.close();
     await bloc.close();
   });
 }

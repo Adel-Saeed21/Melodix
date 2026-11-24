@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:melodix/features/music_library/data/mappers/library_grouping.dart';
+import 'package:melodix/features/music_library/domain/entities/catalog_grouping.dart';
 
 import '../fixtures.dart';
 
@@ -37,7 +38,7 @@ void main() {
         songRow(2, artist: 'B'),
       ]);
 
-      expect(albums.single.artist, LibraryGrouping.variousArtists);
+      expect(albums.single.artist, CatalogGrouping.variousArtists);
     });
   });
 

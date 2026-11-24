@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,11 +7,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
 import 'package:melodix/core/config/theme/app_theme.dart';
 import 'package:melodix/core/usecase/usecase.dart';
-import 'package:melodix/features/music_library/domain/entities/album.dart';
 import 'package:melodix/features/music_library/domain/entities/library_permission.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
-import 'package:melodix/features/music_library/domain/usecases/get_albums_usecase.dart';
-import 'package:melodix/features/music_library/domain/usecases/get_artists_usecase.dart';
+import 'package:melodix/features/music_library/domain/usecases/build_library_catalog_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/get_song_artwork_usecase.dart';
 import 'package:melodix/features/music_library/presentation/logic/library_collections_cubit.dart';
 import 'package:melodix/features/music_library/presentation/logic/music_library_bloc.dart';
@@ -20,9 +17,6 @@ import 'package:melodix/features/music_library/presentation/logic/music_library_
 import 'package:melodix/features/music_library/presentation/logic/music_library_state.dart';
 import 'package:melodix/features/music_library/presentation/logic/playlists_cubit.dart';
 import 'package:melodix/features/music_library/presentation/logic/library_search_cubit.dart';
-import 'package:melodix/features/music_library/domain/entities/library_search_results.dart';
-import 'package:melodix/features/music_library/domain/usecases/search_library_usecase.dart';
-import 'package:melodix/features/music_library/domain/entities/artist.dart';
 import 'package:melodix/features/music_library/presentation/logic/song_actions_cubit.dart';
 import 'package:melodix/features/music_library/domain/entities/playlist.dart';
 import 'package:melodix/features/music_library/domain/usecases/create_playlist_usecase.dart';
@@ -47,15 +41,9 @@ class MockStorage extends Mock implements Storage {}
 
 class MockGetArtwork extends Mock implements GetSongArtworkUseCase {}
 
-class MockGetAlbums extends Mock implements GetAlbumsUseCase {}
-
-class MockGetArtists extends Mock implements GetArtistsUseCase {}
-
 class MockSongActionsCubit extends Mock implements SongActionsCubit {}
 
 class MockWatchPlaylists extends Mock implements WatchPlaylistsUseCase {}
-
-class MockSearchLibrary extends Mock implements SearchLibraryUseCase {}
 
 class MockCreatePlaylist extends Mock implements CreatePlaylistUseCase {}
 
@@ -84,10 +72,8 @@ final _songs = [
 
 void main() {
   late MockMusicLibraryBloc bloc;
-  late MockGetAlbums albums;
   late MockGetArtwork artwork;
   late StreamController<List<Playlist>> playlists;
-  late MockSearchLibrary searchLibrary;
 
   setUpAll(() {
     registerPlayerFallbacks();
@@ -104,16 +90,13 @@ void main() {
     HydratedBloc.storage = storage;
     artwork = MockGetArtwork();
     when(() => artwork(any())).thenAnswer((_) async => null);
-    albums = MockGetAlbums();
     playlists = StreamController<List<Playlist>>.broadcast();
-    searchLibrary = MockSearchLibrary();
-    when(() => albums(any())).thenAnswer((_) async => const Right([]));
-    final artists = MockGetArtists();
-    when(() => artists(any())).thenAnswer((_) async => const Right([]));
     getIt
       ..registerSingleton<GetSongArtworkUseCase>(artwork)
       ..registerFactory<LibraryCollectionsCubit>(
-        () => LibraryCollectionsCubit(getAlbums: albums, getArtists: artists),
+        () => LibraryCollectionsCubit(
+          buildCatalog: const BuildLibraryCatalogUseCase(),
+        ),
       )
       ..registerFactory<SongActionsCubit>(() {
         final actions = MockSongActionsCubit();
@@ -124,8 +107,7 @@ void main() {
         return actions;
       })
       ..registerFactory<LibrarySearchCubit>(
-        () =>
-            LibrarySearchCubit(search: searchLibrary, debounce: Duration.zero),
+        () => LibrarySearchCubit(debounce: Duration.zero),
       )
       ..registerFactory<PlaylistsCubit>(() {
         final watch = MockWatchPlaylists();
@@ -246,30 +228,33 @@ void main() {
       tester.platformDispatcher.textScaleFactorTestValue = textScale;
       addTearDown(tester.view.reset);
       addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
-      when(() => albums(any())).thenAnswer(
-        (_) async => const Right([
-          Album(
-            albumId: 1,
-            title: 'A very long album title that keeps going and going',
-            artist: 'An artist with a really long name as well',
-            songCount: 12,
-            duration: Duration(minutes: 48),
-            artworkSongId: 1,
-          ),
-          Album(
-            albumId: 2,
-            title: 'Short',
-            artist: 'Someone',
-            songCount: 3,
-            duration: Duration(minutes: 9),
-            artworkSongId: 2,
-          ),
-        ]),
+      // Albums are built from the songs: one with very long names.
+      Song song(int id, String album, String artist) => Song(
+        id: id,
+        title: 'Track $id',
+        artist: artist,
+        album: album,
+        albumId: id,
+        duration: const Duration(minutes: 4),
+        path: '/m/$id.mp3',
+        playbackUri: Uri.parse('content://media/external/audio/media/$id'),
+        isFavorite: false,
+        playCount: 0,
       );
 
       await pumpView(
         tester,
-        MusicLibraryState(status: MusicLibraryStatus.ready, songs: _songs),
+        MusicLibraryState(
+          status: MusicLibraryStatus.ready,
+          songs: [
+            song(
+              1,
+              'A very long album title that keeps going and going',
+              'An artist with a really long name as well',
+            ),
+            song(2, 'Short', 'Someone'),
+          ],
+        ),
       );
       // With large text the tab bar scrolls; bring the tab into view first.
       await tester.ensureVisible(find.text('Albums'));
@@ -350,21 +335,6 @@ void main() {
   testWidgets('search opens, shows grouped results and closes back home', (
     tester,
   ) async {
-    when(() => searchLibrary(any())).thenAnswer(
-      (_) async => Right(
-        LibrarySearchResults(
-          songs: [_songs.first],
-          artists: const [
-            Artist(
-              name: 'Artist 1',
-              songCount: 1,
-              albumCount: 1,
-              artworkSongId: 1,
-            ),
-          ],
-        ),
-      ),
-    );
     await pumpView(
       tester,
       MusicLibraryState(status: MusicLibraryStatus.ready, songs: _songs),
@@ -386,10 +356,10 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
 
-    verify(() => searchLibrary('track')).called(1);
+    // Results come from the library already in memory (no database).
     expect(find.text('Songs'), findsOneWidget);
-    expect(find.text('Artists'), findsOneWidget);
-    expect(find.text('Artist 1'), findsWidgets);
+    expect(find.text('Track 1'), findsOneWidget);
+    expect(find.text('Track 3'), findsOneWidget);
 
     await tester.tap(find.byTooltip('Close search'));
     await tester.pumpAndSettle();
@@ -435,8 +405,6 @@ void main() {
   });
 
   testWidgets('search shows a message when nothing matches', (tester) async {
-    when(() => searchLibrary(any()))
-        .thenAnswer((_) async => const Right(LibrarySearchResults.empty));
     await pumpView(
       tester,
       MusicLibraryState(status: MusicLibraryStatus.ready, songs: _songs),
@@ -538,19 +506,6 @@ void main() {
         ..physicalSize = const Size(1080, 2340)
         ..devicePixelRatio = 3;
       addTearDown(tester.view.reset);
-      when(() => albums(any())).thenAnswer(
-        (_) async => Right([
-          for (var i = 1; i <= 6; i++)
-            const Album(
-              albumId: 1,
-              title: 'Album',
-              artist: 'Artist',
-              songCount: 1,
-              duration: Duration(minutes: 3),
-              artworkSongId: 1,
-            ),
-        ]),
-      );
       await pumpView(
         tester,
         MusicLibraryState(status: MusicLibraryStatus.ready, songs: manySongs),
@@ -692,4 +647,117 @@ void main() {
       expect(DebugCounters.of('songsSort'), 1);
     });
   });
+
+  // Baseline before the optimisation (same steps): getAlbums=2,
+  // getArtists=2 (each a full DB read + regroup), searchReruns=1 (full DB
+  // read + regroup) and sorts=1, for a single favourite.
+  testWidgets('a favourite does not regroup, re-read or re-sort the library', (
+    tester,
+  ) async {
+    final updates = StreamController<MusicLibraryState>.broadcast();
+    addTearDown(updates.close);
+    when(() => bloc.stream).thenAnswer((_) => updates.stream);
+    final songs = [
+      for (var i = 1; i <= 50; i++)
+        Song(
+          id: i,
+          title: 'Track $i',
+          artist: 'Artist',
+          album: 'Album',
+          albumId: 1,
+          duration: const Duration(minutes: 3),
+          path: '/m/$i.mp3',
+          playbackUri: Uri.parse('content://media/external/audio/media/$i'),
+          isFavorite: false,
+          playCount: 0,
+        ),
+    ];
+    final start = MusicLibraryState(
+      status: MusicLibraryStatus.ready,
+      songs: songs,
+    );
+    await pumpView(tester, start);
+    await tester.pumpAndSettle();
+    // Open search with a query, like a user searching.
+    await tester.tap(find.byTooltip('Search'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'track');
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    DebugCounters.reset();
+
+    // One song becomes a favourite (what Isar's watch emits).
+    final toggled = [songs.first.copyWithFavorite(true), ...songs.skip(1)];
+    final next = MusicLibraryState(
+      status: MusicLibraryStatus.ready,
+      songs: toggled,
+    );
+    when(() => bloc.state).thenReturn(next);
+    updates.add(next);
+    await tester.pumpAndSettle();
+
+    expect(DebugCounters.of('collectionsRebuild'), 0);
+    expect(DebugCounters.of('songsSort'), 0);
+    // The open search updated in memory, showing the new favourite state.
+    expect(DebugCounters.of('searchRun'), 1);
+    final searchState = tester
+        .element(find.byType(TextField))
+        .read<LibrarySearchCubit>()
+        .state;
+    expect(searchState.results.songs.first.isFavorite, isTrue);
+  });
+
+  testWidgets('adding a song does regroup and re-sort', (tester) async {
+    final updates = StreamController<MusicLibraryState>.broadcast();
+    addTearDown(updates.close);
+    when(() => bloc.stream).thenAnswer((_) => updates.stream);
+    await pumpView(
+      tester,
+      MusicLibraryState(status: MusicLibraryStatus.ready, songs: _songs),
+    );
+    await tester.pumpAndSettle();
+    DebugCounters.reset();
+
+    final grown = MusicLibraryState(
+      status: MusicLibraryStatus.ready,
+      songs: [..._songs, _songs.first.withId(99)],
+    );
+    when(() => bloc.state).thenReturn(grown);
+    updates.add(grown);
+    await tester.pumpAndSettle();
+
+    expect(DebugCounters.of('collectionsRebuild'), 1);
+    expect(DebugCounters.of('songsSort'), 1);
+  });
+}
+
+extension on Song {
+  Song withId(int newId) => Song(
+    id: newId,
+    title: '$title copy',
+    artist: artist,
+    album: album,
+    albumId: albumId,
+    duration: duration,
+    path: '$path.copy',
+    playbackUri: playbackUri,
+    isFavorite: isFavorite,
+    playCount: playCount,
+    dateAdded: dateAdded,
+  );
+
+  Song copyWithFavorite(bool favorite) => Song(
+    id: id,
+    title: title,
+    artist: artist,
+    album: album,
+    albumId: albumId,
+    duration: duration,
+    path: path,
+    playbackUri: playbackUri,
+    isFavorite: favorite,
+    playCount: playCount,
+    dateAdded: dateAdded,
+  );
 }
