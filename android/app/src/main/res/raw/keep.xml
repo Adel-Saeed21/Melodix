@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Keeps the notification icon and media control icons, which are only
+     referenced by name from Dart (audio_service), from being removed by
+     resource shrinking in release builds. -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@drawable/ic_stat_melodix,@drawable/ic_media_*" />
