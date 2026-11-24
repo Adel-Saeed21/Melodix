@@ -1,4 +1,4 @@
-import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
+import 'package:melodix/core/widgets/app_screen_util_init.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
@@ -6,7 +6,6 @@ import 'package:melodix/core/config/theme/app_theme.dart';
 import 'package:melodix/features/music_library/domain/usecases/get_song_artwork_usecase.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_tile.dart';
 import 'package:melodix/features/player/domain/entities/now_playing.dart';
-import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
 import 'package:melodix/features/player/presentation/widgets/equalizer_bars.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -31,21 +30,27 @@ void main() {
 
   tearDown(() => getIt.reset());
 
+  /// Set by [usePlayer]: the tiles get a player above them, like in the app.
+  PlayerHarness? player;
+  setUp(() => player = null);
+
   Future<void> pumpList(WidgetTester tester, {bool reduceMotion = false}) {
     return tester.pumpWidget(
       MediaQuery(
         data: MediaQueryData.fromView(tester.view)
             .copyWith(disableAnimations: reduceMotion),
-        child: ScreenUtilPlusInit(
-          designSize: const Size(375, 812),
-          child: MaterialApp(
-            theme: AppTheme.darkTheme,
-            home: Scaffold(
-              body: Column(
-                children: [
-                  SongTile(song: playerSong(1, title: 'First')),
-                  SongTile(song: playerSong(2, title: 'Second')),
-                ],
+        child: AppScreenUtilInit(
+          child: _withPlayer(
+            player,
+            MaterialApp(
+              theme: AppTheme.darkTheme,
+              home: Scaffold(
+                body: Column(
+                  children: [
+                    SongTile(song: playerSong(1, title: 'First')),
+                    SongTile(song: playerSong(2, title: 'Second')),
+                  ],
+                ),
               ),
             ),
           ),
@@ -54,11 +59,12 @@ void main() {
     );
   }
 
-  /// Creates the fake player inside the test (fake clock) and registers it.
+  /// Creates the fake player inside the test (fake clock); the next
+  /// [pumpList] provides it above the tiles.
   void usePlayer() {
     harness = PlayerHarness();
     addTearDown(harness.dispose);
-    getIt.registerSingleton<PlayerCubit>(harness.cubit);
+    player = harness;
   }
 
   NowPlaying playingSecond({bool isPlaying = true}) => NowPlaying(
@@ -153,3 +159,6 @@ void main() {
     expect(barHeights(tester), before);
   });
 }
+
+Widget _withPlayer(PlayerHarness? player, Widget app) =>
+    player == null ? app : player.provide(app);

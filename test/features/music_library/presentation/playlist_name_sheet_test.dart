@@ -1,4 +1,4 @@
-import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
+import 'package:melodix/core/widgets/app_screen_util_init.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/theme/app_theme.dart';
@@ -23,8 +23,7 @@ void main() {
     addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
 
     await tester.pumpWidget(
-      ScreenUtilPlusInit(
-        designSize: const Size(375, 812),
+      AppScreenUtilInit(
         child: MaterialApp(
           theme: AppTheme.darkTheme,
           home: Builder(

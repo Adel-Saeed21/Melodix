@@ -15,15 +15,13 @@ import 'package:melodix/core/service/music_service.dart';
 import 'package:melodix/core/service/permission_handling_service.dart';
 import 'package:melodix/features/music_library/data/mappers/song_mapper.dart';
 import 'package:melodix/features/music_library/data/repositories/artwork_repository_impl.dart';
-import 'package:melodix/features/music_library/data/repositories/catalog_repository_impl.dart';
 import 'package:melodix/features/music_library/data/repositories/library_permission_repository_impl.dart';
 import 'package:melodix/features/music_library/data/repositories/library_sync_repository_impl.dart';
 import 'package:melodix/features/music_library/data/repositories/playlist_repository_impl.dart';
 import 'package:melodix/features/music_library/data/repositories/song_repository_impl.dart';
 import 'package:melodix/features/music_library/data/sync/full_library_scan.dart';
 import 'package:melodix/features/music_library/data/sync/incremental_library_scan.dart';
-import 'package:melodix/features/music_library/domain/entities/album.dart';
-import 'package:melodix/features/music_library/domain/entities/library_permission.dart';
+import 'package:melodix/core/entities/library_permission.dart';
 import 'package:melodix/features/music_library/domain/entities/library_update.dart';
 import 'package:melodix/features/music_library/domain/entities/playlist.dart';
 import 'package:mocktail/mocktail.dart';
@@ -48,7 +46,6 @@ void main() {
   late MockDeltaSource deltaSource;
   late LibrarySyncRepositoryImpl syncRepo;
   late SongRepositoryImpl songRepo;
-  late CatalogRepositoryImpl catalog;
   late PlaylistRepositoryImpl playlistRepo;
   late ArtworkRepositoryImpl artwork;
   late LibraryPermissionRepositoryImpl permissionRepo;
@@ -80,7 +77,6 @@ void main() {
       musicService: musicService,
       mapper: mapper,
     );
-    catalog = CatalogRepositoryImpl(storage: storage, mapper: mapper);
     playlistRepo = PlaylistRepositoryImpl(
       storage: playlists,
       songStorage: storage,
@@ -218,6 +214,31 @@ void main() {
     expect(calls, 2);
   });
 
+  test('cached artwork comes back synchronously', () async {
+    when(() => musicService.getArtwork(5, size: 200))
+        .thenAnswer((_) async => Uint8List.fromList([1, 2, 3]));
+
+    expect(artwork.getArtwork(5), isA<Future<Uint8List?>>());
+    await artwork.getArtwork(5);
+
+    // Cached: a plain value, so a widget can show it in the same frame.
+    expect(artwork.getArtwork(5), [1, 2, 3]);
+  });
+
+  test('concurrent requests for one cover share a single load', () async {
+    final pending = Completer<Uint8List?>();
+    when(() => musicService.getArtwork(5, size: 200))
+        .thenAnswer((_) => pending.future);
+
+    final first = artwork.getArtwork(5);
+    final second = artwork.getArtwork(5);
+    pending.complete(Uint8List.fromList([7]));
+
+    expect(await first, [7]);
+    expect(await second, [7]);
+    verify(() => musicService.getArtwork(5, size: 200)).called(1);
+  });
+
   test('checkPermission maps the platform status', () async {
     when(() => permissions.audioStatus())
         .thenAnswer((_) async => MediaPermissionStatus.permanentlyDenied);
@@ -251,27 +272,10 @@ void main() {
     );
   });
 
-  test('getAlbumSongs queries by album id and title', () async {
-    const album = Album(
-      albumId: 5,
-      title: 'Album',
-      artist: 'Artist',
-      songCount: 1,
-      duration: Duration.zero,
-      artworkSongId: 1,
-    );
-    when(() => storage.getSongsByAlbum(albumId: 5, albumTitle: 'Album'))
-        .thenAnswer((_) async => [songRow(1, albumId: 5)]);
-
-    final songs = (await catalog.getAlbumSongs(album)).getOrElse(() => []);
-
-    expect(songs.single.id, 1);
-  });
-
   test('read errors become LibraryFailure', () async {
-    when(() => storage.getSongsByArtist('X')).thenThrow(Exception('db'));
+    when(() => playlists.getPlaylistSongs(4)).thenThrow(Exception('db'));
 
-    final result = await catalog.getArtistSongs('X');
+    final result = await playlistRepo.getPlaylistSongs(4);
 
     result.fold(
       (f) => expect(f, isA<LibraryFailure>()),
@@ -284,15 +288,6 @@ void main() {
       when(() => storage.toggleFavorite(4)).thenAnswer((_) async => true);
 
       expect((await songRepo.toggleFavorite(4)).getOrElse(() => false), isTrue);
-    });
-
-    test('setSongHidden writes the flag', () async {
-      when(() => storage.setHidden(4, hidden: true)).thenAnswer((_) async {});
-
-      final result = await songRepo.setSongHidden(4, hidden: true);
-
-      expect(result.isRight(), isTrue);
-      verify(() => storage.setHidden(4, hidden: true)).called(1);
     });
 
     test('bulk hide and favourite delegate to storage', () async {
@@ -342,16 +337,6 @@ void main() {
       );
     });
 
-    test('getAlbumForSong groups the album songs', () async {
-      when(() => storage.getSongsByAlbum(albumId: 1, albumTitle: 'Album'))
-          .thenAnswer((_) async => [songRow(1), songRow(2)]);
-      final song = const SongMapper(isAndroid: true).toEntity(songRow(1));
-
-      final album = (await catalog.getAlbumForSong(song)).getOrElse(() => null);
-
-      expect(album?.songCount, 2);
-    });
-
     test('addSongsToPlaylist returns how many were added', () async {
       when(() => playlists.addSongs(3, [1, 2])).thenAnswer((_) async => 1);
 
@@ -368,9 +353,8 @@ void main() {
       when(() => playlists.watchAllPlaylists()).thenAnswer(
         (_) => Stream.value([row, PlaylistCollection.create('Empty')..id = 5]),
       );
-      when(
-        () => storage.watchHiddenSongs(),
-      ).thenAnswer((_) => Stream.value(const []));
+      when(() => storage.watchHiddenSongs())
+          .thenAnswer((_) => Stream.value(const []));
 
       final result = await playlistRepo.watchPlaylists().first;
 
@@ -383,9 +367,8 @@ void main() {
     test('hidden songs are left out of the count and the cover', () async {
       final row = PlaylistCollection.create('Mix')..songIds = [8, 9, 10];
       row.id = 4;
-      when(
-        () => playlists.watchAllPlaylists(),
-      ).thenAnswer((_) => Stream.value([row]));
+      when(() => playlists.watchAllPlaylists())
+          .thenAnswer((_) => Stream.value([row]));
       final hidden = StreamController<List<SongCollection>>();
       when(() => storage.watchHiddenSongs()).thenAnswer((_) => hidden.stream);
 
@@ -409,9 +392,8 @@ void main() {
       final row = PlaylistCollection.create('Mix')..songIds = [8, 9];
       row.id = 4;
       when(() => playlists.getAllPlaylists()).thenAnswer((_) async => [row]);
-      when(
-        () => storage.watchHiddenSongs(),
-      ).thenAnswer((_) => Stream.value([songRow(8), songRow(9)]));
+      when(() => storage.watchHiddenSongs())
+          .thenAnswer((_) => Stream.value([songRow(8), songRow(9)]));
 
       final result = (await playlistRepo.getPlaylists()).getOrElse(() => []);
 

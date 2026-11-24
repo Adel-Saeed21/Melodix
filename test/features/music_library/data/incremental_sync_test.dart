@@ -12,6 +12,8 @@ import '../../../support/fake_media_store.dart';
 import '../../../support/sync_repository_factory.dart';
 import '../../../support/isar_test_db.dart';
 
+import 'package:melodix/features/music_library/domain/entities/library_sync_stage.dart';
+
 /// Real storage that can be told to fail the next incremental save.
 class FlakyStorage extends MusicLocalStorageImpl {
   FlakyStorage(super.isar);
@@ -73,6 +75,56 @@ void main() {
     DebugCounters.reset();
     return ids;
   }
+
+  group('progress stages', () {
+    /// The stages [action]'s sync reports, in order.
+    Future<List<LibrarySyncStage>> stagesOf(
+      Future<void> Function() action,
+    ) async {
+      final stages = <LibrarySyncStage>[];
+      final sub = repository.watchSyncStage().listen(stages.add);
+      await action();
+      await pumpEventQueue();
+      await sub.cancel();
+      return stages;
+    }
+
+    test('a first (full) scan checks, reads, then saves', () async {
+      device.add(title: 'Alpha');
+      expect(await stagesOf(sync), [
+        LibrarySyncStage.checking,
+        LibrarySyncStage.reading,
+        LibrarySyncStage.saving,
+      ]);
+    }, skip: skip);
+
+    test('a scan of only the changes checks, reads, then saves', () async {
+      await seeded();
+      device.add(title: 'Delta');
+      expect(await stagesOf(sync), [
+        LibrarySyncStage.checking,
+        LibrarySyncStage.reading,
+        LibrarySyncStage.saving,
+      ]);
+    }, skip: skip);
+
+    test('nothing changed: it stops after checking', () async {
+      await seeded();
+      expect(await stagesOf(sync), [LibrarySyncStage.checking]);
+    }, skip: skip);
+
+    test('a failed save never reports more than it reached', () async {
+      await seeded();
+      device.add(title: 'Delta');
+      storage.failNextApply = true;
+      final stages = await stagesOf(() => repository.syncLibrary());
+      expect(stages, [
+        LibrarySyncStage.checking,
+        LibrarySyncStage.reading,
+        LibrarySyncStage.saving,
+      ]);
+    }, skip: skip);
+  });
 
   group('incremental sync', () {
     test('nothing changed: no scan at all', () async {

@@ -1,5 +1,5 @@
+import 'package:melodix/core/widgets/app_screen_util_init.dart';
 import 'package:dartz/dartz.dart';
-import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
@@ -122,14 +122,13 @@ void main() {
       final cubit = SongListCubit(() async => Right(_songs), saveOrder: save);
       await cubit.load();
       await tester.pumpWidget(
-        ScreenUtilPlusInit(
-          designSize: const Size(375, 812),
+        AppScreenUtilInit(
           child: MaterialApp(
             theme: AppTheme.darkTheme,
             home: Scaffold(
               body: BlocProvider.value(
                 value: cubit,
-                child: const SongListBody(header: SizedBox(height: 40)),
+                child: SongListBody(header: (_) => const SizedBox(height: 40)),
               ),
             ),
           ),

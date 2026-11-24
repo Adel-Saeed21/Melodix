@@ -1,5 +1,5 @@
+import 'package:melodix/core/widgets/app_screen_util_init.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:material_ui/material_ui.dart';
@@ -9,7 +9,7 @@ import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/music_library/domain/usecases/get_song_artwork_usecase.dart';
 import 'package:melodix/features/music_library/presentation/logic/song_actions_cubit.dart';
 import 'package:melodix/features/music_library/presentation/logic/song_sort_cubit.dart';
-import 'package:melodix/features/music_library/presentation/widgets/library_tabs.dart';
+import 'package:melodix/features/music_library/presentation/widgets/library_tabs/songs_tab.dart';
 import 'package:mocktail/mocktail.dart';
 
 class MockGetArtwork extends Mock implements GetSongArtworkUseCase {}
@@ -62,8 +62,7 @@ void main() {
       ..devicePixelRatio = 3;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
-      ScreenUtilPlusInit(
-        designSize: const Size(375, 812),
+      AppScreenUtilInit(
         child: MaterialApp(
           theme: AppTheme.darkTheme,
           home: Scaffold(
@@ -72,10 +71,7 @@ void main() {
                 BlocProvider<SongActionsCubit>.value(value: actions),
                 BlocProvider(create: (_) => SongSortCubit()),
               ],
-              child: SongsTab(
-                songs: [_song(1), _song(2), _song(3)],
-                onRefresh: () async {},
-              ),
+              child: SongsTab(songs: [_song(1), _song(2), _song(3)]),
             ),
           ),
         ),
@@ -143,6 +139,25 @@ void main() {
             as List<Song>;
     expect(hidden.map((s) => s.id).toSet(), {1, 3});
     expect(find.byTooltip('Select songs'), findsOneWidget);
+  });
+
+  testWidgets('the selection keeps list order, whatever order it was tapped', (
+    tester,
+  ) async {
+    when(() => actions.hideMany(any())).thenAnswer((_) async => true);
+    await pumpTab(tester);
+
+    await tester.longPress(find.text('Track 3'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Track 1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Hide'));
+    await tester.pumpAndSettle();
+
+    final hidden =
+        verify(() => actions.hideMany(captureAny())).captured.single
+            as List<Song>;
+    expect(hidden.map((s) => s.id), [1, 3]);
   });
 
   testWidgets('delete asks first and does nothing when cancelled', (

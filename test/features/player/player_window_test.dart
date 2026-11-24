@@ -8,7 +8,6 @@ import 'package:just_audio_platform_interface/just_audio_platform_interface.dart
     show LoopModeMessage;
 import 'package:melodix/core/database/collections/playback_state_collection.dart';
 import 'package:melodix/core/database/collections/song_collection.dart';
-import 'package:melodix/core/database/music_local_storage.dart';
 import 'package:melodix/core/database/playback_state_local_storage.dart';
 import 'package:melodix/features/music_library/data/mappers/song_mapper.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
@@ -19,7 +18,10 @@ import 'package:mocktail/mocktail.dart';
 import '../../support/fake_audio_native.dart';
 import '../music_library/fixtures.dart';
 
-class _Music extends Mock implements MusicLocalStorage {}
+import 'package:melodix/features/player/domain/repositories/play_recorder.dart';
+import 'package:melodix/features/player/domain/entities/playback_progress.dart';
+
+class _Music extends Mock implements PlayRecorder {}
 
 /// In-memory session storage that records what the player saves.
 class _Session implements PlaybackStateLocalStorage {
@@ -93,7 +95,7 @@ class _Harness {
     repository = PlayerRepositoryImpl(
       player: player,
       sessionStorage: session,
-      musicStorage: music,
+      playRecorder: music,
       mapper: const SongMapper(isAndroid: true),
       random: Random(seed),
     );
@@ -315,6 +317,87 @@ void main() {
     });
   });
 
+  group('play next / add to queue', () {
+    // Songs not in the queue yet (ids 901…).
+    final extra = [_song(900), _song(901)];
+
+    test(
+      'play next: right after the current song, which keeps playing',
+      () async {
+        await h.play(_songs(10), 3);
+        await h.repository.playNext(extra);
+        await h.settle();
+        expect(h.songId, 4, reason: 'the current song carries on');
+        h.expectConsistent();
+        expect(h.state.queue, hasLength(12));
+
+        final next = <int>[];
+        for (var i = 0; i < 3; i++) {
+          await h.repository.next();
+          await h.settle();
+          h.expectConsistent();
+          next.add(h.songId!);
+        }
+        expect(next, [901, 902, 5]);
+        // Saved, so a restart has the same queue.
+        expect(h.session.queueIds!.sublist(3, 7), [4, 901, 902, 5]);
+      },
+    );
+
+    test('play next while shuffled: still the very next', () async {
+      await h.play(_songs(60), 10);
+      await h.repository.setShuffle(true);
+      await h.settle();
+      await h.repository.playNext([extra.first]);
+      await h.settle();
+      expect(h.songId, 11);
+
+      await h.repository.next();
+      await h.settle();
+      h.expectConsistent();
+      expect(h.songId, 901);
+      expect(h.state.shuffle, isTrue);
+    });
+
+    test('add to queue: plays after everything else', () async {
+      await h.play(_songs(5), 1);
+      await h.repository.addToQueue(extra);
+      await h.settle();
+      expect(h.songId, 2);
+
+      final order = <int>[];
+      while (h.state.hasNext) {
+        await h.repository.next();
+        await h.settle();
+        h.expectConsistent();
+        order.add(h.songId!);
+      }
+      expect(order, [3, 4, 5, 901, 902]);
+    });
+
+    test('a long queue (only a window loaded) takes them too', () async {
+      await h.play(_songs(1000), 500);
+      await h.repository.playNext([extra.first]);
+      await h.settle();
+      h.expectConsistent();
+      await h.repository.next();
+      await h.settle();
+      h.expectConsistent();
+      expect(h.songId, 901);
+      await h.repository.next();
+      await h.settle();
+      expect(h.songId, 502);
+    });
+
+    test('nothing playing: they start playing', () async {
+      await h.repository.playNext(extra);
+      await h.settle();
+      expect(h.songId, 901);
+      expect(h.state.queue.map((s) => s.id), [901, 902]);
+      h.expectConsistent();
+    });
+  });
+
   group('shuffle', () {
     test(
       '5. covers the entire queue, each song once, from the current one',
@@ -519,17 +602,24 @@ void main() {
       );
       final seen = <NowPlaying>[];
       final sub = h.repository.watch().listen(seen.add);
+      final progress = <PlaybackProgress>[];
+      final progressSub = h.repository.watchProgress().listen(progress.add);
 
       await h.repository.restoreLastSession();
       await h.settle();
       await sub.cancel();
+      await progressSub.cancel();
 
       final withSong = seen.where((s) => s.hasSong).toList();
       expect(withSong, isNotEmpty);
       expect(withSong.map((s) => s.currentSong!.title).toSet(), {'Last'});
-      expect(withSong.first.position, const Duration(seconds: 42));
+      // The saved position shows from the start (never 0:00 first).
+      expect(
+        progress.skip(1).first.position, // after the initial "nothing"
+        const Duration(seconds: 42),
+      );
       expect(h.state.currentSong?.title, 'Last');
-      expect(h.state.position, const Duration(seconds: 42));
+      expect(h.repository.progress.position, const Duration(seconds: 42));
       expect(h.native.playing, isFalse, reason: 'restoring never plays');
     });
 
@@ -633,14 +723,225 @@ void main() {
       expect(h.native.position, const Duration(seconds: 90));
       // The player extrapolates while playing: 90 s plus a few ms.
       expect(
-        h.state.position - const Duration(seconds: 90),
+        h.repository.progress.position - const Duration(seconds: 90),
         lessThan(const Duration(milliseconds: 200)),
       );
       expect(
-        h.state.position,
+        h.repository.progress.position,
         greaterThanOrEqualTo(const Duration(seconds: 90)),
       );
       h.expectConsistent();
+    });
+  });
+
+  group('broken songs', () {
+    test('a song failing mid-queue is reported and skipped', () async {
+      await h.play(_songs(10), 2);
+      final errorsBefore = h.state.errorSequence;
+
+      h.native.failCurrent(); // song 3 (index 2) turns out unplayable
+      await h.settle();
+
+      expect(h.state.errorSequence, errorsBefore + 1);
+      expect(h.state.error, isNotNull);
+      expect(h.state.currentIndex, 3, reason: 'moved on to the next song');
+      expect(h.native.playing, isTrue);
+      h.expectConsistent();
+    });
+
+    test(
+      'several broken songs in a row: it stops instead of looping',
+      () async {
+        await h.play(_songs(10), 0);
+
+        for (var i = 0; i < 4; i++) {
+          h.native.failCurrent();
+          await h.settle();
+        }
+
+        // Three skips, then it gives up and pauses.
+        expect(h.state.isPlaying, isFalse);
+        expect(h.player.playing, isFalse);
+        expect(h.state.currentIndex, 3);
+      },
+    );
+
+    test('a broken last song stops the queue (repeat off)', () async {
+      await h.play(_songs(5), 4);
+
+      h.native.failCurrent();
+      await h.settle();
+
+      expect(h.state.isPlaying, isFalse);
+      expect(h.player.playing, isFalse);
+      expect(h.state.currentIndex, 4);
+      expect(h.state.error, isNotNull);
+    });
+
+    test('a broken song with repeat all wraps to the first', () async {
+      await h.play(_songs(5), 4);
+      await h.repository.setRepeatMode(PlaybackRepeat.all);
+      await h.settle();
+
+      h.native.failCurrent();
+      await h.settle();
+
+      expect(h.state.currentIndex, 0);
+      expect(h.native.playing, isTrue);
+    });
+
+    test('a tapped song that can\'t be opened is reported once', () async {
+      await h.play(_songs(10), 0);
+      h.native.brokenIds.add(4); // song at index 3
+      final errorsBefore = h.state.errorSequence;
+      await h.repository.playQueue(_songs(10), startIndex: 3);
+      await h.settle();
+
+      // The load said so; the player's own error event isn't counted twice
+      // and doesn't trigger a skip of its own.
+      expect(h.state.errorSequence, errorsBefore + 1);
+      // The song the user tapped stays shown (not a neighbour of it).
+      expect(h.state.currentIndex, 3);
+
+      // Pressing play tries it again from a fresh load.
+      h.native.brokenIds.clear();
+      await h.repository.play();
+      await h.settle();
+      expect(h.state.currentIndex, 3);
+      expect(h.native.currentSongId, 4);
+      h.expectConsistent();
+    });
+
+    test('skipping streaks reset once a song really plays', () async {
+      await h.play(_songs(20), 0);
+      h.native.failCurrent();
+      await h.settle();
+      h.native.failCurrent();
+      await h.settle();
+      // This one plays for a while.
+      h.native.advance(const Duration(seconds: 10));
+      await h.settle();
+
+      for (var i = 0; i < 3; i++) {
+        h.native.failCurrent();
+        await h.settle();
+      }
+      expect(h.native.playing, isTrue, reason: 'a fresh streak of three');
+      expect(h.state.currentIndex, 5);
+    });
+  });
+
+  group('pause wins', () {
+    test('pausing while a new queue loads keeps it paused', () async {
+      await h.play(_songs(10), 0);
+      final hold = Completer<void>();
+      h.native.holdLoad = hold;
+
+      final loading = h.repository.playQueue(_songs(10), startIndex: 5);
+      await h.settle();
+      await h.repository.pause(); // e.g. headphones unplugged mid-load
+      hold.complete();
+      await loading;
+      await h.settle();
+
+      expect(h.state.currentIndex, 5);
+      expect(h.native.playing, isFalse);
+    });
+
+    test('a later play still plays', () async {
+      await h.play(_songs(10), 0);
+      await h.repository.pause();
+      await h.repository.playQueue(_songs(10), startIndex: 5);
+      await h.settle();
+
+      expect(h.native.playing, isTrue);
+    });
+  });
+
+  group('shuffle play', () {
+    test(
+      'starts the new queue shuffled, without touching the old one',
+      () async {
+        await h.play(_songs(10000), 100);
+        final loads = h.native.loads;
+        final updates = h.native.playlistUpdates;
+
+        await h.repository.playQueue(_songs(50), startIndex: 7, shuffle: true);
+        await h.settle();
+
+        expect(h.state.shuffle, isTrue);
+        expect(h.state.currentIndex, 7, reason: 'the chosen song plays first');
+        expect(h.native.loads, loads + 1);
+        expect(
+          h.native.playlistUpdates,
+          updates,
+          reason: 'the old queue was not reshuffled first',
+        );
+        h.expectConsistent();
+      },
+    );
+  });
+
+  group('saving the position', () {
+    test('a seek is saved right away', () async {
+      await h.play(_songs(10), 2);
+
+      await h.repository.seek(const Duration(minutes: 1, seconds: 20));
+      await h.settle();
+
+      expect(h.session.savedIndex, 2);
+      // While playing, the player's clock keeps moving (by milliseconds).
+      expect(h.session.savedPosition!.inMilliseconds, closeTo(80000, 100));
+    });
+
+    test('a pause is saved right away', () async {
+      await h.play(_songs(10), 4);
+      h.native.advance(const Duration(seconds: 42));
+      await h.settle();
+
+      await h.repository.pause();
+
+      expect(h.session.savedIndex, 4);
+      expect(h.session.savedPosition!.inMilliseconds, closeTo(42000, 100));
+    });
+  });
+
+  group('progress has its own stream', () {
+    test('position ticks reach only the progress stream', () async {
+      await h.play(_songs(10), 0);
+      final states = <NowPlaying>[];
+      final progress = <PlaybackProgress>[];
+      final stateSub = h.repository.watch().skip(1).listen(states.add);
+      final progressSub = h.repository
+          .watchProgress()
+          .skip(1)
+          .listen(progress.add);
+
+      for (var i = 0; i < 20; i++) {
+        h.native.advance(const Duration(milliseconds: 200));
+        await h.settle();
+      }
+      await stateSub.cancel();
+      await progressSub.cancel();
+
+      expect(states, isEmpty, reason: 'nothing but the position changed');
+      expect(progress, isNotEmpty);
+      expect(
+        h.repository.progress.position,
+        greaterThan(const Duration(seconds: 3)),
+      );
+    });
+
+    test('a real change still reaches the player state', () async {
+      await h.play(_songs(10), 0);
+      final states = <NowPlaying>[];
+      final sub = h.repository.watch().skip(1).listen(states.add);
+
+      await h.repository.next();
+      await h.settle();
+      await sub.cancel();
+
+      expect(states.map((s) => s.currentIndex), contains(1));
     });
   });
 }

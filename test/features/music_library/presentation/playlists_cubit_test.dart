@@ -86,7 +86,8 @@ void main() {
         verify(() => create(captureAny())).captured.single
             as CreatePlaylistParams;
     expect(params.name, 'Focus');
-    expect(cubit.state.message, 'Created "Focus"');
+    expect(cubit.state.feedback?.message, 'Created "Focus"');
+    expect(cubit.state.feedback?.isError, isFalse);
   });
 
   test('rename, favourite and delete report feedback', () async {
@@ -95,15 +96,15 @@ void main() {
     when(() => delete(1)).thenAnswer((_) async => const Right(unit));
 
     await cubit.rename(_playlist, 'Leg day');
-    expect(cubit.state.message, 'Playlist renamed');
+    expect(cubit.state.feedback?.message, 'Playlist renamed');
 
     await cubit.toggleFavorite(_playlist);
-    expect(cubit.state.message, 'Playlist added to favourites');
+    expect(cubit.state.feedback?.message, 'Playlist added to favourites');
 
-    final sequence = cubit.state.messageSequence;
+    final sequence = cubit.state.feedback!.sequence;
     await cubit.delete(_playlist);
-    expect(cubit.state.message, 'Playlist deleted');
-    expect(cubit.state.messageSequence, sequence + 1);
+    expect(cubit.state.feedback?.message, 'Playlist deleted');
+    expect(cubit.state.feedback!.sequence, sequence + 1);
   });
 
   test('failures surface their message', () async {
@@ -112,6 +113,7 @@ void main() {
 
     await cubit.delete(_playlist);
 
-    expect(cubit.state.message, 'Nope');
+    expect(cubit.state.feedback?.message, 'Nope');
+    expect(cubit.state.feedback?.isError, isTrue);
   });
 }

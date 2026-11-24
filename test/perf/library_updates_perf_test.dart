@@ -1,3 +1,5 @@
+import 'package:melodix/core/models/load_status.dart';
+
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -7,9 +9,8 @@ import 'package:melodix/core/database/music_local_storage.dart';
 import 'package:melodix/core/models/local_song.dart';
 import 'package:melodix/core/service/app_lifecycle_service.dart';
 import 'package:melodix/features/music_library/data/mappers/song_mapper.dart';
-import 'package:melodix/features/music_library/data/repositories/catalog_repository_impl.dart';
 import 'package:melodix/features/music_library/data/repositories/song_repository_impl.dart';
-import 'package:melodix/features/music_library/domain/entities/library_permission.dart';
+import 'package:melodix/core/entities/library_permission.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/music_library/domain/usecases/check_library_permission_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/get_last_library_sync_usecase.dart';
@@ -17,7 +18,6 @@ import 'package:melodix/features/music_library/domain/usecases/open_library_sett
 import 'package:melodix/features/music_library/domain/usecases/request_library_permission_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/sync_music_library_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/watch_library_songs_usecase.dart';
-import 'package:melodix/features/music_library/presentation/logic/library_collections_cubit.dart';
 import 'package:melodix/features/music_library/presentation/logic/music_library_bloc.dart';
 import 'package:melodix/features/music_library/presentation/logic/music_library_event.dart';
 import 'package:melodix/features/music_library/presentation/logic/music_library_state.dart';
@@ -179,7 +179,7 @@ void main() {
         final id = 7000 + i;
         hide.add(
           await measure(
-            () => songs.setSongHidden(id, hidden: true),
+            () => songs.setSongsHidden([id], hidden: true),
             (s) => !s.songs.any((x) => x.id == id),
           ),
         );
@@ -196,13 +196,9 @@ void main() {
   test(
     'albums + artists rebuild on 10,000 songs',
     () async {
-      final catalog = CatalogRepositoryImpl(
-        storage: storage,
-        mapper: const SongMapper(isAndroid: true),
-      );
       final samples = <Sample>[];
       for (var i = 0; i < runs; i++) {
-        final cubit = buildCollectionsCubit(catalog);
+        final cubit = buildCollectionsCubit();
         storage.reset();
         final sw = Stopwatch()..start();
         // First call: albums / artists are built (a real library change).

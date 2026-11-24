@@ -1,5 +1,4 @@
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
+import 'package:melodix/core/widgets/app_screen_util_init.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/rendering.dart';
 import 'package:material_ui/material_ui.dart';
@@ -8,7 +7,6 @@ import 'package:melodix/core/config/theme/app_theme.dart';
 import 'package:melodix/features/music_library/domain/usecases/get_song_artwork_usecase.dart';
 import 'package:melodix/features/navigation/presentation/widgets/glass_nav_bar.dart';
 import 'package:melodix/features/player/domain/entities/now_playing.dart';
-import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
 import 'package:melodix/features/player/presentation/widgets/equalizer_bars.dart';
 import 'package:melodix/features/player/presentation/widgets/marquee_text.dart';
 import 'package:melodix/features/player/presentation/widgets/mini_player.dart';
@@ -20,11 +18,10 @@ import 'paint_counter.dart';
 
 class MockGetArtwork extends Mock implements GetSongArtworkUseCase {}
 
-NowPlaying _at(int seconds, {bool playing = true}) => NowPlaying(
+NowPlaying _song({bool playing = true}) => NowPlaying(
   queue: _queue,
   currentIndex: 0,
   isPlaying: playing,
-  position: Duration(seconds: seconds),
   duration: const Duration(minutes: 4),
   hasNext: true,
   hasPrevious: true,
@@ -64,11 +61,9 @@ void main() {
     addTearDown(tester.view.reset);
     final counter = PaintCount();
     await tester.pumpWidget(
-      ScreenUtilPlusInit(
-        designSize: const Size(375, 812),
-        child: BlocProvider<PlayerCubit>.value(
-          value: harness.cubit,
-          child: MaterialApp(
+      AppScreenUtilInit(
+        child: harness.provide(
+          MaterialApp(
             theme: AppTheme.darkTheme,
             home: Scaffold(
               body: Column(
@@ -83,7 +78,9 @@ void main() {
         ),
       ),
     );
-    harness.states.add(_at(10));
+    harness
+      ..states.add(_song())
+      ..tick(const Duration(seconds: 10), duration: const Duration(minutes: 4));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
     return counter;
@@ -95,7 +92,11 @@ void main() {
   ) async {
     counter.value = 0;
     for (var i = 1; i <= 10; i++) {
-      harness.states.add(_at(10 + i));
+      // A position tick only: the player state stays the same.
+      harness.tick(
+        Duration(seconds: 10 + i),
+        duration: const Duration(minutes: 4),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 16));
     }
@@ -130,7 +131,9 @@ void main() {
     tester,
   ) async {
     final c = await pumpWithNeighbour(tester, MiniPlayer(onExpand: () {}));
-    harness.states.add(_at(30, playing: false));
+    harness
+      ..states.add(_song(playing: false))
+      ..tick(const Duration(seconds: 30), duration: const Duration(minutes: 4));
     await tester.pump();
     await tester.pump();
     expect(await neighbourPaintsDuringAnimation(tester, c), 0);

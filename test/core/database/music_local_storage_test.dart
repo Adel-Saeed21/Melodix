@@ -168,6 +168,31 @@ void main() {
     }, skip: skip);
   });
 
+  test('watchFavorite follows the song\'s favourite flag', () async {
+    await storage.applyChanges(
+      upserts: [song(1), song(2)],
+      deletedIds: const [],
+      checkpoint: 'cp',
+    );
+    final seen = <bool>[];
+    final sub = storage.watchFavorite(1).listen(seen.add);
+    await pumpEventQueue();
+
+    await storage.toggleFavorite(1);
+    await pumpEventQueue();
+    await storage.toggleFavorite(2); // another song: no event
+    await pumpEventQueue();
+    await storage.setFavoriteMany([1], favorite: false);
+    await pumpEventQueue();
+
+    expect(seen, [false, true, false]);
+    await sub.cancel();
+  }, skip: skip);
+
+  test('watchFavorite reports false for a song that is gone', () async {
+    expect(await storage.watchFavorite(404).first, isFalse);
+  }, skip: skip);
+
   test('getAllSongIds includes hidden songs', () async {
     await storage.applyChanges(
       upserts: [song(1), song(2)],

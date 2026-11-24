@@ -1,58 +1,61 @@
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:melodix/core/config/dependency_injection/get_it.dart';
+import 'package:melodix/features/video/presentation/logic/video_library_cubit.dart';
+import 'package:melodix/features/video/presentation/widgets/library/video_library_empty_view.dart';
+import 'package:melodix/features/video/presentation/widgets/library/video_library_header.dart';
+import 'package:melodix/features/video/presentation/widgets/library/video_library_list.dart';
+import 'package:melodix/features/video/presentation/widgets/library/video_permission_view.dart';
 
-import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
-import 'package:melodix/core/config/theme/app_text_sizes.dart';
-import 'package:melodix/core/config/theme/font_weight_helper.dart';
-import 'package:melodix/core/service/spacing.dart';
-
-/// Video tab. Will list the videos stored on the device; shows an empty
-/// state until local media loading is implemented.
+/// The Video tab: the videos on the phone, newest first, with the ones
+/// you started on top ("Continue watching").
 class VideoPage extends StatelessWidget {
-  const VideoPage({super.key});
+  const VideoPage({super.key, this.createCubit});
+
+  /// Tests pass their own; otherwise the app's (from get_it).
+  final VideoLibraryCubit Function()? createCubit;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final onSurface = theme.colorScheme.onSurface;
+    return BlocProvider(
+      create: (_) =>
+          (createCubit?.call() ?? getIt<VideoLibraryCubit>())..start(),
+      child: const Scaffold(
+        body: SafeArea(bottom: false, child: _VideoLibraryView()),
+      ),
+    );
+  }
+}
 
-    return Scaffold(
-      appBar: AppBar(title: const Text(AppStrings.video)),
-      body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 32.w),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.video_library_outlined,
-                  size: 64.sp,
-                  color: theme.primaryColor,
-                ),
-                verticalSpace(16),
-                Text(
-                  AppStrings.noVideosTitle,
-                  style: TextStyle(
-                    color: onSurface,
-                    fontSize: AppTextSizes.xl,
-                    fontWeight: FontWeightHelper.bold,
-                  ),
-                ),
-                verticalSpace(8),
-                Text(
-                  AppStrings.noVideosSubtitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: onSurface.withValues(alpha: 0.6),
-                    fontSize: AppTextSizes.base,
-                  ),
-                ),
-              ],
-            ),
+class _VideoLibraryView extends StatelessWidget {
+  const _VideoLibraryView();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const VideoLibraryHeader(),
+        Expanded(
+          child: BlocBuilder<VideoLibraryCubit, VideoLibraryState>(
+            buildWhen: (p, c) =>
+                p.status != c.status ||
+                p.permission != c.permission ||
+                p.videos != c.videos ||
+                (p.isScanning != c.isScanning && c.videos.isEmpty),
+            builder: (context, state) => switch (state.status) {
+              VideoLibraryStatus.loading => const Center(
+                child: CircularProgressIndicator(),
+              ),
+              VideoLibraryStatus.permissionRequired => VideoPermissionView(
+                permission: state.permission,
+              ),
+              VideoLibraryStatus.ready when state.videos.isEmpty =>
+                VideoLibraryEmptyView(isScanning: state.isScanning),
+              VideoLibraryStatus.ready => VideoLibraryList(state: state),
+            },
           ),
         ),
-      ),
+      ],
     );
   }
 }

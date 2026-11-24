@@ -1,6 +1,11 @@
+import '../../../support/landscape.dart';
+
+import 'package:melodix/core/widgets/app_screen_util_init.dart';
+
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
@@ -8,10 +13,11 @@ import 'package:melodix/core/config/theme/app_theme.dart';
 import 'package:melodix/features/music_library/domain/entities/album.dart';
 import 'package:melodix/features/music_library/domain/entities/artist.dart';
 import 'package:melodix/features/music_library/domain/entities/playlist.dart';
-import 'package:melodix/features/music_library/domain/usecases/get_album_songs_usecase.dart';
-import 'package:melodix/features/music_library/domain/usecases/get_artist_songs_usecase.dart';
+import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/music_library/domain/usecases/get_playlist_songs_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/get_song_artwork_usecase.dart';
+import 'package:melodix/features/music_library/presentation/logic/music_library_bloc.dart';
+import 'package:melodix/features/music_library/presentation/logic/music_library_state.dart';
 import 'package:melodix/features/music_library/presentation/logic/playlists_cubit.dart';
 import 'package:melodix/features/music_library/presentation/logic/song_actions_cubit.dart';
 import 'package:melodix/features/music_library/presentation/pages/album_details_page.dart';
@@ -23,13 +29,13 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../player/player_fixtures.dart';
 
+import 'package:melodix/features/player/presentation/logic/playback_progress_cubit.dart';
+
 class MockGetArtwork extends Mock implements GetSongArtworkUseCase {}
 
 class MockActions extends Mock implements SongActionsCubit {}
 
-class MockAlbumSongs extends Mock implements GetAlbumSongsUseCase {}
-
-class MockArtistSongs extends Mock implements GetArtistSongsUseCase {}
+class MockLibrary extends Mock implements MusicLibraryBloc {}
 
 class MockPlaylistSongs extends Mock implements GetPlaylistSongsUseCase {}
 
@@ -44,7 +50,7 @@ const _album = Album(
   artworkSongId: 1,
 );
 const _artist = Artist(
-  name: 'Artist',
+  name: 'Artist 1',
   songCount: 1,
   albumCount: 1,
   artworkSongId: 1,
@@ -63,26 +69,17 @@ void main() {
   setUpAll(() {
     registerPlayerFallbacks();
     registerFallbackValue(const SongArtworkParams(0));
-    registerFallbackValue(_album);
   });
 
   setUp(() async {
     await getIt.reset();
     final artwork = MockGetArtwork();
     when(() => artwork(any())).thenAnswer((_) async => null);
-    final albumSongs = MockAlbumSongs();
-    when(() => albumSongs(any()))
-        .thenAnswer((_) async => Right([playerSong(1)]));
-    final artistSongs = MockArtistSongs();
-    when(() => artistSongs(any()))
-        .thenAnswer((_) async => Right([playerSong(1)]));
     final playlistSongs = MockPlaylistSongs();
     when(() => playlistSongs(any()))
         .thenAnswer((_) async => Right([playerSong(1)]));
     getIt
       ..registerSingleton<GetSongArtworkUseCase>(artwork)
-      ..registerSingleton<GetAlbumSongsUseCase>(albumSongs)
-      ..registerSingleton<GetArtistSongsUseCase>(artistSongs)
       ..registerSingleton<GetPlaylistSongsUseCase>(playlistSongs)
       ..registerFactory<SongActionsCubit>(() {
         final actions = MockActions();
@@ -104,7 +101,19 @@ void main() {
 
   tearDown(() => getIt.reset());
 
-  Future<void> pumpPage(WidgetTester tester, Widget page) async {
+  Future<void> pumpPage(
+    WidgetTester tester,
+    Widget page, {
+    Stream<List<Song>>? librarySongs,
+  }) async {
+    // The library the album / artist pages read their songs from.
+    final library = MockLibrary();
+    final songs = [playerSong(1)];
+    when(() => library.state).thenReturn(MusicLibraryState(songs: songs));
+    when(() => library.stream).thenAnswer((_) => const Stream.empty());
+    when(() => library.librarySongs())
+        .thenAnswer((_) => librarySongs ?? Stream.value(songs));
+    when(() => library.close()).thenAnswer((_) async {});
     harness = PlayerHarness();
     addTearDown(harness.dispose);
     tester.view
@@ -112,10 +121,15 @@ void main() {
       ..devicePixelRatio = 3;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
-      ScreenUtilPlusInit(
-        designSize: const Size(375, 812),
-        child: BlocProvider<PlayerCubit>.value(
-          value: harness.cubit,
+      AppScreenUtilInit(
+        child: MultiBlocProvider(
+          providers: [
+            BlocProvider<PlayerCubit>.value(value: harness.cubit),
+            BlocProvider<PlaybackProgressCubit>.value(
+              value: harness.progressCubit,
+            ),
+            BlocProvider<MusicLibraryBloc>.value(value: library),
+          ],
           child: MaterialApp(theme: AppTheme.darkTheme, home: page),
         ),
       ),
@@ -142,8 +156,9 @@ void main() {
       expect(find.byTooltip('Open player'), findsNothing); // nothing loaded
 
       harness.states.add(playing);
+      // Not "settle": the playing song's equalizer bars keep moving.
       await tester.pump();
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(seconds: 1));
 
       expect(find.byTooltip('Open player'), findsOneWidget);
       expect(find.byTooltip('Pause'), findsOneWidget);
@@ -152,4 +167,54 @@ void main() {
       verify(() => harness.controls.pause()).called(1);
     });
   }
+
+  for (final entry in pages.entries) {
+    testWidgets('${entry.key} page fits sideways', (tester) async {
+      await pumpPage(tester, entry.value);
+      harness.states.add(playing);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await turnSideways(tester);
+      expect(find.byTooltip('Open player'), findsOneWidget);
+      // The header is one row (cover beside the words): the songs show.
+      expect(find.text('Song 1').hitTestable(), findsOneWidget);
+      await turnUpright(tester);
+      expect(find.text('Song 1'), findsOneWidget);
+    });
+  }
+
+  testWidgets('album page follows the library live', (tester) async {
+    final library = StreamController<List<Song>>();
+    addTearDown(library.close);
+    await pumpPage(
+      tester,
+      const AlbumDetailsPage(album: _album),
+      librarySongs: library.stream,
+    );
+    final other = Song(
+      id: 9,
+      title: 'Elsewhere',
+      artist: 'Someone',
+      album: 'Other album',
+      albumId: 2,
+      duration: const Duration(minutes: 1),
+      path: '/m/9.mp3',
+      playbackUri: Uri.parse('content://media/external/audio/media/9'),
+      isFavorite: false,
+      playCount: 0,
+    );
+
+    library.add([playerSong(1), playerSong(2), other]);
+    await tester.pumpAndSettle();
+    expect(find.text('Song 1'), findsOneWidget);
+    expect(find.text('Song 2'), findsOneWidget);
+    expect(find.text('Elsewhere'), findsNothing); // another album
+    expect(find.textContaining('2 songs'), findsOneWidget); // live header
+
+    // Song 2 hidden elsewhere: gone here too, no reload needed.
+    library.add([playerSong(1), other]);
+    await tester.pumpAndSettle();
+    expect(find.text('Song 2'), findsNothing);
+    expect(find.textContaining('1 song'), findsOneWidget);
+  });
 }

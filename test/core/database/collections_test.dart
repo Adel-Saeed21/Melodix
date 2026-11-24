@@ -68,11 +68,9 @@ void main() {
       expect(row.toLocalVideo(), _video);
     });
 
-    test('keeps user data and resume position on re-scan', () {
+    test('keeps the favourite flag on re-scan', () {
       final previous = VideoCollection.fromLocalVideo(_video)
-        ..isFavorite = true
-        ..playCount = 2
-        ..lastPositionMs = 30000;
+        ..isFavorite = true;
 
       final updated = VideoCollection.fromLocalVideo(
         _video,
@@ -80,8 +78,6 @@ void main() {
       );
 
       expect(updated.isFavorite, isTrue);
-      expect(updated.playCount, 2);
-      expect(updated.lastPosition, const Duration(seconds: 30));
     });
   });
 

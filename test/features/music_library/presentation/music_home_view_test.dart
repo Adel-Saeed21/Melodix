@@ -1,13 +1,16 @@
+import '../../../support/landscape.dart';
+
+import 'package:melodix/core/widgets/app_screen_util_init.dart';
+
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
 import 'package:melodix/core/config/theme/app_theme.dart';
 import 'package:melodix/core/usecase/usecase.dart';
-import 'package:melodix/features/music_library/domain/entities/library_permission.dart';
+import 'package:melodix/core/entities/library_permission.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/music_library/domain/usecases/build_library_catalog_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/get_song_artwork_usecase.dart';
@@ -24,12 +27,11 @@ import 'package:melodix/features/music_library/domain/usecases/delete_playlist_u
 import 'package:melodix/features/music_library/domain/usecases/rename_playlist_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/toggle_playlist_favorite_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/watch_playlists_usecase.dart';
-import 'package:melodix/features/music_library/presentation/widgets/library_tabs.dart';
+import 'package:melodix/features/music_library/presentation/widgets/library_tabs/songs_tab.dart';
 import 'package:melodix/features/music_library/presentation/widgets/music_home_view.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:melodix/core/utils/debug_counters.dart';
 import 'package:melodix/features/player/domain/entities/now_playing.dart';
-import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
 import 'package:melodix/features/player/presentation/widgets/equalizer_bars.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -131,17 +133,29 @@ void main() {
     await getIt.reset();
   });
 
+  /// When set, the view gets this player above it (like the app).
+  PlayerHarness? player;
+  setUp(() => player = null);
+
   Future<void> pumpView(WidgetTester tester, MusicLibraryState state) async {
     when(() => bloc.state).thenReturn(state);
+    // A phone held upright (the default 800×600 test screen is landscape
+    // and shorter than any phone the app targets).
+    tester.view
+      ..physicalSize = const Size(1080, 2340)
+      ..devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(
-      ScreenUtilPlusInit(
-        designSize: const Size(375, 812),
-        child: MaterialApp(
-          theme: AppTheme.darkTheme,
-          home: Scaffold(
-            body: BlocProvider<MusicLibraryBloc>.value(
-              value: bloc,
-              child: const MusicHomeView(),
+      AppScreenUtilInit(
+        child: _withPlayer(
+          player,
+          MaterialApp(
+            theme: AppTheme.darkTheme,
+            home: Scaffold(
+              body: BlocProvider<MusicLibraryBloc>.value(
+                value: bloc,
+                child: const MusicHomeView(),
+              ),
             ),
           ),
         ),
@@ -216,6 +230,30 @@ void main() {
     expect(find.text('Track 1'), findsOneWidget);
     expect(find.text('Artist 2'), findsOneWidget);
     expect(find.text('3:05'), findsOneWidget);
+  });
+
+  testWidgets('rotating the phone: the library fits sideways, and back', (
+    tester,
+  ) async {
+    await pumpView(
+      tester,
+      MusicLibraryState(status: MusicLibraryStatus.ready, songs: _songs),
+    );
+    await turnSideways(tester);
+    expect(find.text('Track 1').hitTestable(), findsOneWidget);
+    // Two panes: the cards stacked on the left, the tabs and songs right.
+    final favourites = tester.getRect(find.text('Favourites'));
+    final recent = tester.getRect(find.text('Recent'));
+    final songsTab = tester.getRect(find.text('Songs'));
+    expect(recent.top, greaterThan(favourites.bottom)); // stacked
+    expect(favourites.right, lessThan(songsTab.left)); // beside the tabs
+
+    await turnUpright(tester);
+    expect(find.text('Track 1'), findsOneWidget);
+    // One column again: the cards side by side above the tabs.
+    final back = tester.getRect(find.text('Favourites'));
+    expect(tester.getRect(find.text('Recent')).top, closeTo(back.top, 1));
+    expect(back.bottom, lessThan(tester.getRect(find.text('Songs')).top));
   });
 
   for (final textScale in [1.0, 1.3, 2.0]) {
@@ -419,6 +457,53 @@ void main() {
     expect(find.text('No results for "zzz"'), findsOneWidget);
   });
 
+  testWidgets('pulling the lists down never starts a scan', (tester) async {
+    when(() => bloc.add(any())).thenReturn(null);
+    await pumpView(
+      tester,
+      MusicLibraryState(status: MusicLibraryStatus.ready, songs: _songs),
+    );
+
+    // A firm pull down, like the old pull-to-refresh gesture.
+    await tester.fling(
+      find.text(_songs.first.title),
+      const Offset(0, 500),
+      2000,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Albums'));
+    await tester.pumpAndSettle();
+    await tester.fling(
+      find.byType(Scrollable).last,
+      const Offset(0, 500),
+      2000,
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(RefreshIndicator), findsNothing);
+    verifyNever(() => bloc.add(any(that: isA<MusicLibraryRefreshRequested>())));
+  });
+
+  testWidgets('the Scan card asks for a changes-only scan', (tester) async {
+    when(() => bloc.add(any())).thenReturn(null);
+    await pumpView(
+      tester,
+      MusicLibraryState(status: MusicLibraryStatus.ready, songs: _songs),
+    );
+
+    await tester.tap(find.text('Scan'));
+    await tester.pump();
+
+    final event =
+        verify(
+              () => bloc.add(
+                captureAny(that: isA<MusicLibraryRefreshRequested>()),
+              ),
+            ).captured.single
+            as MusicLibraryRefreshRequested;
+    expect(event.full, isFalse);
+  });
+
   testWidgets('sorting reorders the songs list', (tester) async {
     Song song(int id, String title, DateTime added, int plays) => Song(
       id: id,
@@ -560,7 +645,7 @@ void main() {
     testWidgets('works the same while music is playing', (tester) async {
       final harness = PlayerHarness();
       addTearDown(harness.dispose);
-      getIt.registerSingleton<PlayerCubit>(harness.cubit);
+      player = harness;
       harness.states.add(
         NowPlaying(queue: manySongs, currentIndex: 0, isPlaying: true),
       );
@@ -761,3 +846,6 @@ extension on Song {
     dateAdded: dateAdded,
   );
 }
+
+Widget _withPlayer(PlayerHarness? player, Widget app) =>
+    player == null ? app : player.provide(app);

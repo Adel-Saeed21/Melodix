@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:melodix/core/models/local_song.dart';
 import 'package:melodix/core/service/app_lifecycle_service.dart';
 import 'package:melodix/core/service/music_service.dart';
-import 'package:melodix/features/music_library/data/repositories/catalog_repository_impl.dart';
 import 'package:melodix/features/music_library/data/repositories/song_repository_impl.dart';
 import 'package:melodix/features/music_library/domain/usecases/check_library_permission_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/build_library_catalog_usecase.dart';
@@ -14,6 +13,8 @@ import 'package:melodix/features/music_library/domain/usecases/sync_music_librar
 import 'package:melodix/features/music_library/domain/usecases/watch_library_songs_usecase.dart';
 import 'package:melodix/features/music_library/presentation/logic/library_collections_cubit.dart';
 import 'package:melodix/features/music_library/presentation/logic/music_library_bloc.dart';
+import 'package:melodix/features/music_library/domain/usecases/watch_library_sync_stage_usecase.dart';
+import 'package:melodix/features/music_library/domain/entities/library_sync_stage.dart';
 
 /// The parts of the benchmark that depend on constructor signatures.
 MusicLibraryBloc buildBloc({
@@ -31,13 +32,13 @@ MusicLibraryBloc buildBloc({
   syncLibrary: sync,
   getLastSync: lastSync,
   watchSongs: watch,
+  watchSyncStage: _NoStages(),
   lifecycle: lifecycle,
   openSettings: settings,
 );
 
-LibraryCollectionsCubit buildCollectionsCubit(CatalogRepositoryImpl catalog) =>
-    // The catalog repository is no longer needed: albums / artists are
-    // built from the songs in memory.
+/// Albums / artists are built from the songs in memory (no database).
+LibraryCollectionsCubit buildCollectionsCubit() =>
     LibraryCollectionsCubit(buildCatalog: const BuildLibraryCatalogUseCase());
 
 class Sample {
@@ -74,4 +75,13 @@ class NoMusicService implements MusicService {
   Future<List<LocalSong>> getAllSongs() async => const [];
   @override
   Future<Uint8List?> getArtwork(int songId, {int size = 200}) async => null;
+}
+
+/// Never reports a stage (these tests don't look at progress).
+class _NoStages implements WatchLibrarySyncStageUseCase {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
+  Stream<LibrarySyncStage> call() => const Stream.empty();
 }

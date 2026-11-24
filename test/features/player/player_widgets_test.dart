@@ -1,7 +1,12 @@
+import 'package:melodix/core/preferences/ui_preferences.dart';
+import 'package:melodix/features/music_library/presentation/widgets/song_artwork.dart';
+
+import '../../support/landscape.dart';
+
+import 'package:melodix/core/widgets/app_screen_util_init.dart';
+
 import 'dart:async';
 
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
@@ -11,7 +16,6 @@ import 'package:melodix/features/music_library/presentation/logic/music_library_
 import 'package:melodix/features/music_library/presentation/logic/music_library_state.dart';
 import 'package:melodix/features/music_library/presentation/logic/song_actions_cubit.dart';
 import 'package:melodix/features/player/domain/entities/now_playing.dart';
-import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
 import 'package:melodix/features/player/presentation/pages/now_playing_page.dart';
 import 'package:melodix/features/player/presentation/widgets/mini_player.dart';
 import 'package:mocktail/mocktail.dart';
@@ -29,7 +33,6 @@ NowPlaying _playing({
   bool isPlaying = true,
   bool hasNext = true,
   bool hasPrevious = true,
-  Duration position = const Duration(minutes: 1, seconds: 35),
   PlaybackRepeat repeat = PlaybackRepeat.off,
 }) => NowPlaying(
   queue: [
@@ -39,7 +42,6 @@ NowPlaying _playing({
   queueTitle: queueTitle,
   currentIndex: 0,
   isPlaying: isPlaying,
-  position: position,
   duration: const Duration(minutes: 4, seconds: 15),
   hasNext: hasNext,
   hasPrevious: hasPrevious,
@@ -67,6 +69,9 @@ void main() {
       ..registerFactory<SongActionsCubit>(() {
         final actions = MockActions();
         when(() => actions.state).thenReturn(null);
+        // The full player's ♥ follows the song's live favourite flag.
+        when(() => actions.watchFavorite(any()))
+            .thenAnswer((_) => Stream.value(false));
         when(() => actions.stream).thenAnswer((_) => const Stream.empty());
         when(() => actions.close()).thenAnswer((_) async {});
         when(() => actions.canDeleteSongs).thenReturn(true);
@@ -92,15 +97,20 @@ void main() {
       ..devicePixelRatio = 3;
     addTearDown(tester.view.reset);
     await tester.pumpWidget(
-      ScreenUtilPlusInit(
-        designSize: const Size(375, 812),
-        child: BlocProvider<PlayerCubit>.value(
-          value: harness.cubit,
-          child: MaterialApp(theme: AppTheme.darkTheme, home: child),
+      AppScreenUtilInit(
+        child: harness.provide(
+          MaterialApp(theme: AppTheme.darkTheme, home: child),
         ),
       ),
     );
     await tester.pump();
+  }
+
+  /// Lets a bottom sheet open. Not "settle": the playing song in it shows
+  /// equalizer bars that never stop moving.
+  Future<void> openedSheet(WidgetTester tester) async {
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
   }
 
   group('MiniPlayer', () {
@@ -114,11 +124,74 @@ void main() {
 
     setUp(() => expanded = 0);
 
+    group('other designs (chosen in Settings)', () {
+      Widget styled(MiniPlayerStyle style) => UiPreferencesScope(
+        preferences: UiPreferences(miniPlayer: style),
+        child: mini(),
+      );
+
+      for (final style in [MiniPlayerStyle.capsule, MiniPlayerStyle.minimal]) {
+        playerTest('${style.name}: shows the song; play and next work; '
+            'a tap opens the player', (tester) async {
+          await pumpApp(tester, styled(style));
+          harness
+            ..states.add(_playing())
+            ..tick(const Duration(minutes: 1, seconds: 35));
+          await tester.pumpAndSettle();
+
+          expect(find.text('Bad Guy'), findsOneWidget);
+          expect(find.text('Artist 1'), findsOneWidget);
+          // Not the classic card: no seek bar row or queue button.
+          expect(find.byTooltip('Open queue'), findsNothing);
+
+          await tester.tap(find.byTooltip('Pause'));
+          await tester.tap(find.byTooltip('Next'));
+          await tester.pump();
+          verify(() => harness.controls.pause()).called(1);
+          verify(() => harness.controls.next()).called(1);
+
+          await tester.tap(find.text('Bad Guy'));
+          expect(expanded, 1);
+        });
+      }
+
+      playerTest('capsule: the ring shows how far the song is', (tester) async {
+        await pumpApp(tester, styled(MiniPlayerStyle.capsule));
+        harness
+          ..states.add(_playing())
+          ..tick(const Duration(minutes: 1, seconds: 35));
+        await tester.pumpAndSettle();
+        final ring = tester.widget<CircularProgressIndicator>(
+          find.byType(CircularProgressIndicator),
+        );
+        // 1:35 of 4:15.
+        expect(ring.value, closeTo(95 / 255, 0.01));
+      });
+
+      playerTest('minimal: the line shows how far, and ⏮ is there', (
+        tester,
+      ) async {
+        await pumpApp(tester, styled(MiniPlayerStyle.minimal));
+        harness
+          ..states.add(_playing())
+          ..tick(const Duration(minutes: 1, seconds: 35));
+        await tester.pumpAndSettle();
+        final line = tester.widget<LinearProgressIndicator>(
+          find.byType(LinearProgressIndicator),
+        );
+        expect(line.value, closeTo(95 / 255, 0.01));
+        await tester.tap(find.byTooltip('Previous'));
+        verify(() => harness.controls.previous()).called(1);
+      });
+    });
+
     playerTest('is hidden until a song is loaded', (tester) async {
       await pumpApp(tester, mini());
       expect(find.byTooltip('Play'), findsNothing);
 
-      harness.states.add(_playing());
+      harness
+        ..states.add(_playing())
+        ..tick(const Duration(minutes: 1, seconds: 35));
       await tester.pumpAndSettle();
 
       expect(find.text('Bad Guy'), findsOneWidget);
@@ -170,7 +243,7 @@ void main() {
 
       expect(find.byTooltip('Stop'), findsNothing);
       await tester.tap(find.byTooltip('Open queue'));
-      await tester.pumpAndSettle();
+      await openedSheet(tester);
 
       expect(find.text('Playing from'), findsOneWidget);
       expect(find.text('Road trip'), findsOneWidget);
@@ -187,20 +260,16 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.tap(find.byTooltip('Open queue'));
-      await tester.pumpAndSettle();
+      await openedSheet(tester);
 
       expect(find.text('Queue'), findsOneWidget);
     });
 
     playerTest('next / previous are disabled when unavailable', (tester) async {
       await pumpApp(tester, mini());
-      harness.states.add(
-        _playing(
-          hasNext: false,
-          hasPrevious: false,
-          position: const Duration(seconds: 1),
-        ),
-      );
+      harness
+        ..states.add(_playing(hasNext: false, hasPrevious: false))
+        ..tick(const Duration(seconds: 1));
       await tester.pumpAndSettle();
 
       IconButton button(String tooltip) => tester.widget<IconButton>(
@@ -233,8 +302,11 @@ void main() {
           currentIndex: 0,
           isCompleted: true,
           duration: const Duration(minutes: 3),
-          position: const Duration(minutes: 3),
         ),
+      );
+      harness.tick(
+        const Duration(minutes: 3),
+        duration: const Duration(minutes: 3),
       );
       await tester.pumpAndSettle();
 
@@ -245,8 +317,36 @@ void main() {
   });
 
   group('NowPlayingPage', () {
+    playerTest('rotating the phone: fits sideways, and back', (tester) async {
+      harness
+        ..states.add(_playing())
+        ..tick(const Duration(minutes: 1, seconds: 35));
+      await pumpApp(tester, const NowPlayingPage());
+      await tester.pump();
+
+      await turnSideways(tester);
+      expect(find.text('Bad Guy'), findsOneWidget);
+      expect(find.byTooltip('Next'), findsOneWidget);
+      // The cover on the left, as tall as the screen allows (not squeezed
+      // to nothing above the controls).
+      final cover = tester.getRect(find.byType(SongArtwork));
+      final controls = tester.getRect(find.byTooltip('Next'));
+      expect(cover.height, greaterThan(250));
+      expect(cover.right, lessThan(controls.left));
+
+      await turnUpright(tester);
+      expect(find.text('Bad Guy'), findsOneWidget);
+      // Back above the controls.
+      expect(
+        tester.getRect(find.byType(SongArtwork)).bottom,
+        lessThan(tester.getRect(find.byTooltip('Next')).top),
+      );
+    });
+
     playerTest('shows the current song and stays in sync', (tester) async {
-      harness.states.add(_playing());
+      harness
+        ..states.add(_playing())
+        ..tick(const Duration(minutes: 1, seconds: 35));
       await pumpApp(tester, const NowPlayingPage());
       await tester.pump();
 
@@ -256,9 +356,7 @@ void main() {
       expect(find.text('-02:40'), findsOneWidget);
 
       // The player moves on: the page follows.
-      harness.states.add(
-        _playing(position: const Duration(minutes: 2, seconds: 25)),
-      );
+      harness.tick(const Duration(minutes: 2, seconds: 25));
       await tester.pump(); // deliver the new state
       await tester.pump(); // rebuild
       expect(find.text('02:25'), findsOneWidget);
@@ -288,11 +386,9 @@ void main() {
         ..devicePixelRatio = 3;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
-        ScreenUtilPlusInit(
-          designSize: const Size(375, 812),
-          child: BlocProvider<PlayerCubit>.value(
-            value: harness.cubit,
-            child: MaterialApp(
+        AppScreenUtilInit(
+          child: harness.provide(
+            MaterialApp(
               theme: AppTheme.darkTheme,
               home: Builder(
                 builder: (context) => Scaffold(
@@ -330,7 +426,7 @@ void main() {
 
       expect(find.text('Stop'), findsNothing);
       await tester.tap(find.text('Queue'));
-      await tester.pumpAndSettle();
+      await openedSheet(tester);
       expect(find.text('Playing from'), findsOneWidget);
     });
 
@@ -341,11 +437,9 @@ void main() {
         ..devicePixelRatio = 3;
       addTearDown(tester.view.reset);
       await tester.pumpWidget(
-        ScreenUtilPlusInit(
-          designSize: const Size(375, 812),
-          child: BlocProvider<PlayerCubit>.value(
-            value: harness.cubit,
-            child: MaterialApp(
+        AppScreenUtilInit(
+          child: harness.provide(
+            MaterialApp(
               theme: AppTheme.darkTheme,
               home: Builder(
                 builder: (context) => Scaffold(

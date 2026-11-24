@@ -4,7 +4,7 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:melodix/core/errors/failures.dart';
 import 'package:melodix/core/service/app_lifecycle_service.dart';
-import 'package:melodix/features/music_library/domain/entities/library_permission.dart';
+import 'package:melodix/core/entities/library_permission.dart';
 import 'package:melodix/features/music_library/domain/entities/library_sync_result.dart';
 import 'package:melodix/features/music_library/domain/entities/library_update.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
@@ -18,6 +18,8 @@ import 'package:melodix/features/music_library/presentation/logic/music_library_
 import 'package:melodix/features/music_library/presentation/logic/music_library_event.dart';
 import 'package:melodix/features/music_library/presentation/logic/music_library_state.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:melodix/features/music_library/domain/usecases/watch_library_sync_stage_usecase.dart';
+import 'package:melodix/features/music_library/domain/entities/library_sync_stage.dart';
 
 class MockCheck extends Mock implements CheckLibraryPermissionUseCase {}
 
@@ -28,6 +30,8 @@ class MockSync extends Mock implements SyncMusicLibraryUseCase {}
 class MockLastSync extends Mock implements GetLastLibrarySyncUseCase {}
 
 class MockWatch extends Mock implements WatchLibrarySongsUseCase {}
+
+class MockWatchStage extends Mock implements WatchLibrarySyncStageUseCase {}
 
 class MockOpenSettings extends Mock implements OpenLibrarySettingsUseCase {}
 
@@ -69,6 +73,8 @@ void main() {
   late MockWatch watch;
   late FakeLifecycle lifecycle;
   late StreamController<List<Song>> songs;
+  late StreamController<LibrarySyncStage> stages;
+  late MockWatchStage watchStage;
 
   /// Like Isar's `watch(fireImmediately: true)`: emits [initial] as soon as
   /// someone listens, then every later change.
@@ -92,6 +98,9 @@ void main() {
     watch = MockWatch();
     lifecycle = FakeLifecycle();
     songs = StreamController<List<Song>>.broadcast();
+    stages = StreamController<LibrarySyncStage>.broadcast();
+    watchStage = MockWatchStage();
+    when(() => watchStage()).thenAnswer((_) => stages.stream);
     when(
       () => watch(),
     ).thenAnswer((_) => songs.stream.map<LibraryUpdate>(LibraryReloaded.new));
@@ -100,6 +109,7 @@ void main() {
 
   tearDown(() async {
     await songs.close();
+    await stages.close();
     await lifecycle.controller.close();
   });
 
@@ -110,6 +120,7 @@ void main() {
         syncLibrary: sync,
         getLastSync: lastSync,
         watchSongs: watch,
+        watchSyncStage: watchStage,
         lifecycle: lifecycle,
         openSettings: MockOpenSettings(),
         resumeSyncInterval: interval,
@@ -255,58 +266,72 @@ void main() {
     await bloc.close();
   });
 
-  test('startup checks cheaply; manual refresh forces a full scan', () async {
-    when(() => lastSync()).thenAnswer((_) async => DateTime.now());
-    when(() => check()).thenAnswer((_) async => LibraryPermission.granted);
-    final bloc = build()..add(const MusicLibraryStarted());
-    await settle();
-    final startup =
-        verify(() => sync(captureAny())).captured.single as SyncLibraryParams;
-    expect(startup.force, isFalse);
+  test(
+    'a scan only looks for changes; a full re-read must be asked for',
+    () async {
+      when(() => lastSync()).thenAnswer((_) async => DateTime.now());
+      when(() => check()).thenAnswer((_) async => LibraryPermission.granted);
+      final bloc = build()..add(const MusicLibraryStarted());
+      await settle();
+      final startup =
+          verify(() => sync(captureAny())).captured.single as SyncLibraryParams;
+      expect(startup.force, isFalse);
 
-    bloc.add(const MusicLibraryRefreshRequested());
-    await settle();
-    final refresh =
-        verify(() => sync(captureAny())).captured.single as SyncLibraryParams;
-    expect(refresh.force, isTrue);
-    await bloc.close();
-  });
+      // The Scan button: changes only (never a full re-read by accident).
+      bloc.add(const MusicLibraryRefreshRequested());
+      await settle();
+      final scan =
+          verify(() => sync(captureAny())).captured.single as SyncLibraryParams;
+      expect(scan.force, isFalse);
 
-  test('refresh during a background sync still forces a full scan', () async {
-    when(() => lastSync()).thenAnswer((_) async => DateTime.now());
-    when(() => check()).thenAnswer((_) async => LibraryPermission.granted);
-    final background = Completer<Either<Failure, LibrarySyncResult>>();
-    final forced = Completer<Either<Failure, LibrarySyncResult>>();
-    when(() => sync(any())).thenAnswer(
-      (invocation) =>
-          (invocation.positionalArguments.single as SyncLibraryParams).force
-          ? forced.future
-          : background.future,
-    );
-    final bloc = build()..add(const MusicLibraryStarted());
-    await settle();
-    expect(bloc.state.isSyncing, isTrue);
+      // Explicitly asked for: everything is read again.
+      bloc.add(const MusicLibraryRefreshRequested(full: true));
+      await settle();
+      final full =
+          verify(() => sync(captureAny())).captured.single as SyncLibraryParams;
+      expect(full.force, isTrue);
+      await bloc.close();
+    },
+  );
 
-    bloc.add(const MusicLibraryRefreshRequested());
-    // A second pull while it waits adds no extra scan.
-    bloc.add(const MusicLibraryRefreshRequested());
-    await settle();
-    final forces = verify(() => sync(captureAny())).captured
-        .cast<SyncLibraryParams>()
-        .map((p) => p.force);
-    expect(forces, [false, true]);
+  test(
+    'a full re-read asked for during a background sync still runs',
+    () async {
+      when(() => lastSync()).thenAnswer((_) async => DateTime.now());
+      when(() => check()).thenAnswer((_) async => LibraryPermission.granted);
+      final background = Completer<Either<Failure, LibrarySyncResult>>();
+      final forced = Completer<Either<Failure, LibrarySyncResult>>();
+      when(() => sync(any())).thenAnswer(
+        (invocation) =>
+            (invocation.positionalArguments.single as SyncLibraryParams).force
+            ? forced.future
+            : background.future,
+      );
+      final bloc = build()..add(const MusicLibraryStarted());
+      await settle();
+      expect(bloc.state.isSyncing, isTrue);
 
-    // The background sync ends first: still syncing (the rescan runs).
-    background.complete(Right(_syncResult));
-    await settle();
-    expect(bloc.state.isSyncing, isTrue);
+      bloc.add(const MusicLibraryRefreshRequested(full: true));
+      // A second request while it waits adds no extra scan.
+      bloc.add(const MusicLibraryRefreshRequested(full: true));
+      await settle();
+      final forces = verify(() => sync(captureAny())).captured
+          .cast<SyncLibraryParams>()
+          .map((p) => p.force);
+      expect(forces, [false, true]);
 
-    forced.complete(Right(_syncResult));
-    await settle();
-    expect(bloc.state.isSyncing, isFalse);
-    expect(bloc.state.status, MusicLibraryStatus.ready);
-    await bloc.close();
-  });
+      // The background sync ends first: still syncing (the rescan runs).
+      background.complete(Right(_syncResult));
+      await settle();
+      expect(bloc.state.isSyncing, isTrue);
+
+      forced.complete(Right(_syncResult));
+      await settle();
+      expect(bloc.state.isSyncing, isFalse);
+      expect(bloc.state.status, MusicLibraryStatus.ready);
+      await bloc.close();
+    },
+  );
 
   test('a library stream error is reported, not thrown', () async {
     when(() => lastSync()).thenAnswer((_) async => DateTime.now());
@@ -331,6 +356,54 @@ void main() {
     expect(errors, isEmpty);
     await sub.cancel();
     await updates.close();
+    await bloc.close();
+  });
+
+  test(
+    'the running sync\'s stage is kept, then cleared when it ends',
+    () async {
+      when(() => lastSync()).thenAnswer((_) async => DateTime.now());
+      when(() => check()).thenAnswer((_) async => LibraryPermission.granted);
+      final done = Completer<Either<Failure, LibrarySyncResult>>();
+      when(() => sync(any())).thenAnswer((_) => done.future);
+      final bloc = build()..add(const MusicLibraryStarted());
+      await settle();
+
+      stages.add(LibrarySyncStage.checking);
+      await settle();
+      expect(bloc.state.syncStage, LibrarySyncStage.checking);
+      stages.add(LibrarySyncStage.reading);
+      await settle();
+      expect(bloc.state.syncStage, LibrarySyncStage.reading);
+
+      done.complete(Right(_syncResult));
+      await settle();
+      expect(bloc.state.isSyncing, isFalse);
+      expect(bloc.state.syncStage, isNull);
+      expect(bloc.state.lastSyncResult, _syncResult);
+
+      // A late stage can't bring back a finished sync's progress.
+      stages.add(LibrarySyncStage.saving);
+      await settle();
+      expect(bloc.state.syncStage, isNull);
+      await bloc.close();
+    },
+  );
+
+  test('a scan while one is running adds no second scan', () async {
+    when(() => lastSync()).thenAnswer((_) async => DateTime.now());
+    when(() => check()).thenAnswer((_) async => LibraryPermission.granted);
+    final running = Completer<Either<Failure, LibrarySyncResult>>();
+    when(() => sync(any())).thenAnswer((_) => running.future);
+    final bloc = build()..add(const MusicLibraryStarted());
+    await settle();
+
+    bloc.add(const MusicLibraryRefreshRequested());
+    await settle();
+
+    verify(() => sync(any())).called(1); // only the startup one
+    running.complete(Right(_syncResult));
+    await settle();
     await bloc.close();
   });
 }

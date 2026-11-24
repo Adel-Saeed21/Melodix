@@ -68,6 +68,10 @@ class FakeNativePlayer extends AudioPlayerPlatform {
   int sourcesReceived = 0;
   final List<int> loadSizes = [];
 
+  /// Song ids whose files can't be opened: loading one as the first item
+  /// fails like ExoPlayer (an error event, then the load throws).
+  final Set<int> brokenIds = {};
+
   /// When set, the next load / insert / remove waits for it (a slow native
   /// side), so tests can act while a playlist change is in flight.
   Completer<void>? holdLoad;
@@ -123,6 +127,13 @@ class FakeNativePlayer extends AudioPlayerPlatform {
       ..clear()
       ..addAll(uris);
     index = request.initialIndex ?? 0;
+    // Like ExoPlayer: the new items are set, then preparing the first one
+    // fails (an error event for it, and the load throws).
+    if (brokenIds.contains(idOf(playlist[index]))) {
+      state = ProcessingStateMessage.idle;
+      _emitError();
+      throw PlatformException(code: '0', message: 'Source error');
+    }
     position = request.initialPosition ?? Duration.zero;
     state = ProcessingStateMessage.ready;
     _emit();
@@ -194,6 +205,28 @@ class FakeNativePlayer extends AudioPlayerPlatform {
     }
     _emit();
   }
+
+  /// The current song turns out to be unplayable while playing (e.g. its
+  /// file was deleted): like ExoPlayer, an error event for it, then idle.
+  void failCurrent() {
+    state = ProcessingStateMessage.idle;
+    _emitError();
+  }
+
+  void _emitError() => _events.add(
+    PlaybackEventMessage(
+      processingState: state,
+      updateTime: DateTime.now(),
+      updatePosition: position,
+      bufferedPosition: position,
+      duration: const Duration(minutes: 3),
+      icyMetadata: null,
+      currentIndex: playlist.isEmpty ? null : index,
+      androidAudioSessionId: null,
+      errorCode: 0,
+      errorMessage: 'Source error',
+    ),
+  );
 
   /// Playback moved on by [elapsed] inside the current song.
   void advance(Duration elapsed) {

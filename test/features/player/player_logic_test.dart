@@ -1,7 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:melodix/features/player/domain/entities/now_playing.dart';
+import 'package:melodix/features/player/domain/entities/playback_error.dart';
+import 'package:melodix/features/player/domain/entities/playback_progress.dart';
 import 'package:melodix/features/player/domain/repositories/player_repository.dart';
 import 'package:melodix/features/player/domain/usecases/play_queue_usecase.dart';
+import 'package:melodix/features/player/presentation/utils/playback_error_text.dart';
 import 'package:melodix/features/player/presentation/utils/playback_time_format.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -16,30 +19,56 @@ void main() {
     test('idle has no song', () {
       expect(NowPlaying.idle.hasSong, isFalse);
       expect(NowPlaying.idle.currentSong, isNull);
-      expect(NowPlaying.idle.progress, 0);
     });
 
-    test('derives the current song, remaining time and progress', () {
+    test('derives the current song', () {
       final state = NowPlaying(
         queue: [playerSong(1), playerSong(2)],
         currentIndex: 1,
-        position: const Duration(minutes: 1),
-        duration: const Duration(minutes: 4),
       );
       expect(state.currentSong?.id, 2);
-      expect(state.remaining, const Duration(minutes: 3));
-      expect(state.progress, 0.25);
     });
 
-    test('an out-of-range index means no song; remaining never negative', () {
-      final state = NowPlaying(
-        queue: [playerSong(1)],
-        currentIndex: 5,
-        position: const Duration(minutes: 5),
-        duration: const Duration(minutes: 4),
-      );
+    test('an out-of-range index means no song', () {
+      final state = NowPlaying(queue: [playerSong(1)], currentIndex: 5);
       expect(state.hasSong, isFalse);
-      expect(state.remaining, Duration.zero);
+    });
+  });
+
+  group('PlaybackProgress', () {
+    test('nothing yet: no progress', () {
+      expect(PlaybackProgress.zero.fraction, 0);
+      expect(PlaybackProgress.zero.remaining, Duration.zero);
+    });
+
+    test('derives the remaining time and the fraction', () {
+      const progress = PlaybackProgress(
+        position: Duration(minutes: 1),
+        duration: Duration(minutes: 4),
+      );
+      expect(progress.remaining, const Duration(minutes: 3));
+      expect(progress.fraction, 0.25);
+    });
+
+    test('remaining is never negative; fraction stays within 0..1', () {
+      const progress = PlaybackProgress(
+        position: Duration(minutes: 5),
+        duration: Duration(minutes: 4),
+      );
+      expect(progress.remaining, Duration.zero);
+      expect(progress.fraction, 1);
+    });
+  });
+
+  group('playback errors', () {
+    test('every error has words for the user', () {
+      for (final error in PlaybackError.values) {
+        expect(playbackErrorText(error), isNotEmpty);
+      }
+      expect(
+        playbackErrorText(PlaybackError.cannotPlay),
+        "Can't play this song",
+      );
     });
   });
 

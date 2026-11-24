@@ -1,3 +1,5 @@
+import 'package:melodix/core/models/load_status.dart';
+
 import 'dart:async';
 
 import 'package:dartz/dartz.dart' show Either;
@@ -11,7 +13,7 @@ import 'package:melodix/core/models/local_song.dart';
 import 'package:melodix/core/service/app_lifecycle_service.dart';
 import 'package:melodix/features/music_library/data/mappers/song_mapper.dart';
 import 'package:melodix/features/music_library/data/repositories/song_repository_impl.dart';
-import 'package:melodix/features/music_library/domain/entities/library_permission.dart';
+import 'package:melodix/core/entities/library_permission.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/music_library/domain/entities/song_sort_order.dart';
 import 'package:melodix/features/music_library/domain/usecases/build_library_catalog_usecase.dart';
@@ -31,6 +33,9 @@ import '../../support/fake_media_store.dart';
 import '../../support/isar_test_db.dart';
 import '../../support/legacy_library_grouping.dart';
 import '../../support/sync_repository_factory.dart';
+
+import 'package:melodix/features/music_library/domain/usecases/watch_library_sync_stage_usecase.dart';
+import 'package:melodix/features/music_library/domain/entities/library_sync_stage.dart';
 
 class _Check extends Mock implements CheckLibraryPermissionUseCase {}
 
@@ -154,6 +159,7 @@ void main() {
       syncLibrary: _Sync(),
       getLastSync: lastSync,
       watchSongs: WatchLibrarySongsUseCase(songs),
+      watchSyncStage: _NoStages(),
       lifecycle: _Lifecycle(),
       openSettings: _Settings(),
     )..add(const MusicLibraryStarted());
@@ -245,7 +251,7 @@ void main() {
     test('hiding removes the song in memory; showing reloads', () async {
       final before = bloc.state.songs;
 
-      await songs.setSongHidden(9, hidden: true);
+      await songs.setSongsHidden([9], hidden: true);
       await settle();
 
       expect(bloc.state.songs.map((s) => s.id), isNot(contains(9)));
@@ -258,7 +264,7 @@ void main() {
       );
       expect(bloc.state.songs, await fromDatabase());
 
-      await songs.setSongHidden(9, hidden: false);
+      await songs.setSongsHidden([9], hidden: false);
       await settle();
 
       // Back in its title position: a reload (the database decides order).
@@ -377,7 +383,7 @@ void main() {
     expect(search.state.results.songs, hasLength(10));
 
     await songs.toggleFavorite(11);
-    await songs.setSongHidden(12, hidden: true);
+    await songs.setSongsHidden([12], hidden: true);
     await settle();
 
     final found = search.state.results.songs;
@@ -499,12 +505,12 @@ void main() {
     }, skip: skip);
 
     test('a slow reload never overwrites a newer play count', () async {
-      await songs.setSongHidden(20, hidden: true);
+      await songs.setSongsHidden([20], hidden: true);
       await settle();
       storage.holdReads = Completer();
 
       // Unhiding reloads the library; its read is held after the snapshot.
-      final unhide = songs.setSongHidden(20, hidden: false);
+      final unhide = songs.setSongsHidden([20], hidden: false);
       await storage.readTaken.future;
       // A play commits while that (now stale) reload is still in flight.
       await storage.recordPlay(5);
@@ -517,4 +523,13 @@ void main() {
       expect(bloc.state.songs, await fromDatabase());
     }, skip: skip);
   });
+}
+
+/// Never reports a stage (these tests don't look at progress).
+class _NoStages implements WatchLibrarySyncStageUseCase {
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  @override
+  Stream<LibrarySyncStage> call() => const Stream.empty();
 }

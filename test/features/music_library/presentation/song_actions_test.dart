@@ -1,5 +1,7 @@
+import '../../player/player_fixtures.dart';
+
+import 'package:melodix/core/widgets/app_screen_util_init.dart';
 import 'package:dartz/dartz.dart';
-import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
@@ -10,12 +12,9 @@ import 'package:melodix/features/music_library/domain/entities/playlist.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/music_library/domain/usecases/add_songs_to_playlist_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/create_playlist_usecase.dart';
-import 'package:melodix/features/music_library/domain/usecases/get_artist_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/get_playlists_usecase.dart';
-import 'package:melodix/features/music_library/domain/usecases/get_song_album_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/get_song_artwork_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/remove_song_from_playlist_usecase.dart';
-import 'package:melodix/features/music_library/domain/usecases/set_song_hidden_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/set_songs_favorite_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/set_songs_hidden_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/delete_songs_usecase.dart';
@@ -25,20 +24,17 @@ import 'package:melodix/features/music_library/presentation/widgets/song_actions
 import 'package:melodix/features/music_library/presentation/widgets/song_options_button.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_tile.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:melodix/features/music_library/domain/usecases/watch_song_favorite_usecase.dart';
 
 class MockToggleFavorite extends Mock implements ToggleSongFavoriteUseCase {}
 
-class MockSetHidden extends Mock implements SetSongHiddenUseCase {}
+class MockWatchFavorite extends Mock implements WatchSongFavoriteUseCase {}
 
 class MockGetPlaylists extends Mock implements GetPlaylistsUseCase {}
 
 class MockCreatePlaylist extends Mock implements CreatePlaylistUseCase {}
 
 class MockAddToPlaylist extends Mock implements AddSongsToPlaylistUseCase {}
-
-class MockGetAlbum extends Mock implements GetSongAlbumUseCase {}
-
-class MockGetArtist extends Mock implements GetArtistUseCase {}
 
 class MockGetArtwork extends Mock implements GetSongArtworkUseCase {}
 
@@ -74,19 +70,16 @@ const _playlist = Playlist(
 
 void main() {
   late MockToggleFavorite toggleFavorite;
-  late MockSetHidden setHidden;
   late MockGetPlaylists getPlaylists;
   late MockCreatePlaylist createPlaylist;
   late MockAddToPlaylist addToPlaylist;
-  late MockGetAlbum getAlbum;
-  late MockGetArtist getArtist;
   late MockRemoveFromPlaylist removeFromPlaylist;
   late MockSetSongsHidden setSongsHidden;
   late MockSetSongsFavorite setSongsFavorite;
   late MockDeleteSongs deleteSongs;
 
   setUpAll(() {
-    registerFallbackValue(const SetSongHiddenParams(0, hidden: true));
+    registerPlayerFallbacks();
     registerFallbackValue(const AddSongsToPlaylistParams(0, []));
     registerFallbackValue(const CreatePlaylistParams(''));
     registerFallbackValue(const NoParams());
@@ -100,12 +93,9 @@ void main() {
 
   setUp(() {
     toggleFavorite = MockToggleFavorite();
-    setHidden = MockSetHidden();
     getPlaylists = MockGetPlaylists();
     createPlaylist = MockCreatePlaylist();
     addToPlaylist = MockAddToPlaylist();
-    getAlbum = MockGetAlbum();
-    getArtist = MockGetArtist();
     removeFromPlaylist = MockRemoveFromPlaylist();
     setSongsHidden = MockSetSongsHidden();
     setSongsFavorite = MockSetSongsFavorite();
@@ -115,12 +105,10 @@ void main() {
 
   SongActionsCubit buildCubit() => SongActionsCubit(
     toggleFavorite: toggleFavorite,
-    setHidden: setHidden,
+    watchFavorite: MockWatchFavorite(),
     getPlaylists: getPlaylists,
     createPlaylist: createPlaylist,
     addToPlaylist: addToPlaylist,
-    getAlbum: getAlbum,
-    getArtist: getArtist,
     removeFromPlaylist: removeFromPlaylist,
     setSongsHidden: setSongsHidden,
     setSongsFavorite: setSongsFavorite,
@@ -139,7 +127,6 @@ void main() {
     });
 
     test('hide offers undo, which unhides silently', () async {
-      when(() => setHidden(any())).thenAnswer((_) async => const Right(unit));
       when(() => setSongsHidden(any()))
           .thenAnswer((_) async => const Right(unit));
       final cubit = buildCubit();
@@ -151,11 +138,11 @@ void main() {
       final before = cubit.state;
       await cubit.unhideMany([7], silent: true);
       expect(cubit.state, before);
-      final params =
-          verify(() => setSongsHidden(captureAny())).captured.single
-              as SetSongsHiddenParams;
-      expect(params.songIds, [7]);
-      expect(params.hidden, isFalse);
+      final calls = verify(() => setSongsHidden(captureAny())).captured
+          .cast<SetSongsHiddenParams>();
+      // Hidden, then brought back.
+      expect(calls.map((c) => c.hidden), [true, false]);
+      expect(calls.last.songIds, [7]);
       await cubit.close();
     });
 
@@ -281,12 +268,23 @@ void main() {
       );
     });
 
-    test('albumFor reports when the album is missing', () async {
-      when(() => getAlbum(any())).thenAnswer((_) async => const Right(null));
+    test('albumFor / artistFor find them in the library', () async {
+      final cubit = buildCubit();
+      final song = _song();
+
+      expect(cubit.albumFor(song, [song])?.songCount, 1);
+      expect(cubit.artistFor(song, [song])?.name, song.artist);
+      expect(cubit.state, isNull); // nothing to report
+      await cubit.close();
+    });
+
+    test('albumFor / artistFor report when they are gone', () async {
       final cubit = buildCubit();
 
-      expect(await cubit.albumFor(_song()), isNull);
-      expect(cubit.state?.message, 'This song is no longer in your library');
+      expect(cubit.albumFor(_song(), const []), isNull);
+      expect(cubit.state?.message, 'This album is no longer in your library');
+      expect(cubit.artistFor(_song(), const []), isNull);
+      expect(cubit.state?.message, 'This artist is no longer in your library');
       await cubit.close();
     });
   });
@@ -303,21 +301,28 @@ void main() {
 
     tearDown(() => getIt.reset());
 
+    late PlayerHarness player;
+
     Future<void> pumpTile(
       WidgetTester tester,
       Song song, {
       Playlist? playlist,
     }) async {
+      // The player the menu's queue items act on (made inside the test:
+      // its streams run on the test's clock).
+      player = PlayerHarness();
+      addTearDown(player.dispose);
       await tester.pumpWidget(
-        ScreenUtilPlusInit(
-          designSize: const Size(375, 812),
-          child: MaterialApp(
-            theme: AppTheme.darkTheme,
-            home: Scaffold(
-              body: SongActionsScope(
-                child: SongTile(
-                  song: song,
-                  trailing: SongOptionsButton(song: song, playlist: playlist),
+        AppScreenUtilInit(
+          child: player.provide(
+            MaterialApp(
+              theme: AppTheme.darkTheme,
+              home: Scaffold(
+                body: SongActionsScope(
+                  child: SongTile(
+                    song: song,
+                    trailing: SongOptionsButton(song: song, playlist: playlist),
+                  ),
                 ),
               ),
             ),
@@ -328,7 +333,9 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('shows the options, with queue items disabled', (tester) async {
+    testWidgets('shows every option; play next and queue are on', (
+      tester,
+    ) async {
       await pumpTile(tester, _song());
 
       for (final label in [
@@ -339,6 +346,7 @@ void main() {
         'Go to album',
         'Go to artist',
         'Hide from library',
+        'Delete from phone',
       ]) {
         expect(find.text(label), findsOneWidget, reason: label);
       }
@@ -348,7 +356,50 @@ void main() {
           matching: find.byWidgetPredicate((w) => w is PopupMenuItem),
         ),
       );
-      expect(playNext.enabled, isFalse);
+      expect(playNext.enabled, isTrue);
+    });
+
+    testWidgets('play next: right after the current song, and says so', (
+      tester,
+    ) async {
+      final song = _song();
+      await pumpTile(tester, song);
+      await tester.tap(find.text('Play next'));
+      await tester.pumpAndSettle();
+
+      verify(() => player.editQueue.playNext([song])).called(1);
+      expect(find.text('Plays next'), findsOneWidget);
+    });
+
+    testWidgets('add to queue: at the end, and says so', (tester) async {
+      final song = _song();
+      await pumpTile(tester, song);
+      await tester.tap(find.text('Add to queue'));
+      await tester.pumpAndSettle();
+
+      verify(() => player.editQueue.addToQueue([song])).called(1);
+      expect(find.text('Added to queue'), findsOneWidget);
+    });
+
+    testWidgets('delete from phone: asks first, then deletes', (tester) async {
+      when(() => deleteSongs(any())).thenAnswer((_) async => const Right(1));
+      await pumpTile(tester, _song());
+      await tester.tap(find.text('Delete from phone'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Delete 1 song?'), findsOneWidget);
+      verifyNever(() => deleteSongs(any()));
+      await tester.tap(find.widgetWithText(TextButton, 'Delete'));
+      await tester.pumpAndSettle();
+      verify(() => deleteSongs([7])).called(1);
+    });
+
+    testWidgets("delete isn't offered where it isn't supported", (
+      tester,
+    ) async {
+      when(() => deleteSongs.isSupported).thenReturn(false);
+      await pumpTile(tester, _song());
+      expect(find.text('Delete from phone'), findsNothing);
     });
 
     testWidgets('offers removal for a favourite song', (tester) async {
@@ -370,7 +421,6 @@ void main() {
     });
 
     testWidgets('hiding shows a snackbar with undo', (tester) async {
-      when(() => setHidden(any())).thenAnswer((_) async => const Right(unit));
       when(() => setSongsHidden(any()))
           .thenAnswer((_) async => const Right(unit));
       await pumpTile(tester, _song());
@@ -381,12 +431,11 @@ void main() {
       expect(find.text('Hidden from library'), findsOneWidget);
       await tester.tap(find.text('Undo'));
       await tester.pumpAndSettle();
-      verify(() => setHidden(any())).called(1);
-      final undo =
-          verify(() => setSongsHidden(captureAny())).captured.single
-              as SetSongsHiddenParams;
-      expect(undo.hidden, isFalse);
-      expect(undo.songIds, [7]);
+      final calls = verify(() => setSongsHidden(captureAny())).captured
+          .cast<SetSongsHiddenParams>();
+      // Hidden, then brought back by Undo.
+      expect(calls.map((c) => c.hidden), [true, false]);
+      expect(calls.last.songIds, [7]);
     });
 
     testWidgets('offers "Remove from playlist" only on a playlist', (

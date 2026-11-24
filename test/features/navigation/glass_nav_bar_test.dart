@@ -1,4 +1,4 @@
-import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
+import 'package:melodix/core/widgets/app_screen_util_init.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/theme/app_theme.dart';
@@ -26,9 +26,9 @@ Widget _host({
   required ThemeData theme,
   double keyboardInset = 0,
   ValueChanged<int>? onTap,
+  Axis axis = Axis.horizontal,
 }) {
-  return ScreenUtilPlusInit(
-    designSize: const Size(375, 812),
+  return AppScreenUtilInit(
     child: MaterialApp(
       theme: theme,
       home: Builder(
@@ -37,12 +37,28 @@ Widget _host({
               .copyWith(viewInsets: EdgeInsets.only(bottom: keyboardInset)),
           child: Scaffold(
             extendBody: true,
-            body: const SizedBox.expand(),
-            bottomNavigationBar: GlassNavBar(
-              items: _items,
-              currentIndex: 0,
-              onTap: onTap ?? (_) {},
-            ),
+            body: axis == Axis.vertical
+                ? Row(
+                    children: [
+                      Center(
+                        child: GlassNavBar(
+                          items: _items,
+                          currentIndex: 0,
+                          onTap: onTap ?? (_) {},
+                          axis: Axis.vertical,
+                        ),
+                      ),
+                      const Expanded(child: SizedBox.expand()),
+                    ],
+                  )
+                : const SizedBox.expand(),
+            bottomNavigationBar: axis == Axis.vertical
+                ? null
+                : GlassNavBar(
+                    items: _items,
+                    currentIndex: 0,
+                    onTap: onTap ?? (_) {},
+                  ),
           ),
         ),
       ),
@@ -92,5 +108,34 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Music'), findsOneWidget);
+  });
+
+  testWidgets('sideways: a rail down the left, fitting the short screen', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(2400, 1080)
+      ..devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    var tapped = -1;
+    await tester.pumpWidget(
+      _host(
+        theme: AppTheme.darkTheme,
+        axis: Axis.vertical,
+        onTap: (i) => tapped = i,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final music = tester.getRect(find.text('Music'));
+    final video = tester.getRect(find.text('Video'));
+    final settings = tester.getRect(find.text('Settings'));
+    expect(video.top, greaterThan(music.bottom)); // one above the other
+    expect(settings.top, greaterThan(video.bottom));
+    expect(music.left, lessThan(120)); // on the left edge
+    expect(settings.bottom, lessThan(360));
+
+    await tester.tap(find.text('Settings'));
+    expect(tapped, 2);
   });
 }
