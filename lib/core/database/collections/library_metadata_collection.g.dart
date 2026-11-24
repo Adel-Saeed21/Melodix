@@ -23,6 +23,21 @@ const LibraryMetadataCollectionSchema = CollectionSchema(
       name: r'lastSongSyncAt',
       type: IsarType.dateTime,
     ),
+    r'lastVideoSyncAt': PropertySchema(
+      id: 1,
+      name: r'lastVideoSyncAt',
+      type: IsarType.dateTime,
+    ),
+    r'songSyncCheckpoint': PropertySchema(
+      id: 2,
+      name: r'songSyncCheckpoint',
+      type: IsarType.string,
+    ),
+    r'videoSyncCheckpoint': PropertySchema(
+      id: 3,
+      name: r'videoSyncCheckpoint',
+      type: IsarType.string,
+    ),
   },
 
   estimateSize: _libraryMetadataCollectionEstimateSize,
@@ -46,6 +61,18 @@ int _libraryMetadataCollectionEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
+  {
+    final value = object.songSyncCheckpoint;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.videoSyncCheckpoint;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   return bytesCount;
 }
 
@@ -56,6 +83,9 @@ void _libraryMetadataCollectionSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeDateTime(offsets[0], object.lastSongSyncAt);
+  writer.writeDateTime(offsets[1], object.lastVideoSyncAt);
+  writer.writeString(offsets[2], object.songSyncCheckpoint);
+  writer.writeString(offsets[3], object.videoSyncCheckpoint);
 }
 
 LibraryMetadataCollection _libraryMetadataCollectionDeserialize(
@@ -67,6 +97,9 @@ LibraryMetadataCollection _libraryMetadataCollectionDeserialize(
   final object = LibraryMetadataCollection();
   object.id = id;
   object.lastSongSyncAt = reader.readDateTimeOrNull(offsets[0]);
+  object.lastVideoSyncAt = reader.readDateTimeOrNull(offsets[1]);
+  object.songSyncCheckpoint = reader.readStringOrNull(offsets[2]);
+  object.videoSyncCheckpoint = reader.readStringOrNull(offsets[3]);
   return object;
 }
 
@@ -79,6 +112,12 @@ P _libraryMetadataCollectionDeserializeProp<P>(
   switch (propertyId) {
     case 0:
       return (reader.readDateTimeOrNull(offset)) as P;
+    case 1:
+      return (reader.readDateTimeOrNull(offset)) as P;
+    case 2:
+      return (reader.readStringOrNull(offset)) as P;
+    case 3:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -390,6 +429,520 @@ extension LibraryMetadataCollectionQueryFilter
       );
     });
   }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  lastVideoSyncAtIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'lastVideoSyncAt'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  lastVideoSyncAtIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'lastVideoSyncAt'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  lastVideoSyncAtEqualTo(DateTime? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'lastVideoSyncAt', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  lastVideoSyncAtGreaterThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'lastVideoSyncAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  lastVideoSyncAtLessThan(DateTime? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'lastVideoSyncAt',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  lastVideoSyncAtBetween(
+    DateTime? lower,
+    DateTime? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'lastVideoSyncAt',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  songSyncCheckpointIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'songSyncCheckpoint'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  songSyncCheckpointIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'songSyncCheckpoint'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  songSyncCheckpointEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'songSyncCheckpoint',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  songSyncCheckpointGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'songSyncCheckpoint',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  songSyncCheckpointLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'songSyncCheckpoint',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  songSyncCheckpointBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'songSyncCheckpoint',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  songSyncCheckpointStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'songSyncCheckpoint',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  songSyncCheckpointEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'songSyncCheckpoint',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  songSyncCheckpointContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'songSyncCheckpoint',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  songSyncCheckpointMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'songSyncCheckpoint',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  songSyncCheckpointIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'songSyncCheckpoint', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  songSyncCheckpointIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(property: r'songSyncCheckpoint', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  videoSyncCheckpointIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'videoSyncCheckpoint'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  videoSyncCheckpointIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'videoSyncCheckpoint'),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  videoSyncCheckpointEqualTo(String? value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(
+          property: r'videoSyncCheckpoint',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  videoSyncCheckpointGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'videoSyncCheckpoint',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  videoSyncCheckpointLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'videoSyncCheckpoint',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  videoSyncCheckpointBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'videoSyncCheckpoint',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  videoSyncCheckpointStartsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.startsWith(
+          property: r'videoSyncCheckpoint',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  videoSyncCheckpointEndsWith(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.endsWith(
+          property: r'videoSyncCheckpoint',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  videoSyncCheckpointContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.contains(
+          property: r'videoSyncCheckpoint',
+          value: value,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  videoSyncCheckpointMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.matches(
+          property: r'videoSyncCheckpoint',
+          wildcard: pattern,
+          caseSensitive: caseSensitive,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  videoSyncCheckpointIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'videoSyncCheckpoint', value: ''),
+      );
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterFilterCondition
+  >
+  videoSyncCheckpointIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          property: r'videoSyncCheckpoint',
+          value: '',
+        ),
+      );
+    });
+  }
 }
 
 extension LibraryMetadataCollectionQueryObject
@@ -434,6 +987,72 @@ extension LibraryMetadataCollectionQuerySortBy
   sortByLastSongSyncAtDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'lastSongSyncAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterSortBy
+  >
+  sortByLastVideoSyncAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastVideoSyncAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterSortBy
+  >
+  sortByLastVideoSyncAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastVideoSyncAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterSortBy
+  >
+  sortBySongSyncCheckpoint() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'songSyncCheckpoint', Sort.asc);
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterSortBy
+  >
+  sortBySongSyncCheckpointDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'songSyncCheckpoint', Sort.desc);
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterSortBy
+  >
+  sortByVideoSyncCheckpoint() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'videoSyncCheckpoint', Sort.asc);
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterSortBy
+  >
+  sortByVideoSyncCheckpointDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'videoSyncCheckpoint', Sort.desc);
     });
   }
 }
@@ -488,6 +1107,72 @@ extension LibraryMetadataCollectionQuerySortThenBy
       return query.addSortBy(r'lastSongSyncAt', Sort.desc);
     });
   }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterSortBy
+  >
+  thenByLastVideoSyncAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastVideoSyncAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterSortBy
+  >
+  thenByLastVideoSyncAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'lastVideoSyncAt', Sort.desc);
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterSortBy
+  >
+  thenBySongSyncCheckpoint() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'songSyncCheckpoint', Sort.asc);
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterSortBy
+  >
+  thenBySongSyncCheckpointDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'songSyncCheckpoint', Sort.desc);
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterSortBy
+  >
+  thenByVideoSyncCheckpoint() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'videoSyncCheckpoint', Sort.asc);
+    });
+  }
+
+  QueryBuilder<
+    LibraryMetadataCollection,
+    LibraryMetadataCollection,
+    QAfterSortBy
+  >
+  thenByVideoSyncCheckpointDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'videoSyncCheckpoint', Sort.desc);
+    });
+  }
 }
 
 extension LibraryMetadataCollectionQueryWhereDistinct
@@ -501,6 +1186,33 @@ extension LibraryMetadataCollectionQueryWhereDistinct
   distinctByLastSongSyncAt() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'lastSongSyncAt');
+    });
+  }
+
+  QueryBuilder<LibraryMetadataCollection, LibraryMetadataCollection, QDistinct>
+  distinctByLastVideoSyncAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'lastVideoSyncAt');
+    });
+  }
+
+  QueryBuilder<LibraryMetadataCollection, LibraryMetadataCollection, QDistinct>
+  distinctBySongSyncCheckpoint({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'songSyncCheckpoint',
+        caseSensitive: caseSensitive,
+      );
+    });
+  }
+
+  QueryBuilder<LibraryMetadataCollection, LibraryMetadataCollection, QDistinct>
+  distinctByVideoSyncCheckpoint({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(
+        r'videoSyncCheckpoint',
+        caseSensitive: caseSensitive,
+      );
     });
   }
 }
@@ -522,6 +1234,27 @@ extension LibraryMetadataCollectionQueryProperty
   lastSongSyncAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'lastSongSyncAt');
+    });
+  }
+
+  QueryBuilder<LibraryMetadataCollection, DateTime?, QQueryOperations>
+  lastVideoSyncAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'lastVideoSyncAt');
+    });
+  }
+
+  QueryBuilder<LibraryMetadataCollection, String?, QQueryOperations>
+  songSyncCheckpointProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'songSyncCheckpoint');
+    });
+  }
+
+  QueryBuilder<LibraryMetadataCollection, String?, QQueryOperations>
+  videoSyncCheckpointProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'videoSyncCheckpoint');
     });
   }
 }

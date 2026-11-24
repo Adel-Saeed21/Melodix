@@ -1,3 +1,6 @@
+import 'package:melodix/features/video/presentation/pages/video_player_page.dart';
+import 'package:melodix/core/config/dependency_injection/get_it.dart';
+import 'package:melodix/features/video/presentation/logic/video_player_cubit.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'package:go_router/go_router.dart';
@@ -10,6 +13,8 @@ import 'package:melodix/features/music_library/domain/entities/playlist.dart';
 import 'package:melodix/features/music_library/presentation/pages/album_details_page.dart';
 import 'package:melodix/features/music_library/presentation/pages/artist_details_page.dart';
 import 'package:melodix/features/music_library/presentation/pages/hidden_songs_page.dart';
+import 'package:melodix/features/music_library/presentation/pages/favourites_page.dart';
+import 'package:melodix/features/music_library/presentation/pages/recently_played_page.dart';
 import 'package:melodix/features/music_library/presentation/pages/playlist_details_page.dart';
 import 'package:melodix/features/navigation/presentation/pages/main_nav_shell.dart';
 import 'package:melodix/features/player/presentation/pages/now_playing_page.dart';
@@ -132,6 +137,37 @@ class AppRoute {
             child: PlaylistDetailsPage(playlist: state.extra! as Playlist),
           );
         },
+      ),
+      GoRoute(
+        path: Routes.favourites,
+        name: Routes.favourites,
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          key: state.pageKey,
+          child: const FavouritesPage(),
+        ),
+      ),
+      GoRoute(
+        path: Routes.recentlyPlayed,
+        name: Routes.recentlyPlayed,
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          key: state.pageKey,
+          child: const RecentlyPlayedPage(),
+        ),
+      ),
+      // Shows the app's video session; with no video open, back home.
+      GoRoute(
+        path: Routes.videoPlayer,
+        name: Routes.videoPlayer,
+        redirect: (context, state) =>
+            getIt<VideoPlayerCubit>().state.isActive ? null : Routes.homeScreen,
+        pageBuilder: (context, state) => CustomTransitionPage<void>(
+          key: state.pageKey,
+          child: const VideoPlayerPage(),
+          transitionDuration: const Duration(milliseconds: 250),
+          reverseTransitionDuration: const Duration(milliseconds: 200),
+          transitionsBuilder: (context, animation, _, child) =>
+              FadeTransition(opacity: animation, child: child),
+        ),
       ),
       // The full player slides up from the mini player.
       GoRoute(

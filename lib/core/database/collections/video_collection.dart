@@ -4,6 +4,11 @@ import 'package:melodix/core/models/local_video.dart';
 
 part 'video_collection.g.dart';
 
+/// A video on the device, as last scanned, and whether it's a favourite.
+///
+/// Watch progress lives in [VideoProgressCollection]: it changes every few
+/// seconds while a video plays, and keeping it here would make everything
+/// watching the library reload it each time.
 @collection
 class VideoCollection {
   /// [fastHash] of [videoId], so re-scans update the same row.
@@ -28,14 +33,6 @@ class VideoCollection {
   @Index()
   bool isFavorite = false;
 
-  int playCount = 0;
-
-  @Index()
-  DateTime? lastPlayedAt;
-
-  /// Where playback stopped, for "continue watching". 0 = from the start.
-  int lastPositionMs = 0;
-
   VideoCollection();
 
   /// Builds a row from a scanned video, keeping user data from [previous].
@@ -50,17 +47,20 @@ class VideoCollection {
       ..width = video.width
       ..height = video.height
       ..createdAt = video.createdAt
-      ..isFavorite = previous?.isFavorite ?? false
-      ..playCount = previous?.playCount ?? 0
-      ..lastPlayedAt = previous?.lastPlayedAt
-      ..lastPositionMs = previous?.lastPositionMs ?? 0;
+      ..isFavorite = previous?.isFavorite ?? false;
   }
+
+  /// Whether [video] (a fresh scan of this row) has the same details, so
+  /// the row needn't be rewritten.
+  bool hasSameScanAs(LocalVideo video) =>
+      title == video.title &&
+      durationMs == video.duration.inMilliseconds &&
+      width == video.width &&
+      height == video.height &&
+      createdAt == video.createdAt;
 
   @ignore
   Duration get duration => Duration(milliseconds: durationMs);
-
-  @ignore
-  Duration get lastPosition => Duration(milliseconds: lastPositionMs);
 
   LocalVideo toLocalVideo() => LocalVideo(
     id: videoId,

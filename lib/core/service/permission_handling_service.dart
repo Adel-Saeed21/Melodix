@@ -16,6 +16,10 @@ abstract interface class PermissionHandlingService {
   Future<MediaPermissionStatus> videoStatus();
   Future<MediaPermissionStatus> requestVideo();
 
+  /// Whether the app sees only the videos the user picked (Android 14+
+  /// "Select photos and videos", iOS limited library), not all of them.
+  Future<bool> isVideoAccessPartial();
+
   Future<bool> openSettings();
 }
 
@@ -38,6 +42,14 @@ class PermissionHandlingServiceImpl implements PermissionHandlingService {
 
   @override
   Future<MediaPermissionStatus> videoStatus() => _status(_videoPermissions);
+
+  @override
+  Future<bool> isVideoAccessPartial() async {
+    final statuses = [for (final p in _videoPermissions) await p.status];
+    // Partial only if nothing grants full access.
+    return statuses.any((s) => s.isLimited) &&
+        !statuses.any((s) => s.isGranted);
+  }
 
   @override
   Future<MediaPermissionStatus> requestVideo() => _request(_videoPermissions);

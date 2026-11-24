@@ -33,24 +33,9 @@ const VideoCollectionSchema = CollectionSchema(
       name: r'isFavorite',
       type: IsarType.bool,
     ),
-    r'lastPlayedAt': PropertySchema(
-      id: 4,
-      name: r'lastPlayedAt',
-      type: IsarType.dateTime,
-    ),
-    r'lastPositionMs': PropertySchema(
-      id: 5,
-      name: r'lastPositionMs',
-      type: IsarType.long,
-    ),
-    r'playCount': PropertySchema(
-      id: 6,
-      name: r'playCount',
-      type: IsarType.long,
-    ),
-    r'title': PropertySchema(id: 7, name: r'title', type: IsarType.string),
-    r'videoId': PropertySchema(id: 8, name: r'videoId', type: IsarType.string),
-    r'width': PropertySchema(id: 9, name: r'width', type: IsarType.long),
+    r'title': PropertySchema(id: 4, name: r'title', type: IsarType.string),
+    r'videoId': PropertySchema(id: 5, name: r'videoId', type: IsarType.string),
+    r'width': PropertySchema(id: 6, name: r'width', type: IsarType.long),
   },
 
   estimateSize: _videoCollectionEstimateSize,
@@ -111,19 +96,6 @@ const VideoCollectionSchema = CollectionSchema(
         ),
       ],
     ),
-    r'lastPlayedAt': IndexSchema(
-      id: 1709968845012040220,
-      name: r'lastPlayedAt',
-      unique: false,
-      replace: false,
-      properties: [
-        IndexPropertySchema(
-          name: r'lastPlayedAt',
-          type: IndexType.value,
-          caseSensitive: false,
-        ),
-      ],
-    ),
   },
   links: {},
   embeddedSchemas: {},
@@ -155,12 +127,9 @@ void _videoCollectionSerialize(
   writer.writeLong(offsets[1], object.durationMs);
   writer.writeLong(offsets[2], object.height);
   writer.writeBool(offsets[3], object.isFavorite);
-  writer.writeDateTime(offsets[4], object.lastPlayedAt);
-  writer.writeLong(offsets[5], object.lastPositionMs);
-  writer.writeLong(offsets[6], object.playCount);
-  writer.writeString(offsets[7], object.title);
-  writer.writeString(offsets[8], object.videoId);
-  writer.writeLong(offsets[9], object.width);
+  writer.writeString(offsets[4], object.title);
+  writer.writeString(offsets[5], object.videoId);
+  writer.writeLong(offsets[6], object.width);
 }
 
 VideoCollection _videoCollectionDeserialize(
@@ -174,12 +143,9 @@ VideoCollection _videoCollectionDeserialize(
   object.durationMs = reader.readLong(offsets[1]);
   object.height = reader.readLong(offsets[2]);
   object.isFavorite = reader.readBool(offsets[3]);
-  object.lastPlayedAt = reader.readDateTimeOrNull(offsets[4]);
-  object.lastPositionMs = reader.readLong(offsets[5]);
-  object.playCount = reader.readLong(offsets[6]);
-  object.title = reader.readString(offsets[7]);
-  object.videoId = reader.readString(offsets[8]);
-  object.width = reader.readLong(offsets[9]);
+  object.title = reader.readString(offsets[4]);
+  object.videoId = reader.readString(offsets[5]);
+  object.width = reader.readLong(offsets[6]);
   return object;
 }
 
@@ -199,16 +165,10 @@ P _videoCollectionDeserializeProp<P>(
     case 3:
       return (reader.readBool(offset)) as P;
     case 4:
-      return (reader.readDateTimeOrNull(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 5:
-      return (reader.readLong(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 6:
-      return (reader.readLong(offset)) as P;
-    case 7:
-      return (reader.readString(offset)) as P;
-    case 8:
-      return (reader.readString(offset)) as P;
-    case 9:
       return (reader.readLong(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -306,15 +266,6 @@ extension VideoCollectionQueryWhereSort
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'isFavorite'),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterWhere>
-  anyLastPlayedAt() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'lastPlayedAt'),
       );
     });
   }
@@ -646,132 +597,6 @@ extension VideoCollectionQueryWhere
       }
     });
   }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterWhereClause>
-  lastPlayedAtIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IndexWhereClause.equalTo(indexName: r'lastPlayedAt', value: [null]),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterWhereClause>
-  lastPlayedAtIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IndexWhereClause.between(
-          indexName: r'lastPlayedAt',
-          lower: [null],
-          includeLower: false,
-          upper: [],
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterWhereClause>
-  lastPlayedAtEqualTo(DateTime? lastPlayedAt) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IndexWhereClause.equalTo(
-          indexName: r'lastPlayedAt',
-          value: [lastPlayedAt],
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterWhereClause>
-  lastPlayedAtNotEqualTo(DateTime? lastPlayedAt) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'lastPlayedAt',
-                lower: [],
-                upper: [lastPlayedAt],
-                includeUpper: false,
-              ),
-            )
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'lastPlayedAt',
-                lower: [lastPlayedAt],
-                includeLower: false,
-                upper: [],
-              ),
-            );
-      } else {
-        return query
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'lastPlayedAt',
-                lower: [lastPlayedAt],
-                includeLower: false,
-                upper: [],
-              ),
-            )
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'lastPlayedAt',
-                lower: [],
-                upper: [lastPlayedAt],
-                includeUpper: false,
-              ),
-            );
-      }
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterWhereClause>
-  lastPlayedAtGreaterThan(DateTime? lastPlayedAt, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IndexWhereClause.between(
-          indexName: r'lastPlayedAt',
-          lower: [lastPlayedAt],
-          includeLower: include,
-          upper: [],
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterWhereClause>
-  lastPlayedAtLessThan(DateTime? lastPlayedAt, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IndexWhereClause.between(
-          indexName: r'lastPlayedAt',
-          lower: [],
-          upper: [lastPlayedAt],
-          includeUpper: include,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterWhereClause>
-  lastPlayedAtBetween(
-    DateTime? lowerLastPlayedAt,
-    DateTime? upperLastPlayedAt, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IndexWhereClause.between(
-          indexName: r'lastPlayedAt',
-          lower: [lowerLastPlayedAt],
-          includeLower: includeLower,
-          upper: [upperLastPlayedAt],
-          includeUpper: includeUpper,
-        ),
-      );
-    });
-  }
 }
 
 extension VideoCollectionQueryFilter
@@ -1001,189 +826,6 @@ extension VideoCollectionQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.equalTo(property: r'isFavorite', value: value),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterFilterCondition>
-  lastPlayedAtIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNull(property: r'lastPlayedAt'),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterFilterCondition>
-  lastPlayedAtIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        const FilterCondition.isNotNull(property: r'lastPlayedAt'),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterFilterCondition>
-  lastPlayedAtEqualTo(DateTime? value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'lastPlayedAt', value: value),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterFilterCondition>
-  lastPlayedAtGreaterThan(DateTime? value, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'lastPlayedAt',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterFilterCondition>
-  lastPlayedAtLessThan(DateTime? value, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'lastPlayedAt',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterFilterCondition>
-  lastPlayedAtBetween(
-    DateTime? lower,
-    DateTime? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'lastPlayedAt',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterFilterCondition>
-  lastPositionMsEqualTo(int value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'lastPositionMs', value: value),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterFilterCondition>
-  lastPositionMsGreaterThan(int value, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'lastPositionMs',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterFilterCondition>
-  lastPositionMsLessThan(int value, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'lastPositionMs',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterFilterCondition>
-  lastPositionMsBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'lastPositionMs',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterFilterCondition>
-  playCountEqualTo(int value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'playCount', value: value),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterFilterCondition>
-  playCountGreaterThan(int value, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.greaterThan(
-          include: include,
-          property: r'playCount',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterFilterCondition>
-  playCountLessThan(int value, {bool include = false}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.lessThan(
-          include: include,
-          property: r'playCount',
-          value: value,
-        ),
-      );
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterFilterCondition>
-  playCountBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.between(
-          property: r'playCount',
-          lower: lower,
-          includeLower: includeLower,
-          upper: upper,
-          includeUpper: includeUpper,
-        ),
       );
     });
   }
@@ -1589,48 +1231,6 @@ extension VideoCollectionQuerySortBy
     });
   }
 
-  QueryBuilder<VideoCollection, VideoCollection, QAfterSortBy>
-  sortByLastPlayedAt() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'lastPlayedAt', Sort.asc);
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterSortBy>
-  sortByLastPlayedAtDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'lastPlayedAt', Sort.desc);
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterSortBy>
-  sortByLastPositionMs() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'lastPositionMs', Sort.asc);
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterSortBy>
-  sortByLastPositionMsDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'lastPositionMs', Sort.desc);
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterSortBy>
-  sortByPlayCount() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'playCount', Sort.asc);
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterSortBy>
-  sortByPlayCountDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'playCount', Sort.desc);
-    });
-  }
-
   QueryBuilder<VideoCollection, VideoCollection, QAfterSortBy> sortByTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.asc);
@@ -1740,48 +1340,6 @@ extension VideoCollectionQuerySortThenBy
     });
   }
 
-  QueryBuilder<VideoCollection, VideoCollection, QAfterSortBy>
-  thenByLastPlayedAt() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'lastPlayedAt', Sort.asc);
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterSortBy>
-  thenByLastPlayedAtDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'lastPlayedAt', Sort.desc);
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterSortBy>
-  thenByLastPositionMs() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'lastPositionMs', Sort.asc);
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterSortBy>
-  thenByLastPositionMsDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'lastPositionMs', Sort.desc);
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterSortBy>
-  thenByPlayCount() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'playCount', Sort.asc);
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QAfterSortBy>
-  thenByPlayCountDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'playCount', Sort.desc);
-    });
-  }
-
   QueryBuilder<VideoCollection, VideoCollection, QAfterSortBy> thenByTitle() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'title', Sort.asc);
@@ -1851,27 +1409,6 @@ extension VideoCollectionQueryWhereDistinct
     });
   }
 
-  QueryBuilder<VideoCollection, VideoCollection, QDistinct>
-  distinctByLastPlayedAt() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'lastPlayedAt');
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QDistinct>
-  distinctByLastPositionMs() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'lastPositionMs');
-    });
-  }
-
-  QueryBuilder<VideoCollection, VideoCollection, QDistinct>
-  distinctByPlayCount() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'playCount');
-    });
-  }
-
   QueryBuilder<VideoCollection, VideoCollection, QDistinct> distinctByTitle({
     bool caseSensitive = true,
   }) {
@@ -1925,26 +1462,6 @@ extension VideoCollectionQueryProperty
   QueryBuilder<VideoCollection, bool, QQueryOperations> isFavoriteProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isFavorite');
-    });
-  }
-
-  QueryBuilder<VideoCollection, DateTime?, QQueryOperations>
-  lastPlayedAtProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'lastPlayedAt');
-    });
-  }
-
-  QueryBuilder<VideoCollection, int, QQueryOperations>
-  lastPositionMsProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'lastPositionMs');
-    });
-  }
-
-  QueryBuilder<VideoCollection, int, QQueryOperations> playCountProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'playCount');
     });
   }
 

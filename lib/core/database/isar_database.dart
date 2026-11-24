@@ -5,6 +5,7 @@ import 'package:melodix/core/database/collections/playlist_collection.dart';
 import 'package:melodix/core/database/collections/recent_music_collection.dart';
 import 'package:melodix/core/database/collections/song_collection.dart';
 import 'package:melodix/core/database/collections/video_collection.dart';
+import 'package:melodix/core/database/collections/video_progress_collection.dart';
 import 'package:path_provider/path_provider.dart';
 
 /// Opens the app's single Isar instance. Register new collection schemas in
@@ -19,6 +20,7 @@ class IsarDatabase {
     PlaybackStateCollectionSchema,
     LibraryMetadataCollectionSchema,
     VideoCollectionSchema,
+    VideoProgressCollectionSchema,
   ];
 
   static Future<Isar> open() async {

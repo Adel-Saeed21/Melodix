@@ -8,3 +8,13 @@ String formatDuration(Duration duration) {
   }
   return '$minutes:$seconds';
 }
+
+/// A list's total length in words: "48 min", "2 hr 14 min" ("1 min" at
+/// least, once there's anything).
+String formatTotalDuration(Duration duration) {
+  if (duration <= Duration.zero) return '0 min';
+  final hours = duration.inHours;
+  final minutes = duration.inMinutes.remainder(60);
+  if (hours == 0) return '${minutes < 1 ? 1 : minutes} min';
+  return minutes == 0 ? '$hours hr' : '$hours hr $minutes min';
+}

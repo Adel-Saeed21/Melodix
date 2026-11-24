@@ -13,6 +13,17 @@ class AppColors {
   static const Color splashDarkBackground = Color(0xff121212);
   static const Color buttonGreyBackground = Color(0xff4B4B4B);
 
+  // Library shortcut cards and the pages they open (top-left → bottom-right).
+  // (Favourites follows the accent: see AccentColors.favouritesGradient.)
+  static const List<Color> recentGradient = [
+    Color(0xff2BB5A8),
+    Color(0xff125B66),
+  ];
+  static const List<Color> scanGradient = [
+    buttonGreyBackground,
+    Color(0xff232323),
+  ];
+
   // Input fields
   static const Color fieldDark = Color(0xff1B1B1B);
   static const Color fieldLight = Colors.white;

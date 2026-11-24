@@ -6,6 +6,10 @@
 class MusicFileFilter {
   MusicFileFilter._();
 
+  /// Bump when the rules below change, so existing libraries are rescanned
+  /// with the new rules (it's part of the library change signature).
+  static const int rulesVersion = 1;
+
   /// Shorter files are clips or voice notes, not songs.
   static const Duration minimumDuration = Duration(seconds: 30);
 

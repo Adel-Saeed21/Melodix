@@ -8,4 +8,7 @@ class Routes {
   static const String hiddenSongs = '/hidden-songs';
   static const String playlistDetails = '/playlist-details';
   static const String nowPlaying = '/now-playing';
+  static const String favourites = '/favourites';
+  static const String recentlyPlayed = '/recently-played';
+  static const String videoPlayer = '/video-player';
 }
