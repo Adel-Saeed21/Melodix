@@ -80,129 +80,172 @@ class _NowPlayingBody extends StatelessWidget {
     final onSurface = theme.colorScheme.onSurface;
     final cubit = context.read<PlayerCubit>();
 
+    final landscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
+    final header = Row(
+      children: [
+        _CircleIconButton(
+          icon: Icons.keyboard_arrow_down_rounded,
+          tooltip: AppStrings.closePlayer,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
+        Expanded(
+          child: Text(
+            AppStrings.nowPlaying,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: onSurface,
+              fontSize: AppTextSizes.lg,
+              fontWeight: FontWeightHelper.bold,
+            ),
+          ),
+        ),
+        SongOptionsButton(song: song),
+      ],
+    );
+    final titleRow = Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              MarqueeText(
+                song.title,
+                key: ValueKey('title-${song.id}'),
+                style: TextStyle(
+                  color: onSurface,
+                  fontSize: AppTextSizes.xl,
+                  fontWeight: FontWeightHelper.bold,
+                ),
+              ),
+              verticalSpace(4),
+              Text(
+                song.artist,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: onSurface.withValues(alpha: 0.6),
+                  fontSize: AppTextSizes.base,
+                ),
+              ),
+            ],
+          ),
+        ),
+        _FavouriteButton(song: song),
+      ],
+    );
+    final controls = Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        RepeatButton(
+          mode: state.repeatMode,
+          onPressed: cubit.cycleRepeat,
+          size: 24.r,
+        ),
+        PreviousButton(iconSize: 36.r),
+        PlayPauseButton(
+          isPlaying: state.isPlaying,
+          isLoading: state.isLoading,
+          isCompleted: state.isCompleted,
+          size: 68.r,
+          onPressed: cubit.togglePlayPause,
+        ),
+        IconButton(
+          tooltip: AppStrings.next,
+          iconSize: 36.r,
+          onPressed: state.hasNext ? cubit.next : null,
+          icon: const Icon(Icons.skip_next_rounded),
+        ),
+        IconButton(
+          tooltip: AppStrings.shuffle,
+          onPressed: cubit.toggleShuffle,
+          icon: Icon(
+            Icons.shuffle_rounded,
+            size: 24.r,
+            color: state.shuffle
+                ? theme.primaryColor
+                : onSurface.withValues(alpha: 0.6),
+          ),
+        ),
+      ],
+    );
+    final queueButton = TextButton.icon(
+      onPressed: () => showPlayerQueue(context),
+      icon: Icon(
+        Icons.queue_music_rounded,
+        color: onSurface.withValues(alpha: 0.7),
+      ),
+      label: Text(
+        AppStrings.queue,
+        style: TextStyle(color: onSurface.withValues(alpha: 0.7)),
+      ),
+    );
+    Widget cover(BoxConstraints constraints) => Center(
+      child: SongArtwork(
+        key: ValueKey(song.id),
+        songId: song.id,
+        size: constraints.biggest.shortestSide,
+      ),
+    );
+
+    if (landscape) {
+      // Phone on its side: the cover on the left, as tall as the screen;
+      // everything else beside it.
+      return Padding(
+        padding: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 8.h),
+        child: Row(
+          children: [
+            AspectRatio(
+              aspectRatio: 1,
+              child: LayoutBuilder(builder: (_, c) => cover(c)),
+            ),
+            horizontalSpace(32),
+            Expanded(
+              child: Center(
+                // Scrolls only if it can't fit (very large text).
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      header,
+                      verticalSpace(8),
+                      titleRow,
+                      verticalSpace(12),
+                      const PlayerSeekBar(),
+                      verticalSpace(4),
+                      const PlaybackTimesRow(),
+                      verticalSpace(8),
+                      controls,
+                      queueButton,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 24.w),
       child: Column(
         children: [
           verticalSpace(8),
-          Row(
-            children: [
-              _CircleIconButton(
-                icon: Icons.keyboard_arrow_down_rounded,
-                tooltip: AppStrings.closePlayer,
-                onPressed: () => Navigator.of(context).maybePop(),
-              ),
-              Expanded(
-                child: Text(
-                  AppStrings.nowPlaying,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: onSurface,
-                    fontSize: AppTextSizes.lg,
-                    fontWeight: FontWeightHelper.bold,
-                  ),
-                ),
-              ),
-              SongOptionsButton(song: song),
-            ],
-          ),
+          header,
           verticalSpace(24),
           // Cover: as large as fits, square, rounded.
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) => Center(
-                child: SongArtwork(
-                  key: ValueKey(song.id),
-                  songId: song.id,
-                  size: constraints.biggest.shortestSide,
-                ),
-              ),
-            ),
-          ),
+          Expanded(child: LayoutBuilder(builder: (_, c) => cover(c))),
           verticalSpace(28),
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    MarqueeText(
-                      song.title,
-                      key: ValueKey('title-${song.id}'),
-                      style: TextStyle(
-                        color: onSurface,
-                        fontSize: AppTextSizes.xl,
-                        fontWeight: FontWeightHelper.bold,
-                      ),
-                    ),
-                    verticalSpace(4),
-                    Text(
-                      song.artist,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: onSurface.withValues(alpha: 0.6),
-                        fontSize: AppTextSizes.base,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _FavouriteButton(song: song),
-            ],
-          ),
+          titleRow,
           verticalSpace(20),
           const PlayerSeekBar(),
           verticalSpace(6),
           const PlaybackTimesRow(),
           verticalSpace(12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              RepeatButton(
-                mode: state.repeatMode,
-                onPressed: cubit.cycleRepeat,
-                size: 24.r,
-              ),
-              PreviousButton(iconSize: 36.r),
-              PlayPauseButton(
-                isPlaying: state.isPlaying,
-                isLoading: state.isLoading,
-                isCompleted: state.isCompleted,
-                size: 68.r,
-                onPressed: cubit.togglePlayPause,
-              ),
-              IconButton(
-                tooltip: AppStrings.next,
-                iconSize: 36.r,
-                onPressed: state.hasNext ? cubit.next : null,
-                icon: const Icon(Icons.skip_next_rounded),
-              ),
-              IconButton(
-                tooltip: AppStrings.shuffle,
-                onPressed: cubit.toggleShuffle,
-                icon: Icon(
-                  Icons.shuffle_rounded,
-                  size: 24.r,
-                  color: state.shuffle
-                      ? theme.primaryColor
-                      : onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-            ],
-          ),
+          controls,
           verticalSpace(4),
-          TextButton.icon(
-            onPressed: () => showPlayerQueue(context),
-            icon: Icon(
-              Icons.queue_music_rounded,
-              color: onSurface.withValues(alpha: 0.7),
-            ),
-            label: Text(
-              AppStrings.queue,
-              style: TextStyle(color: onSurface.withValues(alpha: 0.7)),
-            ),
-          ),
+          queueButton,
           verticalSpace(8),
         ],
       ),

@@ -26,6 +26,15 @@ abstract interface class PlayerRepository {
     bool? shuffle,
   });
 
+  /// Puts [songs] right after the current song: they play next (also with
+  /// shuffle on). The current song carries on. With nothing playing, they
+  /// start playing.
+  Future<void> playNext(List<Song> songs);
+
+  /// Puts [songs] at the end of the queue. With nothing playing, they start
+  /// playing.
+  Future<void> addToQueue(List<Song> songs);
+
   /// Jumps to the song at [index] in the queue and plays it.
   Future<void> skipToIndex(int index);
 

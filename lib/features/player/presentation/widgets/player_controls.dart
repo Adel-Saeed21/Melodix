@@ -130,12 +130,17 @@ class PlayPauseButton extends StatelessWidget {
               child: isLoading && !isPlaying
                   ? Padding(
                       padding: EdgeInsets.all(size * 0.28),
-                      child: const CircularProgressIndicator(
+                      child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     )
-                  : Icon(icon, color: Colors.white, size: size * 0.55),
+                  : Icon(
+                      icon,
+                      // Readable on any accent (dark on yellow).
+                      color: Theme.of(context).colorScheme.onPrimary,
+                      size: size * 0.55,
+                    ),
             ),
           ),
         ),

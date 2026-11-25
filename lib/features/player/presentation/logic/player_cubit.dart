@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/player/domain/entities/now_playing.dart';
 import 'package:melodix/features/player/domain/usecases/play_queue_usecase.dart';
+import 'package:melodix/features/player/domain/usecases/edit_queue_usecase.dart';
 import 'package:melodix/features/player/domain/usecases/playback_controls_usecase.dart';
 import 'package:melodix/features/player/domain/usecases/restore_playback_session_usecase.dart';
 import 'package:melodix/features/player/domain/usecases/watch_now_playing_usecase.dart';
@@ -17,6 +18,7 @@ class PlayerCubit extends Cubit<NowPlaying> {
     required this._playQueue,
     required this._controls,
     required this._restore,
+    required this._editQueue,
     Random? random,
   }) : _random = random ?? Random(),
        super(watchNowPlaying.current) {
@@ -28,6 +30,7 @@ class PlayerCubit extends Cubit<NowPlaying> {
   final PlayQueueUseCase _playQueue;
   final PlaybackControlsUseCase _controls;
   final RestorePlaybackSessionUseCase _restore;
+  final EditQueueUseCase _editQueue;
   final Random _random;
   late final StreamSubscription<NowPlaying> _subscription;
 
@@ -49,6 +52,12 @@ class PlayerCubit extends Cubit<NowPlaying> {
       ),
     );
   }
+
+  /// Plays [songs] right after the current song (or now, if nothing plays).
+  Future<void> playNext(List<Song> songs) => _editQueue.playNext(songs);
+
+  /// Adds [songs] at the end of the queue (or plays them, if nothing plays).
+  Future<void> addToQueue(List<Song> songs) => _editQueue.addToQueue(songs);
 
   /// Jumps to a song in the current queue.
   Future<void> playAt(int index) => _controls.skipToIndex(index);

@@ -1,3 +1,6 @@
+import 'package:melodix/features/player/presentation/logic/playback_progress_cubit.dart';
+import 'package:melodix/features/player/domain/entities/playback_progress.dart';
+import 'package:melodix/core/preferences/ui_preferences.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -57,11 +60,23 @@ class MiniPlayer extends StatelessWidget {
               ),
             ),
             child: visible
-                ? _MiniPlayerCard(
-                    key: const ValueKey('mini-player'),
-                    state: state,
-                    onExpand: onExpand,
-                  )
+                ? switch (UiPreferencesScope.of(context).miniPlayer) {
+                    MiniPlayerStyle.classic => _MiniPlayerCard(
+                      key: const ValueKey('mini-player'),
+                      state: state,
+                      onExpand: onExpand,
+                    ),
+                    MiniPlayerStyle.capsule => _CapsuleMiniPlayer(
+                      key: const ValueKey('mini-player-capsule'),
+                      state: state,
+                      onExpand: onExpand,
+                    ),
+                    MiniPlayerStyle.minimal => _MinimalMiniPlayer(
+                      key: const ValueKey('mini-player-minimal'),
+                      state: state,
+                      onExpand: onExpand,
+                    ),
+                  }
                 : const SizedBox(
                     key: ValueKey('no-player'),
                     width: double.infinity,
@@ -213,6 +228,249 @@ class _MiniPlayerCard extends StatelessWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The capsule design: a floating pill, the cover round inside a ring that
+/// fills as the song plays, then play / pause and next. Tap it to open the
+/// full player.
+class _CapsuleMiniPlayer extends StatelessWidget {
+  const _CapsuleMiniPlayer({
+    super.key,
+    required this.state,
+    required this.onExpand,
+  });
+
+  final NowPlaying state;
+  final VoidCallback onExpand;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final isDark = theme.brightness == Brightness.dark;
+    final cubit = context.read<PlayerCubit>();
+    final song = state.currentSong!;
+    final ring = 50.r;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 8.h),
+      child: Material(
+        color: isDark
+            ? theme.colorScheme.surfaceContainerHigh
+            : theme.colorScheme.surface,
+        elevation: 10,
+        shadowColor: theme.primaryColor.withValues(alpha: 0.35),
+        shape: const StadiumBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: Semantics(
+          button: true,
+          label: AppStrings.openPlayer,
+          child: InkWell(
+            onTap: onExpand,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(6.r, 6.r, 8.r, 6.r),
+              child: Row(
+                children: [
+                  SizedBox.square(
+                    dimension: ring,
+                    child: Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.all(4.r),
+                          child: SongArtwork(
+                            songId: song.id,
+                            size: ring - 8.r,
+                            circle: true,
+                          ),
+                        ),
+                        // Only the ring follows the position ticks.
+                        RepaintBoundary(
+                          child:
+                              BlocSelector<
+                                PlaybackProgressCubit,
+                                PlaybackProgress,
+                                double
+                              >(
+                                selector: (p) => p.fraction,
+                                builder: (context, fraction) =>
+                                    CircularProgressIndicator(
+                                      value: fraction,
+                                      strokeWidth: 2.5,
+                                      strokeCap: StrokeCap.round,
+                                      color: theme.primaryColor,
+                                      backgroundColor: onSurface.withValues(
+                                        alpha: 0.12,
+                                      ),
+                                    ),
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  horizontalSpace(12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        MarqueeText(
+                          song.title,
+                          key: ValueKey('capsule-${song.id}'),
+                          style: TextStyle(
+                            color: onSurface,
+                            fontSize: AppTextSizes.base,
+                            fontWeight: FontWeightHelper.bold,
+                          ),
+                        ),
+                        Text(
+                          song.artist,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: onSurface.withValues(alpha: 0.6),
+                            fontSize: AppTextSizes.sm,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  PlayPauseButton(
+                    isPlaying: state.isPlaying,
+                    isLoading: state.isLoading,
+                    isCompleted: state.isCompleted,
+                    size: 42.r,
+                    onPressed: cubit.togglePlayPause,
+                  ),
+                  IconButton(
+                    tooltip: AppStrings.next,
+                    onPressed: state.hasNext ? cubit.next : null,
+                    icon: Icon(Icons.skip_next_rounded, size: 28.r),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The minimal design: a flat bar (no shadow) with a thin progress line
+/// along its top, the cover, the song and previous / play / next. Tap it to
+/// open the full player.
+class _MinimalMiniPlayer extends StatelessWidget {
+  const _MinimalMiniPlayer({
+    super.key,
+    required this.state,
+    required this.onExpand,
+  });
+
+  final NowPlaying state;
+  final VoidCallback onExpand;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+    final isDark = theme.brightness == Brightness.dark;
+    final cubit = context.read<PlayerCubit>();
+    final song = state.currentSong!;
+    final radius = BorderRadius.circular(14.r);
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 6.h),
+      child: Material(
+        color: isDark
+            ? theme.colorScheme.surfaceContainer
+            : theme.colorScheme.surfaceContainerLow,
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Only the line follows the position ticks.
+            RepaintBoundary(
+              child:
+                  BlocSelector<PlaybackProgressCubit, PlaybackProgress, double>(
+                    selector: (p) => p.fraction,
+                    builder: (context, fraction) => LinearProgressIndicator(
+                      value: fraction,
+                      minHeight: 2.5,
+                      color: theme.primaryColor,
+                      backgroundColor: onSurface.withValues(alpha: 0.08),
+                    ),
+                  ),
+            ),
+            Semantics(
+              button: true,
+              label: AppStrings.openPlayer,
+              child: InkWell(
+                onTap: onExpand,
+                child: IconButtonTheme(
+                  data: IconButtonThemeData(
+                    style: IconButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(10.w, 6.h, 4.w, 6.h),
+                    child: Row(
+                      children: [
+                        SongArtwork(songId: song.id, size: 40.r),
+                        horizontalSpace(10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                song.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: onSurface,
+                                  fontSize: AppTextSizes.base,
+                                  fontWeight: FontWeightHelper.semiBold,
+                                ),
+                              ),
+                              Text(
+                                song.artist,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  color: onSurface.withValues(alpha: 0.6),
+                                  fontSize: AppTextSizes.xs,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        PreviousButton(iconSize: 24.r),
+                        PlayPauseButton(
+                          isPlaying: state.isPlaying,
+                          isLoading: state.isLoading,
+                          isCompleted: state.isCompleted,
+                          size: 36.r,
+                          onPressed: cubit.togglePlayPause,
+                        ),
+                        IconButton(
+                          tooltip: AppStrings.next,
+                          onPressed: state.hasNext ? cubit.next : null,
+                          icon: Icon(Icons.skip_next_rounded, size: 24.r),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

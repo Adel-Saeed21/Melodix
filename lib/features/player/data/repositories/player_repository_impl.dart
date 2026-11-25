@@ -166,6 +166,33 @@ class PlayerRepositoryImpl implements PlayerRepository {
   }
 
   @override
+  Future<void> playNext(List<Song> songs) => _addSongs(songs, next: true);
+
+  @override
+  Future<void> addToQueue(List<Song> songs) => _addSongs(songs, next: false);
+
+  Future<void> _addSongs(List<Song> songs, {required bool next}) async {
+    if (songs.isEmpty) return;
+    // Nothing playing or on its way: these become the queue.
+    if (_window.queue == null && _pending == null) return playQueue(songs);
+    await _serial.run(() async {
+      final queue = _window.queue;
+      final slot = _window.current;
+      if (queue == null || slot == null) return;
+      final updated = queue.withAdded(
+        songs,
+        currentLogical: slot.logical,
+        next: next,
+      );
+      _window.queue = updated;
+      // Like a shuffle change: new neighbours, the current song untouched.
+      await _window.reorderAround(updated.positionOf(slot.logical));
+      _session.saveQueue(updated.songs, currentIndex: slot.logical);
+    });
+    _publish();
+  }
+
+  @override
   Future<void> play() async {
     if (_window.queue == null) return;
     final pauses = _pauses.mark();
