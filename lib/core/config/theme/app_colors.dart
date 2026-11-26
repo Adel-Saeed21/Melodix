@@ -6,7 +6,23 @@ class AppColors {
   static const Color darkBackground = Color(0xff0D0C0C);
   static const Color gray = Color(0xffBEBEBE);
   static const Color navigationBarDarkBackground = Color(0xff343434);
+
+  // Splash: must match flutter_native_splash.yaml so the hand-off from the
+  // native splash to the Flutter splash is seamless.
+  static const Color splashLightBackground = Color(0xffFFFFFF);
+  static const Color splashDarkBackground = Color(0xff121212);
   static const Color buttonGreyBackground = Color(0xff4B4B4B);
+
+  // Library shortcut cards and the pages they open (top-left → bottom-right).
+  // (Favourites follows the accent: see AccentColors.favouritesGradient.)
+  static const List<Color> recentGradient = [
+    Color(0xff2BB5A8),
+    Color(0xff125B66),
+  ];
+  static const List<Color> scanGradient = [
+    buttonGreyBackground,
+    Color(0xff232323),
+  ];
 
   // Input fields
   static const Color fieldDark = Color(0xff1B1B1B);

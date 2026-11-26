@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 	<dict>
+		<key>NSAppleMusicUsageDescription</key>
+		<string>Melodix needs access to your music library to play your songs.</string>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Melodix needs access to your photo library to show and play your videos.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>CFBundleDevelopmentRegion</key>
