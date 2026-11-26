@@ -50,3 +50,9 @@ app.*.map.json
 lib/firebase_options.dart
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
+# OpenSubtitles API key (copy config/opensubtitles.example.json). Ignoring it
+# only keeps it out of git: the key is still compiled into the app.
+/config/opensubtitles.json
+
+# Release debug symbols (kept to read obfuscated crash reports)
+/release-symbols/

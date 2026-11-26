@@ -22,15 +22,14 @@ Melodix is a music streaming client built with Flutter. The project is a referen
 
 ## Overview
 
-The application covers the onboarding and authentication journey of a music streaming product: a native splash screen, a get-started screen, a light/dark mode selection, and an authentication flow backed by Firebase Authentication. Each feature is developed as an independent module with its own data, domain and presentation layers, so new capabilities can be added without touching existing ones.
+The application covers the onboarding and authentication journey of a music streaming product: a native splash screen, an animated onboarding that introduces the app and ends with the light/dark choice, and an authentication flow backed by Firebase Authentication. Each feature is developed as an independent module with its own data, domain and presentation layers, so new capabilities can be added without touching existing ones.
 
 ## Features
 
 | Feature | Description | Status |
 | --- | --- | --- |
 | Splash screen | Native splash for Android and iOS, with separate light and dark variants | Done |
-| Get started | Onboarding entry screen | Done |
-| Choose mode | User selects light or dark appearance; the choice is persisted across launches | Done |
+| Onboarding | Animated pages introducing music, video and offline subtitles (drawn in code, no images), ending with the dark / light / auto choice, persisted across launches | Done |
 | Authentication hub | Entry point to the register and sign-in flows | Done |
 | Registration | Email/password sign-up through Firebase Authentication, with user-facing error messages | Done |
 | Sign in | Sign-in screen UI | UI only, integration in progress |
@@ -114,8 +113,7 @@ lib/
 │   └── widgets/                   # Shared widgets (e.g. AppButton)
 └── features/
     ├── splash/
-    ├── get_start_screen/
-    ├── choose_mode_screen/
+    ├── onboarding/            # Intro pages (drawn in code) and the look
     └── auth/
         ├── data/
         │   ├── datasource/
@@ -188,21 +186,32 @@ The app ships two flavors, each with its own entry point and application ID, so 
 
 Flavors are currently configured for Android in `android/app/build.gradle.kts`. iOS scheme configuration is planned.
 
+### OpenSubtitles API key
+
+Online subtitle search reads its API key from `config/opensubtitles.json`, which is git-ignored. Create it from the example once:
+
+```bash
+cp config/opensubtitles.example.json config/opensubtitles.json   # then put the key in it
+```
+
+Without the file (or with an empty key) the app still runs: local subtitles work and online search is hidden. The key is compiled into the app, so `.gitignore` only prevents committing it; it does not hide it from someone unpacking the APK.
+
 Run a flavor:
 
 ```bash
-flutter run --flavor dev -t lib/main_dev.dart
-flutter run --flavor production -t lib/main_production.dart
+flutter run --flavor dev -t lib/main_dev.dart --dart-define-from-file=config/opensubtitles.json
+flutter run --flavor production -t lib/main_production.dart --dart-define-from-file=config/opensubtitles.json
 ```
 
-Build a release artifact:
+Build a release artifact (obfuscated, with the key, keeping debug symbols in `release-symbols/<version>/`):
 
 ```bash
-flutter build apk --flavor production -t lib/main_production.dart --release
-flutter build appbundle --flavor production -t lib/main_production.dart --release
+tool/build_release.sh
 ```
 
-For VS Code, ready-made launch configurations for both flavors are provided in `.vscode/launch.json`.
+It runs `flutter build appbundle --release --obfuscate --split-debug-info=build/symbols` for the production flavor. Back up the symbols of every released version: obfuscated crash reports can only be read with them (`flutter symbolize`). Obfuscation makes reverse engineering harder; it does not make the API key secret.
+
+For VS Code, ready-made launch configurations for both flavors are provided in `.vscode/launch.json` (they pass the key file too).
 
 ## Getting Started
 
