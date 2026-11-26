@@ -1,6 +1,9 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/config/routing/routes.dart';
+import 'package:melodix/core/service/navigation_extension.dart';
+import 'package:melodix/features/player/presentation/widgets/mini_player.dart';
 import 'package:melodix/features/home_screen/presentation/pages/home_screen_page.dart';
 import 'package:melodix/features/navigation/presentation/widgets/glass_nav_bar.dart';
 import 'package:melodix/features/settings/presentation/pages/settings_page.dart';
@@ -9,23 +12,33 @@ import 'package:melodix/features/video/presentation/pages/video_page.dart';
 /// Root screen after sign-in: hosts the Music, Video and Settings tabs.
 ///
 /// Pages live in an [IndexedStack] so each tab keeps its state (scroll
-/// position, loaded data) when the user switches between them.
+/// position, loaded data) when the user switches between them. Each is
+/// built on its first visit.
 class MainNavShell extends StatefulWidget {
-  const MainNavShell({super.key});
+  const MainNavShell({super.key, this.pages = defaultPages});
+
+  /// The Music, Video and Settings pages, in tab order.
+  static const List<Widget> defaultPages = [
+    HomeScreenPage(),
+    VideoPage(),
+    SettingsPage(),
+  ];
+
+  /// The tab pages, in [defaultPages] order. Tests may swap the heavy ones
+  /// for stand-ins.
+  @visibleForTesting
+  final List<Widget> pages;
 
   @override
   State<MainNavShell> createState() => _MainNavShellState();
 }
 
 class _MainNavShellState extends State<MainNavShell> {
-  /// Music is the default destination.
-  int _currentIndex = 0;
+  static const int _musicTab = 0;
 
-  static const List<Widget> _pages = [
-    HomeScreenPage(),
-    VideoPage(),
-    SettingsPage(),
-  ];
+  int _currentIndex = _musicTab;
+
+  List<Widget> get _pages => widget.pages;
 
   static const List<GlassNavItem> _items = [
     GlassNavItem(
@@ -45,23 +58,73 @@ class _MainNavShellState extends State<MainNavShell> {
     ),
   ];
 
+  /// Tabs opened so far. A tab is built the first time it's shown (so
+  /// the Video tab doesn't scan the phone at launch unless it's opened),
+  /// then kept.
+  late final Set<int> _opened = {_currentIndex};
+
+  /// Keeps the pages (and their state) when the phone turns.
+  final GlobalKey _pagesKey = GlobalKey();
+
   void _onTap(int index) {
     if (index == _currentIndex) return;
-    setState(() => _currentIndex = index);
+    setState(() {
+      _currentIndex = index;
+      _opened.add(index);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final landscape =
+        MediaQuery.orientationOf(context) == Orientation.landscape;
+    final pages = IndexedStack(
+      index: _currentIndex,
+      children: [
+        for (var i = 0; i < _pages.length; i++)
+          _opened.contains(i) ? _pages[i] : const SizedBox.shrink(),
+      ],
+    );
+    final nav = GlassNavBar(
+      items: _items,
+      currentIndex: _currentIndex,
+      onTap: _onTap,
+      axis: landscape ? Axis.vertical : Axis.horizontal,
+    );
     return Scaffold(
       // Lets page content scroll behind the translucent bar. The Scaffold
       // adds the bar's height to the body's bottom padding, so SafeArea and
       // scroll views inside each page keep their content clear of it.
       extendBody: true,
-      body: IndexedStack(index: _currentIndex, children: _pages),
-      bottomNavigationBar: GlassNavBar(
-        items: _items,
-        currentIndex: _currentIndex,
-        onTap: _onTap,
+      // Phone on its side: the nav moves to a rail on the left, so the
+      // page keeps the little height there is. (Pages keep their state:
+      // the same IndexedStack, under a key, just moves.)
+      body: landscape
+          ? Row(
+              children: [
+                Center(child: nav),
+                Expanded(
+                  // The rail already keeps clear of the left edge (notch).
+                  child: MediaQuery.removePadding(
+                    context: context,
+                    removeLeft: true,
+                    child: KeyedSubtree(key: _pagesKey, child: pages),
+                  ),
+                ),
+              ],
+            )
+          : KeyedSubtree(key: _pagesKey, child: pages),
+      // The mini player sits above the nav bar, on the Music tab only (the
+      // Video and Settings tabs have nothing to do with songs). extendBody
+      // gives lists bottom padding for both, so nothing is hidden behind
+      // them.
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_currentIndex == _musicTab)
+            MiniPlayer(onExpand: () => context.pushNamed(Routes.nowPlaying)),
+          if (!landscape) nav,
+        ],
       ),
     );
   }

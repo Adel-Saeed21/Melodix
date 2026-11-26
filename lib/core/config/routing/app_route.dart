@@ -5,14 +5,16 @@ import 'package:material_ui/material_ui.dart';
 
 import 'package:go_router/go_router.dart';
 import 'package:melodix/core/config/routing/routes.dart';
-import 'package:melodix/features/choose_mode_screen/presentation/choose_mode_screen.dart';
-import 'package:melodix/features/get_start_screen/presentation/get_start_screen.dart';
+import 'package:melodix/features/player/domain/repositories/equalizer_engine.dart';
+import 'package:melodix/features/player/presentation/pages/equalizer_page.dart';
+import 'package:melodix/features/settings/presentation/pages/library_filters_page.dart';
+import 'package:melodix/features/stats/presentation/pages/listening_stats_page.dart';
+import 'package:melodix/features/onboarding/presentation/pages/onboarding_page.dart';
 import 'package:melodix/features/music_library/domain/entities/album.dart';
 import 'package:melodix/features/music_library/domain/entities/artist.dart';
 import 'package:melodix/features/music_library/domain/entities/playlist.dart';
 import 'package:melodix/features/music_library/presentation/pages/album_details_page.dart';
 import 'package:melodix/features/music_library/presentation/pages/artist_details_page.dart';
-import 'package:melodix/features/music_library/presentation/pages/hidden_songs_page.dart';
 import 'package:melodix/features/music_library/presentation/pages/favourites_page.dart';
 import 'package:melodix/features/music_library/presentation/pages/recently_played_page.dart';
 import 'package:melodix/features/music_library/presentation/pages/playlist_details_page.dart';
@@ -58,23 +60,12 @@ class AppRoute {
         },
       ),
       GoRoute(
-        path: Routes.getStartScreen,
-        name: Routes.getStartScreen,
+        path: Routes.onboarding,
+        name: Routes.onboarding,
         pageBuilder: (context, state) {
           return _buildPageWithTransition(
             key: state.pageKey,
-            child: const GetStartScreen(),
-          );
-        },
-      ),
-
-      GoRoute(
-        path: Routes.chooseModeScreen,
-        name: Routes.chooseModeScreen,
-        pageBuilder: (context, state) {
-          return _buildPageWithTransition(
-            key: state.pageKey,
-            child: const ChooseModeScreen(),
+            child: const OnboardingPage(),
           );
         },
       ),
@@ -117,14 +108,28 @@ class AppRoute {
         },
       ),
       GoRoute(
-        path: Routes.hiddenSongs,
-        name: Routes.hiddenSongs,
-        pageBuilder: (context, state) {
-          return _buildPageWithTransition(
-            key: state.pageKey,
-            child: const HiddenSongsPage(),
-          );
-        },
+        path: Routes.equalizer,
+        name: Routes.equalizer,
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          key: state.pageKey,
+          child: EqualizerPage(supported: getIt<EqualizerEngine>().isSupported),
+        ),
+      ),
+      GoRoute(
+        path: Routes.listeningStats,
+        name: Routes.listeningStats,
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          key: state.pageKey,
+          child: const ListeningStatsPage(),
+        ),
+      ),
+      GoRoute(
+        path: Routes.libraryFilters,
+        name: Routes.libraryFilters,
+        pageBuilder: (context, state) => _buildPageWithTransition(
+          key: state.pageKey,
+          child: const LibraryFiltersPage(),
+        ),
       ),
       GoRoute(
         path: Routes.playlistDetails,

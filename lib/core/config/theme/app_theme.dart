@@ -11,11 +11,14 @@ class AppTheme {
 
   static const String _fontFamily = 'Satoshi';
 
-  static ElevatedButtonThemeData _elevatedButtonTheme(AppAccent accent) {
+  static ElevatedButtonThemeData _elevatedButtonTheme(
+    Color accent,
+    Color onAccent,
+  ) {
     return ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: accent.color,
-        foregroundColor: accent.onColor,
+        backgroundColor: accent,
+        foregroundColor: onAccent,
         textStyle: TextStyle(
           fontFamily: _fontFamily,
           fontSize: AppTextSizes.lg,
@@ -29,37 +32,47 @@ class AppTheme {
   }
 
   /// The light theme in [accent] (the app's green by default).
-  static ThemeData light([AppAccent accent = AppAccent.green]) => _build(
-    accent,
-    brightness: Brightness.light,
-    background: AppColors.lightBackground,
-  );
+  static ThemeData light([AppAccent accent = AppAccent.green]) =>
+      forColor(accent.color, Brightness.light, onAccent: accent.onColor);
 
   /// The dark theme in [accent] (the app's green by default).
-  static ThemeData dark([AppAccent accent = AppAccent.green]) => _build(
+  static ThemeData dark([AppAccent accent = AppAccent.green]) =>
+      forColor(accent.color, Brightness.dark, onAccent: accent.onColor);
+
+  /// A theme in any [accent] (e.g. one taken from the song's cover); text
+  /// on it is white unless that can't be read ([AccentColors.onColorFor]).
+  static ThemeData forColor(
+    Color accent,
+    Brightness brightness, {
+    Color? onAccent,
+  }) => _build(
     accent,
-    brightness: Brightness.dark,
-    background: AppColors.darkBackground,
+    onAccent ?? AccentColors.onColorFor(accent),
+    brightness: brightness,
+    background: brightness == Brightness.dark
+        ? AppColors.darkBackground
+        : AppColors.lightBackground,
   );
 
   static ThemeData _build(
-    AppAccent accent, {
+    Color accent,
+    Color onAccent, {
     required Brightness brightness,
     required Color background,
   }) => ThemeData(
-    primaryColor: accent.color,
+    primaryColor: accent,
     scaffoldBackgroundColor: background,
     brightness: brightness,
     fontFamily: _fontFamily,
     colorScheme: ColorScheme.fromSeed(
-      seedColor: accent.color,
+      seedColor: accent,
       brightness: brightness,
       // The accent itself (not a tone derived from it), and a colour that
       // reads on it.
-      primary: accent.color,
-      onPrimary: accent.onColor,
+      primary: accent,
+      onPrimary: onAccent,
     ),
-    elevatedButtonTheme: _elevatedButtonTheme(accent),
+    elevatedButtonTheme: _elevatedButtonTheme(accent, onAccent),
   );
 
   /// The default (green) themes.

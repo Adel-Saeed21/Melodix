@@ -20,7 +20,9 @@ class GlassNavItem {
   final String label;
 }
 
-/// Floating, frosted-glass bottom navigation bar.
+/// Floating, frosted-glass navigation: a bar along the bottom, or (with
+/// [axis] vertical, for a phone on its side) a rail down the left edge,
+/// which leaves the little height there is to the page.
 ///
 /// Colors come from the active [ThemeData], so the bar follows light/dark
 /// mode changes automatically. It hides itself while the software keyboard
@@ -31,11 +33,13 @@ class GlassNavBar extends StatelessWidget {
     required this.items,
     required this.currentIndex,
     required this.onTap,
+    this.axis = Axis.horizontal,
   });
 
   final List<GlassNavItem> items;
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final Axis axis;
 
   static const Duration _animationDuration = Duration(milliseconds: 250);
 
@@ -53,17 +57,24 @@ class GlassNavBar extends StatelessWidget {
         opacity: animation,
         child: SizeTransition(
           sizeFactor: animation,
+          axis: axis == Axis.vertical ? Axis.horizontal : Axis.vertical,
           alignment: Alignment.topCenter,
           child: child,
         ),
       ),
       child: isKeyboardOpen
           ? const SizedBox.shrink(key: ValueKey('nav-hidden'))
-          : _GlassBar(
+          : RepaintBoundary(
               key: const ValueKey('nav-visible'),
-              items: items,
-              currentIndex: currentIndex,
-              onTap: onTap,
+              // Own layer: page animations (tab indicator, progress bars)
+              // don't repaint the nav bar. Its blur still updates as the
+              // content behind it changes.
+              child: _GlassBar(
+                items: items,
+                currentIndex: currentIndex,
+                onTap: onTap,
+                vertical: axis == Axis.vertical,
+              ),
             ),
     );
   }
@@ -71,15 +82,16 @@ class GlassNavBar extends StatelessWidget {
 
 class _GlassBar extends StatelessWidget {
   const _GlassBar({
-    super.key,
     required this.items,
     required this.currentIndex,
     required this.onTap,
+    required this.vertical,
   });
 
   final List<GlassNavItem> items;
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final bool vertical;
 
   @override
   Widget build(BuildContext context) {
@@ -94,10 +106,21 @@ class _GlassBar extends StatelessWidget {
             .withValues(alpha: isDark ? 0.55 : 0.65);
     final radius = BorderRadius.circular(28.r);
 
+    final navItems = [
+      for (var i = 0; i < items.length; i++)
+        _NavItem(
+          item: items[i],
+          isActive: i == currentIndex,
+          onTap: () => onTap(i),
+        ),
+    ];
     return SafeArea(
-      top: false,
+      top: vertical,
+      right: !vertical,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
+        padding: vertical
+            ? EdgeInsets.fromLTRB(12.w, 12.h, 0, 12.h)
+            : EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
         child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: radius,
@@ -118,7 +141,9 @@ class _GlassBar extends StatelessWidget {
               child: Container(
                 // Height follows the content (icon + label) so the bar
                 // never overflows with large text scales or wide screens.
-                padding: EdgeInsets.symmetric(vertical: 10.h),
+                padding: vertical
+                    ? EdgeInsets.symmetric(vertical: 14.h, horizontal: 6.w)
+                    : EdgeInsets.symmetric(vertical: 10.h),
                 decoration: BoxDecoration(
                   color: glassColor,
                   borderRadius: radius,
@@ -126,18 +151,22 @@ class _GlassBar extends StatelessWidget {
                     color: onSurface.withValues(alpha: isDark ? 0.12 : 0.08),
                   ),
                 ),
-                child: Row(
-                  children: [
-                    for (var i = 0; i < items.length; i++)
-                      Expanded(
-                        child: _NavItem(
-                          item: items[i],
-                          isActive: i == currentIndex,
-                          onTap: () => onTap(i),
-                        ),
+                child: vertical
+                    ? Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          for (final item in navItems)
+                            Padding(
+                              padding: EdgeInsets.symmetric(vertical: 8.h),
+                              child: item,
+                            ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          for (final item in navItems) Expanded(child: item),
+                        ],
                       ),
-                  ],
-                ),
               ),
             ),
           ),

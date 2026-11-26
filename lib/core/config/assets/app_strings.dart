@@ -1,14 +1,35 @@
 class AppStrings {
   AppStrings._();
 
-  static const String enjoyListeningToMusic = 'Enjoy listening to music';
-  static const String getStartSecondText =
-      "Lorem ipsum dolor sit amet,\n consectetur adipiscing elit. Sagittis enim\n purus sed phasellus. Cursus ornare id\n scelerisque aliquam.";
-  static const String getStartButtonText = 'Get Started';
-  static const String containueButtonText = 'Continue';
-  static const String chooseModeText = 'Choose Mode';
-  static const String lightModeText = 'Light Mode';
-  static const String darkModeText = 'Dark Mode';
+  static const String appName = 'Melodix';
+
+  // Onboarding
+  static const String onboardingSkip = 'Skip';
+  static const String onboardingNext = 'Next';
+  static const String onboardingStart = 'Start listening';
+  static const String onboardingMusicTitle =
+      'All your music,\nbeautifully organised';
+  static const String onboardingMusicBody =
+      'Melodix finds the songs on your phone and sorts them into albums, '
+      'artists and playlists. Favourites, shuffle, and controls right on '
+      'your lock screen.';
+  static const String onboardingVideoTitle = 'Videos that\nkeep up with you';
+  static const String onboardingVideoBody =
+      'Pick up where you left off, skip with a double-tap, and keep watching '
+      'in a floating window while you use other apps.';
+  static const String onboardingSubtitlesTitle = 'Subtitles,\neven offline';
+  static const String onboardingSubtitlesBody =
+      'Add .srt or .vtt files, or find them online once. They stay on your '
+      'phone, ready without internet.';
+  static const String onboardingThemeTitle = 'Choose your look';
+  static const String onboardingThemeBody =
+      'Dark, light, or follow your phone. You can change it any time in '
+      'Settings.';
+  static const String onboardingAuto = 'Auto';
+  static const String onboardingOffline = 'Offline';
+  static const String onboardingCaption1 = 'Hello, and welcome!';
+  static const String onboardingCaption2 = 'Captions in your language';
+  static const String onboardingCaption3 = 'Saved on your phone';
 
   // Main navigation
   static const String music = 'Music';
@@ -74,8 +95,47 @@ class AppStrings {
   static const String lockControls = 'Lock';
   static const String unlockControls = 'Unlock';
   static const String controlsLocked = 'Controls locked';
-  static const String back10 = 'Back 10 seconds';
-  static const String forward10 = 'Forward 10 seconds';
+  static String backSeconds(int seconds) => 'Back $seconds seconds';
+  static String forwardSeconds(int seconds) => 'Forward $seconds seconds';
+  static const String videoSettings = 'Video player';
+
+  // Subtitles
+  static const String subtitles = 'Subtitles';
+  static const String subtitlesOff = 'Off';
+  static const String subtitlesNone =
+      'No subtitles for this video yet. Add a file or search online.';
+  static const String subtitlesAddFromDevice = 'Add from device';
+  static const String subtitlesAddFromDeviceHint = 'An .srt or .vtt file';
+  static const String subtitlesSearchOnline = 'Search online';
+  static const String subtitlesSearchOnlineHint =
+      'OpenSubtitles · kept for offline use';
+  static const String subtitlesSearchHint = 'Name, file name or IMDb ID';
+  static const String subtitlesSearch = 'Search';
+  static const String subtitlesAnyLanguage = 'Any language';
+  static const String subtitlesNoResults =
+      'Nothing found. Try another name or language.';
+  static const String subtitlesDownload = 'Download';
+  static const String subtitlesSaved = 'Saved';
+  static const String subtitlesFitsFile = 'Fits this file';
+  static const String subtitlesHearingImpaired = 'SDH';
+  static const String subtitlesTryAgain = 'Try again';
+  static String subtitlesRetryIn(int seconds) => 'Try again in ${seconds}s.';
+  static String subtitlesQuotaResets(String time) => 'Resets in $time.';
+  static String subtitlesDownloads(int count) =>
+      count == 1 ? '1 download' : '$count downloads';
+  static const String subtitlesFromDevice = 'On this device';
+  static const String subtitlesImported = 'Added';
+  static const String subtitlesDownloaded = 'Downloaded';
+  static String subtitlesDownloadsLeft(int count) =>
+      count == 1 ? '1 download left today.' : '$count downloads left today.';
+  // The video in the notification and on the lock screen.
+  static const String mediaVideoSubtitle = 'Video · Melodix';
+  static const String mediaRewind = 'Back';
+  static const String mediaForward = 'Forward';
+  static const String videoSkip = 'Skip length';
+  static const String videoSkipHint =
+      'How far the skip buttons and double-taps jump';
+  static String videoSkipSeconds(int seconds) => '${seconds}s';
   static String videoPosition(int number, int count) => '$number of $count';
   static const String closeVideo = 'Close video';
   static const String replay = 'Replay';
@@ -87,6 +147,135 @@ class AppStrings {
 
   // Settings
   static const String appearance = 'Appearance';
+  static const String settingsTagline = 'Make Melodix yours';
+  static const String settingsFooter = 'Your music, your way';
+
+  // Lyrics
+  static const String lyrics = 'Lyrics';
+  static const String showLyrics = 'Show lyrics';
+  static const String showCover = 'Show cover';
+  static const String lyricsSearching = 'Looking for lyrics online…';
+  static const String lyricsNone = 'No lyrics on your phone for this song';
+  static const String lyricsNotFound = 'No lyrics found online either';
+  static const String lyricsFailed =
+      "Couldn't reach the lyrics service. Check your connection.";
+  static const String lyricsSearchOnline = 'Search online';
+  static const String lyricsSearchHint =
+      "Sends the song's title and artist to LRCLIB. Lyrics found are kept "
+      'on your phone.';
+  static const String lyricsFromFile = 'Lyrics from the song file';
+  static const String lyricsFromLrc = 'Lyrics from an .lrc file';
+  static const String lyricsFromOnline = 'Lyrics from LRCLIB';
+  static const String lyricsRemove = 'Wrong song? Remove';
+
+  // Sleep timer
+  static const String sleepTimer = 'Sleep timer';
+  static const String sleepTimerHint = 'The music fades out, then stops';
+  static const String sleepTimerEndOfSong = 'End of song';
+  static const String sleepTimerOff = 'Turn off';
+  static const String sleepTimerAddFive = '+5 min';
+  static const String sleepTimerStopsAtEnd = 'Stops when this song ends';
+  static String sleepTimerMinutes(int minutes) =>
+      minutes >= 60 && minutes % 60 == 0
+      ? '${minutes ~/ 60} h'
+      : minutes > 60
+      ? '${minutes ~/ 60} h ${minutes % 60} min'
+      : '$minutes min';
+  static String sleepTimerLeft(String time) => 'Stops in $time';
+
+  // Playback
+  static const String playback = 'Playback';
+  static const String speed = 'Speed';
+  static const String speedHint = 'Faster or slower, same pitch';
+  static String speedValue(double speed) =>
+      '${speed.toStringAsFixed(speed == speed.roundToDouble() ? 0 : 2).replaceFirst(RegExp(r'0$'), '')}×';
+  static const String skipSilence = 'Skip silence';
+  static const String skipSilenceHint =
+      'Jumps over quiet gaps (great for talks and audiobooks)';
+
+  // Equalizer
+  static const String equalizer = 'Equalizer';
+  static const String equalizerHint = 'Shape the sound with presets or bars';
+  static const String equalizerOn = 'Equalizer on';
+  static const String equalizerUnsupported =
+      "This phone doesn't offer an equalizer to apps.";
+  static const String equalizerPresets = 'Presets';
+  static const String equalizerBars = 'Drag a bar to make your own';
+  static String bandLabel(double hz) => hz >= 1000
+      ? '${(hz / 1000).toStringAsFixed(hz % 1000 == 0 ? 0 : 1)}k'
+      : '${hz.round()}';
+
+  // Cover colours
+  static const String coverColours = 'From the cover';
+  static const String coverColoursHint =
+      "The playing song's cover colours the app";
+
+  // Now Playing background
+  static const String nowPlayingBackground = 'Now Playing background';
+  static const String backgroundPlain = 'Plain';
+  static const String backgroundCover = 'Cover';
+  static const String backgroundGlow = 'Glow';
+
+  // Subtitle style
+  static const String subtitleStyle = 'Subtitles';
+  static const String subtitleSize = 'Size';
+  static const String subtitleLook = 'Style';
+  static const String subtitleColour = 'Colour';
+  static const String subtitleSmall = 'Small';
+  static const String subtitleMedium = 'Medium';
+  static const String subtitleLarge = 'Large';
+  static const String subtitleHuge = 'Huge';
+  static const String subtitleBox = 'Box';
+  static const String subtitleOutline = 'Outline';
+  static const String subtitleWhite = 'White';
+  static const String subtitleYellow = 'Yellow';
+  static const String subtitleAccent = 'Accent';
+  static const String subtitlePreview = 'This is how captions look';
+
+  // Listening stats
+  static const String yourMelodix = 'Your Melodix';
+  static const String yourMelodixHint = 'Your top songs, artists and hours';
+  static const String statsListened = 'Listened';
+  static const String statsPlays = 'Plays';
+  static const String statsSongs = 'Songs';
+  static const String statsFavourites = 'Favourites';
+  static const String statsTopSongs = 'Top songs';
+  static const String statsTopArtists = 'Top artists';
+  static const String statsEmpty =
+      'Play some music and your stats show up here.';
+  static String statsHours(int hours, int minutes) =>
+      hours > 0 ? '$hours h $minutes min' : '$minutes min';
+  static String statsTimes(int plays) => plays == 1 ? '1 play' : '$plays plays';
+  static const String statsTopArtistLabel = 'Your top artist';
+
+  // Library filters
+  static const String libraryFilters = 'Music filters';
+  static const String libraryFiltersHint = 'Hide short clips and folders';
+  static const String minimumLength = 'Shortest song';
+  static const String minimumLengthHint =
+      'Shorter files (voice notes, clips) stay out of the library';
+  static String minimumLengthValue(int seconds) => seconds == 0
+      ? 'Any'
+      : seconds < 60
+      ? '${seconds}s'
+      : '${seconds ~/ 60} min';
+  static const String folders = 'Folders';
+  static const String foldersHint =
+      'Turn a folder off to keep its songs out of the library. Nothing is '
+      'deleted: turn it back on and they return, playlists and plays '
+      'included.';
+  static const String noFolders = 'No music folders found yet.';
+  static String folderSongs(int count) =>
+      count == 1 ? '1 song' : '$count songs';
+
+  // App icon
+  static const String appIcon = 'App icon';
+  static const String appIconHint = 'Your home screen icon';
+  static const String appIconClassic = 'Classic';
+  static String appIconNamed(String name) => '$name icon';
+  static const String appIconChanged =
+      'Icon changed. Your home screen may take a moment to update.';
+  static const String appIconFailed = "This phone didn't allow the change";
   static const String systemModeText = 'System';
 
   // Music library
@@ -133,11 +322,8 @@ class AppStrings {
   static const String addToPlaylist = 'Add to playlist';
   static const String goToAlbum = 'Go to album';
   static const String goToArtist = 'Go to artist';
-  static const String hideFromLibrary = 'Hide from library';
   static const String addedToFavourites = 'Added to favourites';
   static const String removedFromFavourites = 'Removed from favourites';
-  static const String hiddenFromLibrary = 'Hidden from library';
-  static const String restoredToLibrary = 'Back in your library';
   static const String albumNotFound = 'This album is no longer in your library';
   static const String artistNotFound =
       'This artist is no longer in your library';
@@ -152,14 +338,8 @@ class AppStrings {
   static String addedToPlaylist(String name) => 'Added to "$name"';
   static String alreadyInPlaylist(String name) => 'Already in "$name"';
 
-  // Hidden songs
+  // Library
   static const String library = 'Library';
-  static const String hiddenSongs = 'Hidden songs';
-  static const String hiddenSongsSubtitle = 'Songs you hid from your library';
-  static const String noHiddenSongs = 'No hidden songs';
-  static const String noHiddenSongsSubtitle =
-      'Songs you hide from the ⋮ menu appear here.';
-  static const String unhide = 'Unhide';
 
   // Playlists
   static const String playlists = 'Playlists';
@@ -236,14 +416,11 @@ class AppStrings {
   static const String playlistShort = 'Playlist';
   static const String favourite = 'Favourite';
   static const String unfavourite = 'Unfavourite';
-  static const String hide = 'Hide';
   static const String nothingDeleted = 'No songs were deleted';
   static const String deleteSongsMessage =
       "They'll be permanently deleted from your phone. This can't be undone.";
 
   static String selectedCount(int count) => '$count selected';
-  static String hiddenSongsCount(int count) =>
-      count == 1 ? 'Hidden from library' : '$count songs hidden';
   static String addedSongsToFavourites(int count) =>
       count == 1 ? addedToFavourites : 'Added $count songs to favourites';
   static String removedSongsFromFavourites(int count) => count == 1
@@ -291,6 +468,7 @@ class AppStrings {
   static const String noFavouriteVideosSubtitle =
       'Tap ♥ on any video and it will be waiting for you here.';
   static String resumeAt(String time) => 'Resume at $time';
+  static String timeLeft(String time) => '$time left';
   static const String yourFavourites = 'Your favourites';
   static const String noFavouritesTitle = 'No favourites yet';
   static const String noFavouritesSubtitle =
