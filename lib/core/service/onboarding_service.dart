@@ -1,7 +1,7 @@
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 
-/// Remembers whether the user has finished onboarding (get started + choose
-/// mode), so returning users go straight to the library.
+/// Remembers whether the user has finished onboarding (the intro pages and
+/// the look), so returning users go straight to the library.
 ///
 /// Uses the app's existing [HydratedStorage], initialised in `main` before
 /// `runApp`, so no extra storage dependency is needed.

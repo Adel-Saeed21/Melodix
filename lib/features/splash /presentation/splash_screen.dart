@@ -25,7 +25,7 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future<void>.delayed(const Duration(seconds: 2));
     if (!mounted) return;
     context.go(
-      OnboardingService.isCompleted ? Routes.homeScreen : Routes.getStartScreen,
+      OnboardingService.isCompleted ? Routes.homeScreen : Routes.onboarding,
     );
   }
 
