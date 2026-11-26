@@ -19,6 +19,11 @@ import 'package:melodix/features/player/domain/entities/now_playing.dart';
 import 'package:melodix/features/player/presentation/pages/now_playing_page.dart';
 import 'package:melodix/features/player/presentation/widgets/mini_player.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:dartz/dartz.dart';
+import 'package:melodix/core/errors/failures.dart';
+import 'package:melodix/features/lyrics/domain/entities/lyrics.dart';
+import 'package:melodix/features/lyrics/domain/repositories/lyrics_repository.dart';
+import 'package:melodix/features/music_library/domain/entities/song.dart';
 
 import 'player_fixtures.dart';
 
@@ -317,6 +322,70 @@ void main() {
   });
 
   group('NowPlayingPage', () {
+    playerTest('lyrics: none on the phone, found online, follow the song', (
+      tester,
+    ) async {
+      final lyrics = _Lyrics();
+      getIt.registerSingleton<LyricsRepository>(lyrics);
+      harness
+        ..states.add(_playing())
+        ..tick(const Duration(seconds: 6));
+      await pumpApp(tester, const NowPlayingPage());
+      await tester.pump();
+
+      await tester.tap(find.byTooltip('Show lyrics'));
+      await tester.pump(); // asks for the lyrics
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        find.text('No lyrics on your phone for this song'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Search online'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('Second line'), findsOneWidget);
+      expect(find.text('Lyrics from LRCLIB'), findsOneWidget);
+      // The line being sung (6 s in) is the accent's colour.
+      final sung = tester.widget<AnimatedDefaultTextStyle>(
+        find
+            .ancestor(
+              of: find.text('Second line'),
+              matching: find.byType(AnimatedDefaultTextStyle),
+            )
+            .first, // the line's own (not the page's)
+      );
+      expect(sung.style.color, AppTheme.darkTheme.primaryColor);
+
+      // A tap on a line jumps there.
+      await tester.tap(find.text('First line'));
+      verify(() => harness.controls.seek(const Duration(seconds: 1))).called(1);
+
+      // Back to the cover.
+      await tester.tap(find.byTooltip('Show cover'));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(SongArtwork), findsOneWidget);
+    });
+
+    playerTest('sleep timer: picked from Now Playing, counts down', (
+      tester,
+    ) async {
+      harness.states.add(_playing());
+      await pumpApp(tester, const NowPlayingPage());
+      await tester.pump();
+
+      await tester.tap(find.byTooltip('Sleep timer'));
+      await openedSheet(tester);
+      await tester.tap(find.text('15 min'));
+      await openedSheet(tester); // the sheet closes; a second goes by
+      expect(
+        harness.sleepTimer.state.remaining,
+        const Duration(minutes: 14, seconds: 59),
+      );
+      expect(find.text('14:59'), findsOneWidget); // on the button
+      harness.sleepTimer.cancel();
+    });
+
     playerTest('rotating the phone: fits sideways, and back', (tester) async {
       harness
         ..states.add(_playing())
@@ -467,4 +536,25 @@ void main() {
       expect(find.text('open'), findsOneWidget);
     });
   });
+}
+
+/// No lyrics on the phone; LRCLIB has synced ones.
+class _Lyrics implements LyricsRepository {
+  @override
+  Future<Lyrics?> local(Song song) async => null;
+
+  @override
+  Future<Either<Failure, Lyrics?>> searchOnline(Song song) async => const Right(
+    Lyrics(
+      lines: [
+        LyricLine('First line', time: Duration(seconds: 1)),
+        LyricLine('Second line', time: Duration(seconds: 5)),
+        LyricLine('Third line', time: Duration(seconds: 9)),
+      ],
+      source: LyricsSource.online,
+    ),
+  );
+
+  @override
+  Future<void> forgetSaved(int songId) async {}
 }

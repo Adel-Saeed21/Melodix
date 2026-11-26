@@ -21,6 +21,21 @@ void main() {
     expect(UiPreferences.defaults.selectionBar, SelectionBarStyle.bottom);
   });
 
+  test('video skip: 10 s by default, only the offered lengths', () {
+    final cubit = UiPreferencesCubit();
+    expect(cubit.state.videoSeekStep, const Duration(seconds: 10));
+    cubit.setVideoSeekSeconds(5);
+    expect(cubit.state.videoSeekSeconds, 5);
+    cubit.setVideoSeekSeconds(7); // not offered: ignored
+    expect(cubit.state.videoSeekSeconds, 5);
+
+    final saved = cubit.toJson(cubit.state)!;
+    expect(cubit.fromJson(saved)!.videoSeekSeconds, 5);
+    // Missing or unknown (an older app): the default.
+    expect(cubit.fromJson(const {})!.videoSeekSeconds, 10);
+    expect(cubit.fromJson(const {'videoSeekSeconds': 7})!.videoSeekSeconds, 10);
+  });
+
   test('each choice is kept apart', () {
     final cubit = UiPreferencesCubit()..setMiniPlayer(MiniPlayerStyle.capsule);
     expect(cubit.state.miniPlayer, MiniPlayerStyle.capsule);
@@ -52,6 +67,23 @@ void main() {
     cubit.setAccent(AppAccent.red);
     expect(cubit.state.accent, AppAccent.red);
     expect(cubit.state.miniPlayer, MiniPlayerStyle.classic);
+  });
+
+  test('the new look choices are saved and restored', () {
+    final cubit = UiPreferencesCubit()
+      ..setDynamicAccent(true)
+      ..setSubtitleSize(SubtitleSize.huge)
+      ..setSubtitleLook(SubtitleLook.outline)
+      ..setSubtitleColor(SubtitleColor.yellow)
+      ..setNowPlayingBackground(NowPlayingBackground.glow);
+    expect(cubit.fromJson(cubit.toJson(cubit.state)!), cubit.state);
+  });
+
+  test('picking a colour turns cover colours off', () {
+    final cubit = UiPreferencesCubit()..setDynamicAccent(true);
+    cubit.setAccent(AppAccent.blue);
+    expect(cubit.state.dynamicAccent, isFalse);
+    expect(cubit.state.accent, AppAccent.blue);
   });
 
   test("a name it doesn't know (another app version) falls back", () {

@@ -23,6 +23,7 @@ void main() {
     expect(calls.single.method, 'setAutoEnter');
     expect(calls.single.arguments, {
       'enabled': true,
+      'playing': true,
       'width': 1280,
       'height': 720,
     });

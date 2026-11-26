@@ -251,7 +251,7 @@ void main() {
     test('hiding removes the song in memory; showing reloads', () async {
       final before = bloc.state.songs;
 
-      await songs.setSongsHidden([9], hidden: true);
+      await storage.setHiddenMany([9], hidden: true);
       await settle();
 
       expect(bloc.state.songs.map((s) => s.id), isNot(contains(9)));
@@ -264,7 +264,7 @@ void main() {
       );
       expect(bloc.state.songs, await fromDatabase());
 
-      await songs.setSongsHidden([9], hidden: false);
+      await storage.setHiddenMany([9], hidden: false);
       await settle();
 
       // Back in its title position: a reload (the database decides order).
@@ -274,10 +274,10 @@ void main() {
     }, skip: skip);
 
     test('bulk hide, and hiding an already hidden song', () async {
-      await songs.setSongsHidden([1, 2, 3], hidden: true);
+      await storage.setHiddenMany([1, 2, 3], hidden: true);
       await settle();
       final afterHide = bloc.state;
-      await songs.setSongsHidden([1, 2], hidden: true); // no-op
+      await storage.setHiddenMany([1, 2], hidden: true); // no-op
       await settle();
 
       expect(bloc.state.songs, hasLength(17));
@@ -383,7 +383,7 @@ void main() {
     expect(search.state.results.songs, hasLength(10));
 
     await songs.toggleFavorite(11);
-    await songs.setSongsHidden([12], hidden: true);
+    await storage.setHiddenMany([12], hidden: true);
     await settle();
 
     final found = search.state.results.songs;
@@ -505,12 +505,12 @@ void main() {
     }, skip: skip);
 
     test('a slow reload never overwrites a newer play count', () async {
-      await songs.setSongsHidden([20], hidden: true);
+      await storage.setHiddenMany([20], hidden: true);
       await settle();
       storage.holdReads = Completer();
 
       // Unhiding reloads the library; its read is held after the snapshot.
-      final unhide = songs.setSongsHidden([20], hidden: false);
+      final unhide = storage.setHiddenMany([20], hidden: false);
       await storage.readTaken.future;
       // A play commits while that (now stale) reload is still in flight.
       await storage.recordPlay(5);

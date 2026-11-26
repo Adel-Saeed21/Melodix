@@ -16,7 +16,6 @@ import 'package:melodix/features/music_library/domain/usecases/get_playlists_use
 import 'package:melodix/features/music_library/domain/usecases/get_song_artwork_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/remove_song_from_playlist_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/set_songs_favorite_usecase.dart';
-import 'package:melodix/features/music_library/domain/usecases/set_songs_hidden_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/delete_songs_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/toggle_song_favorite_usecase.dart';
 import 'package:melodix/features/music_library/presentation/logic/song_actions_cubit.dart';
@@ -40,8 +39,6 @@ class MockGetArtwork extends Mock implements GetSongArtworkUseCase {}
 
 class MockRemoveFromPlaylist extends Mock
     implements RemoveSongFromPlaylistUseCase {}
-
-class MockSetSongsHidden extends Mock implements SetSongsHiddenUseCase {}
 
 class MockSetSongsFavorite extends Mock implements SetSongsFavoriteUseCase {}
 
@@ -74,7 +71,6 @@ void main() {
   late MockCreatePlaylist createPlaylist;
   late MockAddToPlaylist addToPlaylist;
   late MockRemoveFromPlaylist removeFromPlaylist;
-  late MockSetSongsHidden setSongsHidden;
   late MockSetSongsFavorite setSongsFavorite;
   late MockDeleteSongs deleteSongs;
 
@@ -86,7 +82,6 @@ void main() {
     registerFallbackValue(const SongArtworkParams(0));
     registerFallbackValue(_song());
     registerFallbackValue(const RemoveSongFromPlaylistParams(0, 0));
-    registerFallbackValue(const SetSongsHiddenParams([], hidden: true));
     registerFallbackValue(const SetSongsFavoriteParams([], favorite: true));
     registerFallbackValue(<int>[]);
   });
@@ -97,7 +92,6 @@ void main() {
     createPlaylist = MockCreatePlaylist();
     addToPlaylist = MockAddToPlaylist();
     removeFromPlaylist = MockRemoveFromPlaylist();
-    setSongsHidden = MockSetSongsHidden();
     setSongsFavorite = MockSetSongsFavorite();
     deleteSongs = MockDeleteSongs();
     when(() => deleteSongs.isSupported).thenReturn(true);
@@ -110,7 +104,6 @@ void main() {
     createPlaylist: createPlaylist,
     addToPlaylist: addToPlaylist,
     removeFromPlaylist: removeFromPlaylist,
-    setSongsHidden: setSongsHidden,
     setSongsFavorite: setSongsFavorite,
     deleteSongs: deleteSongs,
   );
@@ -123,26 +116,6 @@ void main() {
       await cubit.toggleFavorite(_song());
 
       expect(cubit.state?.message, 'Added to favourites');
-      await cubit.close();
-    });
-
-    test('hide offers undo, which unhides silently', () async {
-      when(() => setSongsHidden(any()))
-          .thenAnswer((_) async => const Right(unit));
-      final cubit = buildCubit();
-
-      await cubit.hide(_song());
-      expect(cubit.state?.message, 'Hidden from library');
-      expect(cubit.state?.undoHideIds, [7]);
-
-      final before = cubit.state;
-      await cubit.unhideMany([7], silent: true);
-      expect(cubit.state, before);
-      final calls = verify(() => setSongsHidden(captureAny())).captured
-          .cast<SetSongsHiddenParams>();
-      // Hidden, then brought back.
-      expect(calls.map((c) => c.hidden), [true, false]);
-      expect(calls.last.songIds, [7]);
       await cubit.close();
     });
 
@@ -223,18 +196,6 @@ void main() {
             verify(() => setSongsFavorite(captureAny())).captured.single
                 as SetSongsFavoriteParams;
         expect(params.favorite, isFalse);
-        await cubit.close();
-      });
-
-      test('hideMany offers undo for all of them', () async {
-        when(() => setSongsHidden(any()))
-            .thenAnswer((_) async => const Right(unit));
-        final cubit = buildCubit();
-
-        expect(await cubit.hideMany(songs), isTrue);
-
-        expect(cubit.state?.message, '2 songs hidden');
-        expect(cubit.state?.undoHideIds, [7, 7]);
         await cubit.close();
       });
 
@@ -345,11 +306,11 @@ void main() {
         'Add to playlist',
         'Go to album',
         'Go to artist',
-        'Hide from library',
         'Delete from phone',
       ]) {
         expect(find.text(label), findsOneWidget, reason: label);
       }
+      expect(find.text('Hide from library'), findsNothing);
       final playNext = tester.widget<PopupMenuItem<Object?>>(
         find.ancestor(
           of: find.text('Play next'),
@@ -418,24 +379,6 @@ void main() {
 
       verify(() => toggleFavorite(7)).called(1);
       expect(find.text('Added to favourites'), findsOneWidget);
-    });
-
-    testWidgets('hiding shows a snackbar with undo', (tester) async {
-      when(() => setSongsHidden(any()))
-          .thenAnswer((_) async => const Right(unit));
-      await pumpTile(tester, _song());
-
-      await tester.tap(find.text('Hide from library'));
-      await tester.pumpAndSettle();
-
-      expect(find.text('Hidden from library'), findsOneWidget);
-      await tester.tap(find.text('Undo'));
-      await tester.pumpAndSettle();
-      final calls = verify(() => setSongsHidden(captureAny())).captured
-          .cast<SetSongsHiddenParams>();
-      // Hidden, then brought back by Undo.
-      expect(calls.map((c) => c.hidden), [true, false]);
-      expect(calls.last.songIds, [7]);
     });
 
     testWidgets('offers "Remove from playlist" only on a playlist', (

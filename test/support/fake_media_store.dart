@@ -340,6 +340,9 @@ class FakeMediaStore
       MediaPermissionStatus.granted;
 
   @override
+  Future<bool> isVideoAccessPartial() async => false;
+
+  @override
   Future<bool> openSettings() async => false;
 
   @override

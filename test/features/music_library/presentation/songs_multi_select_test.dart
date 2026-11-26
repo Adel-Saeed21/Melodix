@@ -92,7 +92,7 @@ void main() {
     expect(find.text('0 selected'), findsOneWidget);
     expect(find.text('Select all'), findsOneWidget);
     expect(find.byTooltip('Song options'), findsNothing); // ⋮ hidden
-    for (final label in ['Playlist', 'Favourite', 'Hide', 'Delete']) {
+    for (final label in ['Playlist', 'Favourite', 'Delete']) {
       expect(find.text(label), findsOneWidget, reason: label);
     }
   });
@@ -121,43 +121,43 @@ void main() {
     expect(find.byTooltip('Select songs'), findsOneWidget);
   });
 
-  testWidgets('hide acts on the selection and leaves selection mode', (
+  testWidgets('an action acts on the selection and leaves selection mode', (
     tester,
   ) async {
-    when(() => actions.hideMany(any())).thenAnswer((_) async => true);
+    when(() => actions.favoriteMany(any())).thenAnswer((_) async => true);
     await pumpTab(tester);
 
     await tester.longPress(find.text('Track 1'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Track 3'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Hide'));
+    await tester.tap(find.text('Favourite'));
     await tester.pumpAndSettle();
 
-    final hidden =
-        verify(() => actions.hideMany(captureAny())).captured.single
+    final picked =
+        verify(() => actions.favoriteMany(captureAny())).captured.single
             as List<Song>;
-    expect(hidden.map((s) => s.id).toSet(), {1, 3});
+    expect(picked.map((s) => s.id).toSet(), {1, 3});
     expect(find.byTooltip('Select songs'), findsOneWidget);
   });
 
   testWidgets('the selection keeps list order, whatever order it was tapped', (
     tester,
   ) async {
-    when(() => actions.hideMany(any())).thenAnswer((_) async => true);
+    when(() => actions.favoriteMany(any())).thenAnswer((_) async => true);
     await pumpTab(tester);
 
     await tester.longPress(find.text('Track 3'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Track 1'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Hide'));
+    await tester.tap(find.text('Favourite'));
     await tester.pumpAndSettle();
 
-    final hidden =
-        verify(() => actions.hideMany(captureAny())).captured.single
+    final picked =
+        verify(() => actions.favoriteMany(captureAny())).captured.single
             as List<Song>;
-    expect(hidden.map((s) => s.id), [1, 3]);
+    expect(picked.map((s) => s.id), [1, 3]);
   });
 
   testWidgets('delete asks first and does nothing when cancelled', (
@@ -188,7 +188,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Delete'), findsNothing);
-    expect(find.text('Hide'), findsOneWidget);
+    expect(find.text('Favourite'), findsOneWidget);
+    expect(find.text('Hide'), findsNothing);
   });
 
   testWidgets('the select icon stays in place whatever the sort label', (

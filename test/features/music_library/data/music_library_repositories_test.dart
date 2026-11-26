@@ -290,16 +290,10 @@ void main() {
       expect((await songRepo.toggleFavorite(4)).getOrElse(() => false), isTrue);
     });
 
-    test('bulk hide and favourite delegate to storage', () async {
-      when(() => storage.setHiddenMany([1, 2], hidden: true))
-          .thenAnswer((_) async {});
+    test('bulk favourite delegates to storage', () async {
       when(() => storage.setFavoriteMany([1, 2], favorite: false))
           .thenAnswer((_) async {});
 
-      expect(
-        (await songRepo.setSongsHidden([1, 2], hidden: true)).isRight(),
-        isTrue,
-      );
       expect(
         (await songRepo.setSongsFavorite([1, 2], favorite: false)).isRight(),
         isTrue,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:melodix/core/database/collections/library_metadata_collection.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
@@ -106,26 +108,33 @@ void main() {
 
   test('favourites are watched live, newest first', skip: skip, () async {
     await storage.syncVideos([video('a', day: 1), video('b', day: 2)]);
-    final emitted = <List<String>>[];
+    final emitted = StreamController<List<String>>();
     final sub = storage.watchFavoriteVideos().listen(
       (videos) => emitted.add([for (final v in videos) v.videoId]),
     );
-    await pumpEventQueue();
+    // Each change is awaited as it arrives: Isar reports from its own
+    // thread, so a fixed number of event-loop turns can be too few on a
+    // busy machine.
+    final updates = StreamIterator(emitted.stream);
+    Future<List<String>> next() async {
+      expect(
+        await updates.moveNext().timeout(const Duration(seconds: 5)),
+        isTrue,
+      );
+      return updates.current;
+    }
 
+    expect(await next(), <String>[]);
     await storage.toggleFavorite('a');
-    await pumpEventQueue();
+    expect(await next(), ['a']);
     await storage.toggleFavorite('b');
-    await pumpEventQueue();
+    expect(await next(), ['b', 'a']);
     await storage.toggleFavorite('a');
-    await pumpEventQueue();
-    await sub.cancel();
+    expect(await next(), ['b']);
 
-    expect(emitted, [
-      <String>[],
-      ['a'],
-      ['b', 'a'],
-      ['b'],
-    ]);
+    await sub.cancel();
+    await updates.cancel();
+    await emitted.close();
   });
 
   group('progress', skip: skip, () {
@@ -247,5 +256,34 @@ void main() {
       expect(row.videoSyncCheckpoint, '1:a:100');
       expect(row.lastVideoSyncAt, isNotNull);
     });
+  });
+
+  group('partial access', skip: skip, () {
+    test(
+      'videos the scan didn\'t see are kept, with their user data',
+      () async {
+        await storage.syncVideos([video('a'), video('b'), video('c')]);
+        await storage.toggleFavorite('b');
+        await storage.savePlaybackPosition('c', const Duration(minutes: 2));
+
+        // The user let the app see only "a" (and a new one).
+        final result = await storage.syncVideos([
+          video('a'),
+          video('d'),
+        ], keepMissing: true);
+
+        expect(result.removed, 0);
+        expect(result.added, 1);
+        final ids = {for (final v in await storage.getAllVideos()) v.videoId};
+        expect(ids, {'a', 'b', 'c', 'd'});
+        expect(
+          (await storage.getAllVideos())
+              .firstWhere((v) => v.videoId == 'b')
+              .isFavorite,
+          isTrue,
+        );
+        expect(await storage.getProgress('c'), isNotNull);
+      },
+    );
   });
 }

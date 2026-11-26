@@ -103,4 +103,64 @@ void main() {
 
     expect(File.fromUri(fallback!).existsSync(), isTrue);
   });
+
+  group('the Melodix finish', () {
+    NowPlayingArtworkFiles branded(
+      Future<Uint8List> Function(Uint8List) brand,
+    ) => NowPlayingArtworkFiles(
+      artwork: artwork,
+      directory: () async => Directory('${dir.path}/covers'),
+      fallbackCover: () async => Uint8List.fromList([0xFA, 0x11]),
+      brand: brand,
+    );
+
+    test('every cover is branded once, in a new design-named file', () async {
+      var brands = 0;
+      final covers = branded((cover) async {
+        brands++;
+        return Uint8List.fromList([0xB0, ...cover]);
+      });
+
+      final uri = await covers.uriFor(playerSong(7));
+      await covers.uriFor(playerSong(7));
+
+      expect(uri!.pathSegments.last, '7_m1.png');
+      expect(await File.fromUri(uri).readAsBytes(), [0xB0, 7]);
+      expect(brands, 1);
+    });
+
+    test('a cover that cannot be branded is shown as it is', () async {
+      final covers = branded((_) async => throw Exception('not an image'));
+      final uri = await covers.uriFor(playerSong(7));
+      expect(await File.fromUri(uri!).readAsBytes(), [7]);
+    });
+
+    test('without a cover: the fallback, not branded again', () async {
+      withoutCover([3]);
+      var brands = 0;
+      final covers = branded((cover) async {
+        brands++;
+        return cover;
+      });
+      final uri = await covers.uriFor(playerSong(3));
+      expect(await File.fromUri(uri!).readAsBytes(), [0xFA, 0x11]);
+      expect(brands, 0);
+    });
+
+    test('old-design files are pruned like any other', () async {
+      final old = File('${dir.path}/covers/1.jpg')
+        ..createSync(recursive: true)
+        ..writeAsBytesSync([1]);
+      old.setLastModifiedSync(DateTime(2020));
+      final covers = NowPlayingArtworkFiles(
+        artwork: artwork,
+        directory: () async => Directory('${dir.path}/covers'),
+        fallbackCover: () async => Uint8List.fromList([0xFA]),
+        brand: (cover) async => cover,
+        keep: 1,
+      );
+      await covers.uriFor(playerSong(7));
+      expect(old.existsSync(), isFalse);
+    });
+  });
 }

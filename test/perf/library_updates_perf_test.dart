@@ -179,7 +179,7 @@ void main() {
         final id = 7000 + i;
         hide.add(
           await measure(
-            () => songs.setSongsHidden([id], hidden: true),
+            () => storage.setHiddenMany([id], hidden: true),
             (s) => !s.songs.any((x) => x.id == id),
           ),
         );

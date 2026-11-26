@@ -205,6 +205,21 @@ void main() {
     expect(await storage.countSongs(), 1); // visible only
   }, skip: skip);
 
+  test('unhideAll brings back songs hidden by older versions', () async {
+    await storage.applyChanges(
+      upserts: [song(1), song(2), song(3)],
+      deletedIds: const [],
+      checkpoint: 'cp',
+    );
+    await storage.setHiddenMany([1, 3], hidden: true);
+    expect(await storage.countSongs(), 1);
+
+    await storage.unhideAll();
+
+    expect(await storage.countSongs(), 3);
+    expect(await storage.watchHiddenSongs().first, isEmpty);
+  }, skip: skip);
+
   test('a full sync saves its checkpoint too', () async {
     await storage.syncSongs([song(1)], checkpoint: 'full-cp');
 

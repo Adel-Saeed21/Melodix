@@ -204,6 +204,33 @@ void main() {
       );
     });
 
+    test('partial access: nothing removed, never "confirmed empty"', () async {
+      when(() => service.scan()).thenAnswer(
+        (_) async => const VideoScan([], deviceCount: 0, partial: true),
+      );
+      when(
+        () => storage.syncVideos(
+          any(),
+          confirmedEmpty: any(named: 'confirmedEmpty'),
+          checkpoint: any(named: 'checkpoint'),
+          keepMissing: any(named: 'keepMissing'),
+        ),
+      ).thenAnswer(
+        (_) async =>
+            const VideoSyncResult(added: 0, updated: 0, removed: 0, total: 2),
+      );
+
+      await sync.syncLibrary();
+      verify(
+        () => storage.syncVideos(
+          [],
+          confirmedEmpty: false,
+          checkpoint: now,
+          keepMissing: true,
+        ),
+      ).called(1);
+    });
+
     test('syncs asked for at once share one scan', () async {
       final scan = Completer<VideoScan>();
       when(() => service.scan()).thenAnswer((_) => scan.future);

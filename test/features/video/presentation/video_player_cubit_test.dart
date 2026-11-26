@@ -28,6 +28,15 @@ void main() {
     await cubit.close();
   });
 
+  test('open is active at once (the player route can be pushed next)', () {
+    final cubit = h.cubit();
+    unawaited(cubit.open([a, b], 1));
+    // No await: the full player is shown right after open() returns, and
+    // its route sends you home when no video is open.
+    expect(cubit.state.isActive, isTrue);
+    expect(cubit.state.video, b);
+  });
+
   test('resumes where it stopped, unless that was the very end', () async {
     h = VideoPlayerHarness(
       saved: {

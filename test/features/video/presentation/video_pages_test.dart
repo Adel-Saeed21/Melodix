@@ -3,6 +3,7 @@ import 'package:melodix/core/utils/debug_counters.dart';
 import 'package:melodix/core/widgets/selection/selection_widgets.dart';
 import 'package:melodix/core/widgets/selection/selection_actions_overlay.dart';
 import 'package:melodix/core/preferences/ui_preferences.dart';
+import 'package:melodix/features/video/presentation/widgets/player/video_player_controls.dart';
 import 'package:melodix/features/video/presentation/widgets/video_tile.dart';
 import 'package:flutter/services.dart';
 import 'package:melodix/features/video/domain/usecases/video_bulk_usecases.dart';
@@ -15,6 +16,14 @@ import 'dart:async';
 
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:melodix/features/subtitles/domain/entities/subtitle_download.dart';
+import 'package:melodix/features/subtitles/presentation/logic/subtitles_cubit.dart';
+import 'package:melodix/features/subtitles/domain/entities/subtitle_track.dart';
+import 'package:melodix/features/subtitles/domain/entities/online_subtitle.dart';
+
+import '../../subtitles/subtitle_fixtures.dart';
+
+import 'package:melodix/features/video/presentation/widgets/library/continue_watching_row.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
@@ -63,9 +72,18 @@ class FakePip implements PictureInPictureService {
   @override
   Stream<bool> get modeChanges => _changes.stream;
 
+  final _actions = StreamController<PictureInPictureAction>.broadcast();
+
+  /// A tap on one of the window's buttons.
+  void tap(PictureInPictureAction action) => _actions.add(action);
+
+  @override
+  Stream<PictureInPictureAction> get actions => _actions.stream;
+
   @override
   Future<void> setAutoEnter({
     required bool enabled,
+    bool? playing,
     required int width,
     required int height,
   }) async => calls.add((enabled, width, height));
@@ -132,6 +150,7 @@ void main() {
     PictureInPictureService? pip,
     EdgeInsets clearance = MiniVideoWindow.portraitClearance,
     UiPreferences preferences = UiPreferences.defaults,
+    FakeSubtitleRepository? subtitles,
   }) async {
     tester.view
       ..physicalSize = const Size(1080, 2400)
@@ -143,6 +162,18 @@ void main() {
       MultiBlocProvider(
         providers: [
           BlocProvider.value(value: session),
+          BlocProvider(
+            create: (_) => subtitlesCubitOver(
+              subtitles ?? FakeSubtitleRepository(),
+              currentVideo: session.stream
+                  .map((s) => s.isActive ? s.video.id : null)
+                  .distinct(),
+              // Created on first use, maybe after the video opened.
+              initialVideo: session.state.isActive
+                  ? session.state.video.id
+                  : null,
+            ),
+          ),
           RepositoryProvider<DeleteVideosUseCase>.value(value: deleteVideos),
           BlocProvider(
             create: (_) => FavoriteVideosCubit(
@@ -256,6 +287,42 @@ void main() {
       expect(find.text('Video b'), findsNWidgets(2));
       expect(find.text('Resume at 3:12'), findsNWidgets(2));
       expect(find.text('1080p'), findsOneWidget);
+    });
+
+    testWidgets('continue watching: time left, progress, resume', (
+      tester,
+    ) async {
+      await pumpApp(tester, router(), session);
+      videos.add([testVideo('a'), testVideo('b')]);
+      progress.add({
+        'b': watched('b', const Duration(minutes: 2, seconds: 30)),
+      });
+      await tester.pumpAndSettle();
+
+      final row = find.byType(ContinueWatchingRow);
+      expect(
+        find.descendant(of: row, matching: find.text('7:30 left')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: row, matching: find.text('Resume at 2:30')),
+        findsOneWidget,
+      );
+      final bar = tester.widget<LinearProgressIndicator>(
+        find.descendant(
+          of: row,
+          matching: find.byType(LinearProgressIndicator),
+        ),
+      );
+      expect(bar.value, closeTo(0.25, 0.001));
+
+      await tester.tap(
+        find.descendant(of: row, matching: find.text('Video b')),
+      );
+      await tester.pumpAndSettle();
+      expect(session.state.video.id, 'b');
+      await session.stop();
+      await tester.pumpAndSettle();
     });
 
     testWidgets('the Video tab fits sideways', (tester) async {
@@ -622,8 +689,17 @@ void main() {
       WidgetTester tester,
       List<Video> queue, [
       int index = 0,
+      UiPreferences preferences = UiPreferences.defaults,
+      FakeSubtitleRepository? subtitles,
     ]) async {
-      await pumpApp(tester, router(queue, index), session, pip: pip);
+      await pumpApp(
+        tester,
+        router(queue, index),
+        session,
+        pip: pip,
+        preferences: preferences,
+        subtitles: subtitles,
+      );
       await tester.tap(find.text('open'));
       await tester.pump();
       await tester.pump();
@@ -851,7 +927,7 @@ void main() {
       await finish(tester, session);
     });
 
-    testWidgets("adding to the list doesn't undo the screen's rotation", (
+    testWidgets('opens upright; only the rotate button turns the screen', (
       tester,
     ) async {
       final turns = <Object?>[];
@@ -871,20 +947,27 @@ void main() {
         ),
       );
       await open(tester, [testVideo('a')]);
-      final before = turns.length;
-      expect(before, greaterThan(0)); // fitted to the video on opening
+      // Upright on opening, even for a wide video.
+      expect(turns, [
+        ['DeviceOrientation.portraitUp'],
+      ]);
 
       session
         ..playNext([testVideo('b')])
         ..addToQueue([testVideo('c')]);
       await tester.pump();
-      expect(turns, hasLength(before));
-
-      // Moving to the next video does fit it.
+      // Moving to the next video doesn't turn it either.
       await tester.tap(find.byTooltip('Next video'));
       await tester.pump();
       await tester.pump();
-      expect(turns.length, greaterThan(before));
+      expect(turns, hasLength(1));
+
+      await tester.tap(find.byTooltip('Rotate'));
+      await tester.pump();
+      expect(turns.last, [
+        'DeviceOrientation.landscapeLeft',
+        'DeviceOrientation.landscapeRight',
+      ]);
       await finish(tester, session);
     });
 
@@ -1065,6 +1148,163 @@ void main() {
       final told = pip.calls.length;
       await tester.pump();
       expect(pip.calls, hasLength(told));
+      await finish(tester, session);
+    });
+
+    testWidgets('the skip length from Settings: buttons, double-tap, window', (
+      tester,
+    ) async {
+      await open(
+        tester,
+        [testVideo('a')],
+        0,
+        const UiPreferences(videoSeekSeconds: 5),
+      );
+      final player = h.engines['a']!..advanceTo(const Duration(seconds: 30));
+
+      await tester.tap(find.byTooltip('Forward 5 seconds'));
+      await tester.pump();
+      expect(player.value.position, const Duration(seconds: 35));
+      await tester.tap(find.byTooltip('Back 5 seconds'));
+      await tester.pump();
+      expect(player.value.position, const Duration(seconds: 30));
+
+      // Double-tap the right half.
+      final center = tester.getCenter(find.byType(VideoPlayerControls));
+      final right = center + const Offset(100, 0);
+      await tester.tapAt(right);
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.tapAt(right);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(player.value.position, const Duration(seconds: 35));
+      expect(find.text('+5s'), findsOneWidget);
+
+      pip.enter();
+      await tester.pump();
+      pip.tap(PictureInPictureAction.forward);
+      await tester.pump();
+      expect(player.value.position, const Duration(seconds: 40));
+      pip.leave();
+      await tester.pump(const Duration(seconds: 1));
+      await finish(tester, session);
+    });
+
+    testWidgets('subtitles: the chosen track shows at the right time', (
+      tester,
+    ) async {
+      final subtitles = FakeSubtitleRepository()
+        ..tracks['a'] = [testTrack('english')]
+        ..selected['a'] = 'english'
+        ..timelines['english'] = timelineOf('Hello there');
+      await open(
+        tester,
+        [testVideo('a')],
+        0,
+        UiPreferences.defaults,
+        subtitles,
+      );
+      await tester.pump();
+      final player = h.engines['a']!;
+
+      expect(find.text('Hello there'), findsNothing); // before its time
+      player.advanceTo(const Duration(seconds: 2));
+      await tester.pump();
+      expect(find.text('Hello there'), findsOneWidget);
+      player.advanceTo(const Duration(seconds: 5));
+      await tester.pump();
+      expect(find.text('Hello there'), findsNothing); // after it
+
+      // The sheet: off, and the track (chosen).
+      await tester.tap(find.byTooltip('Subtitles'));
+      await tester.pumpAndSettle();
+      expect(find.text('english.srt'), findsOneWidget);
+      await tester.tap(find.text('Off'));
+      await tester.pumpAndSettle();
+      expect(subtitles.selected['a'], isNull);
+
+      Navigator.of(tester.element(find.text('Off'))).pop();
+      await tester.pumpAndSettle();
+      await finish(tester, session);
+    });
+
+    testWidgets('subtitles: search online, download, and it shows', (
+      tester,
+    ) async {
+      const found = OnlineSubtitle(
+        fileId: 7,
+        title: 'Video.a.Release',
+        language: 'en',
+        downloadCount: 12,
+      );
+      final subtitles = FakeSubtitleRepository()
+        ..searchResult = const Right([found])
+        ..downloadResult = Right(
+          SubtitleDownload(
+            track: testTrack('downloaded:7', source: SubtitleSource.downloaded),
+            remaining: 4,
+            resetsIn: '20 hours',
+          ),
+        );
+      await open(
+        tester,
+        [testVideo('a')],
+        0,
+        UiPreferences.defaults,
+        subtitles,
+      );
+      await tester.tap(find.byTooltip('Subtitles'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Search online'));
+      await tester.pumpAndSettle();
+
+      // Searched at once, for the video's name.
+      expect(subtitles.searches.single.$1, 'Video a');
+      expect(find.text('Video.a.Release'), findsOneWidget);
+      expect(find.text('EN · SRT · 12 downloads'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Download'));
+      await tester.pumpAndSettle();
+      expect(find.byTooltip('Saved'), findsOneWidget);
+      expect(
+        find.text('4 downloads left today. Resets in 20 hours.'),
+        findsOneWidget,
+      );
+      // Remembered for the video, and shown in the player now.
+      expect(subtitles.selected['a'], 'downloaded:7');
+      final cubit = BlocProvider.of<SubtitlesCubit>(
+        tester.element(find.byType(VideoPlayerControls)),
+      );
+      expect(cubit.state.selectedId, 'downloaded:7');
+
+      Navigator.of(tester.element(find.text('Video.a.Release'))).pop();
+      await tester.pumpAndSettle();
+      await finish(tester, session);
+    });
+
+    testWidgets("the window's buttons control the video, not the music", (
+      tester,
+    ) async {
+      await open(tester, [testVideo('a')]);
+      final player = h.engines['a']!;
+      player.advanceTo(const Duration(seconds: 30));
+      pip.enter();
+      await tester.pump();
+
+      pip.tap(PictureInPictureAction.forward);
+      await tester.pump();
+      expect(player.value.position, const Duration(seconds: 40));
+      pip.tap(PictureInPictureAction.rewind);
+      await tester.pump();
+      expect(player.value.position, const Duration(seconds: 30));
+
+      pip.tap(PictureInPictureAction.pause);
+      await tester.pump();
+      expect(player.value.isPlaying, isFalse);
+      pip.tap(PictureInPictureAction.play);
+      await tester.pump();
+      expect(player.value.isPlaying, isTrue);
+
+      pip.leave();
       await finish(tester, session);
     });
 
