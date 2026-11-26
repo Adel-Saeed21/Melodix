@@ -56,7 +56,6 @@ void main() {
     ];
     await sync();
     await storage.toggleFavorite(ids[0]);
-    await storage.setHidden(ids[1], hidden: true);
     await storage.recordPlay(ids[2]);
     await storage.recordPlay(ids[0]);
     final mix = await playlists.createPlaylist('Mix', songIds: ids);
@@ -75,7 +74,7 @@ void main() {
       'songs': [
         for (final s in songs)
           '${s.id}|${s.title}|${s.path}|fav:${s.isFavorite}'
-              '|hidden:${s.isHidden}|plays:${s.playCount}',
+              '|plays:${s.playCount}',
       ],
       'playlists': [
         for (final p in lists) '${p.name}|${p.songIds}|fav:${p.isFavorite}',
@@ -267,7 +266,6 @@ void main() {
       final alpha = await isar.songCollections.get(ids[0]);
       expect(alpha!.isFavorite, isTrue);
       expect(alpha.playCount, 1);
-      expect((await isar.songCollections.get(ids[1]))!.isHidden, isTrue);
       final lists = {
         for (final p in await playlists.getAllPlaylists()) p.name: p,
       };

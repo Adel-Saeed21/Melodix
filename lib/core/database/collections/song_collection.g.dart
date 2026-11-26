@@ -40,20 +40,19 @@ const SongCollectionSchema = CollectionSchema(
       name: r'isFavorite',
       type: IsarType.bool,
     ),
-    r'isHidden': PropertySchema(id: 7, name: r'isHidden', type: IsarType.bool),
-    r'path': PropertySchema(id: 8, name: r'path', type: IsarType.string),
+    r'path': PropertySchema(id: 7, name: r'path', type: IsarType.string),
     r'playCount': PropertySchema(
-      id: 9,
+      id: 8,
       name: r'playCount',
       type: IsarType.long,
     ),
     r'sizeBytes': PropertySchema(
-      id: 10,
+      id: 9,
       name: r'sizeBytes',
       type: IsarType.long,
     ),
-    r'title': PropertySchema(id: 11, name: r'title', type: IsarType.string),
-    r'uri': PropertySchema(id: 12, name: r'uri', type: IsarType.string),
+    r'title': PropertySchema(id: 10, name: r'title', type: IsarType.string),
+    r'uri': PropertySchema(id: 11, name: r'uri', type: IsarType.string),
   },
 
   estimateSize: _songCollectionEstimateSize,
@@ -153,19 +152,6 @@ const SongCollectionSchema = CollectionSchema(
         ),
       ],
     ),
-    r'isHidden': IndexSchema(
-      id: 1012074769999104596,
-      name: r'isHidden',
-      unique: false,
-      replace: false,
-      properties: [
-        IndexPropertySchema(
-          name: r'isHidden',
-          type: IndexType.value,
-          caseSensitive: false,
-        ),
-      ],
-    ),
   },
   links: {},
   embeddedSchemas: {},
@@ -208,12 +194,11 @@ void _songCollectionSerialize(
   writer.writeDateTime(offsets[4], object.dateAdded);
   writer.writeLong(offsets[5], object.durationMs);
   writer.writeBool(offsets[6], object.isFavorite);
-  writer.writeBool(offsets[7], object.isHidden);
-  writer.writeString(offsets[8], object.path);
-  writer.writeLong(offsets[9], object.playCount);
-  writer.writeLong(offsets[10], object.sizeBytes);
-  writer.writeString(offsets[11], object.title);
-  writer.writeString(offsets[12], object.uri);
+  writer.writeString(offsets[7], object.path);
+  writer.writeLong(offsets[8], object.playCount);
+  writer.writeLong(offsets[9], object.sizeBytes);
+  writer.writeString(offsets[10], object.title);
+  writer.writeString(offsets[11], object.uri);
 }
 
 SongCollection _songCollectionDeserialize(
@@ -231,12 +216,11 @@ SongCollection _songCollectionDeserialize(
   object.durationMs = reader.readLong(offsets[5]);
   object.id = id;
   object.isFavorite = reader.readBool(offsets[6]);
-  object.isHidden = reader.readBool(offsets[7]);
-  object.path = reader.readString(offsets[8]);
-  object.playCount = reader.readLong(offsets[9]);
-  object.sizeBytes = reader.readLong(offsets[10]);
-  object.title = reader.readString(offsets[11]);
-  object.uri = reader.readStringOrNull(offsets[12]);
+  object.path = reader.readString(offsets[7]);
+  object.playCount = reader.readLong(offsets[8]);
+  object.sizeBytes = reader.readLong(offsets[9]);
+  object.title = reader.readString(offsets[10]);
+  object.uri = reader.readStringOrNull(offsets[11]);
   return object;
 }
 
@@ -262,16 +246,14 @@ P _songCollectionDeserializeProp<P>(
     case 6:
       return (reader.readBool(offset)) as P;
     case 7:
-      return (reader.readBool(offset)) as P;
-    case 8:
       return (reader.readString(offset)) as P;
+    case 8:
+      return (reader.readLong(offset)) as P;
     case 9:
       return (reader.readLong(offset)) as P;
     case 10:
-      return (reader.readLong(offset)) as P;
-    case 11:
       return (reader.readString(offset)) as P;
-    case 12:
+    case 11:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -379,14 +361,6 @@ extension SongCollectionQueryWhereSort
     return QueryBuilder.apply(this, (query) {
       return query.addWhereClause(
         const IndexWhereClause.any(indexName: r'isFavorite'),
-      );
-    });
-  }
-
-  QueryBuilder<SongCollection, SongCollection, QAfterWhere> anyIsHidden() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        const IndexWhereClause.any(indexName: r'isHidden'),
       );
     });
   }
@@ -969,58 +943,6 @@ extension SongCollectionQueryWhere
                 indexName: r'isFavorite',
                 lower: [],
                 upper: [isFavorite],
-                includeUpper: false,
-              ),
-            );
-      }
-    });
-  }
-
-  QueryBuilder<SongCollection, SongCollection, QAfterWhereClause>
-  isHiddenEqualTo(bool isHidden) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addWhereClause(
-        IndexWhereClause.equalTo(indexName: r'isHidden', value: [isHidden]),
-      );
-    });
-  }
-
-  QueryBuilder<SongCollection, SongCollection, QAfterWhereClause>
-  isHiddenNotEqualTo(bool isHidden) {
-    return QueryBuilder.apply(this, (query) {
-      if (query.whereSort == Sort.asc) {
-        return query
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'isHidden',
-                lower: [],
-                upper: [isHidden],
-                includeUpper: false,
-              ),
-            )
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'isHidden',
-                lower: [isHidden],
-                includeLower: false,
-                upper: [],
-              ),
-            );
-      } else {
-        return query
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'isHidden',
-                lower: [isHidden],
-                includeLower: false,
-                upper: [],
-              ),
-            )
-            .addWhereClause(
-              IndexWhereClause.between(
-                indexName: r'isHidden',
-                lower: [],
-                upper: [isHidden],
                 includeUpper: false,
               ),
             );
@@ -1629,15 +1551,6 @@ extension SongCollectionQueryFilter
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
         FilterCondition.equalTo(property: r'isFavorite', value: value),
-      );
-    });
-  }
-
-  QueryBuilder<SongCollection, SongCollection, QAfterFilterCondition>
-  isHiddenEqualTo(bool value) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(
-        FilterCondition.equalTo(property: r'isHidden', value: value),
       );
     });
   }
@@ -2294,19 +2207,6 @@ extension SongCollectionQuerySortBy
     });
   }
 
-  QueryBuilder<SongCollection, SongCollection, QAfterSortBy> sortByIsHidden() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isHidden', Sort.asc);
-    });
-  }
-
-  QueryBuilder<SongCollection, SongCollection, QAfterSortBy>
-  sortByIsHiddenDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isHidden', Sort.desc);
-    });
-  }
-
   QueryBuilder<SongCollection, SongCollection, QAfterSortBy> sortByPath() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'path', Sort.asc);
@@ -2476,19 +2376,6 @@ extension SongCollectionQuerySortThenBy
     });
   }
 
-  QueryBuilder<SongCollection, SongCollection, QAfterSortBy> thenByIsHidden() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isHidden', Sort.asc);
-    });
-  }
-
-  QueryBuilder<SongCollection, SongCollection, QAfterSortBy>
-  thenByIsHiddenDesc() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addSortBy(r'isHidden', Sort.desc);
-    });
-  }
-
   QueryBuilder<SongCollection, SongCollection, QAfterSortBy> thenByPath() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'path', Sort.asc);
@@ -2603,12 +2490,6 @@ extension SongCollectionQueryWhereDistinct
     });
   }
 
-  QueryBuilder<SongCollection, SongCollection, QDistinct> distinctByIsHidden() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addDistinctBy(r'isHidden');
-    });
-  }
-
   QueryBuilder<SongCollection, SongCollection, QDistinct> distinctByPath({
     bool caseSensitive = true,
   }) {
@@ -2696,12 +2577,6 @@ extension SongCollectionQueryProperty
   QueryBuilder<SongCollection, bool, QQueryOperations> isFavoriteProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isFavorite');
-    });
-  }
-
-  QueryBuilder<SongCollection, bool, QQueryOperations> isHiddenProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'isHidden');
     });
   }
 

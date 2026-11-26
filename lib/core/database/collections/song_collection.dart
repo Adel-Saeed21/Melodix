@@ -6,7 +6,7 @@ part 'song_collection.g.dart';
 /// A song from the device library, plus the user's data for it.
 ///
 /// Scanned fields are overwritten on every library sync; user fields
-/// ([isFavorite], [playCount], [isHidden]) are kept. Play history lives in
+/// ([isFavorite], [playCount]) are kept. Play history lives in
 /// `RecentMusicCollection`.
 @collection
 class SongCollection {
@@ -46,14 +46,9 @@ class SongCollection {
 
   int playCount = 0;
 
-  /// Hidden from the library by the user. The file stays on the device and
-  /// the song is excluded from every list until unhidden.
-  ///
-  /// Rows saved before this field existed store null here, so queries must
-  /// use `not().isHiddenEqualTo(true)` for visible songs, never
-  /// `isHiddenEqualTo(false)` (which would skip those rows).
-  @Index()
-  bool isHidden = false;
+  // An `isHidden` field used to live here (hiding songs was removed).
+  // Isar ignores the values older versions stored, so songs they hid show
+  // again with no migration. Don't reuse the name for something else.
 
   /// When the song first appeared in the library.
   late DateTime addedAt;
@@ -78,7 +73,6 @@ class SongCollection {
       ..dateAdded = song.dateAdded
       ..isFavorite = previous?.isFavorite ?? false
       ..playCount = previous?.playCount ?? 0
-      ..isHidden = previous?.isHidden ?? false
       ..addedAt = previous?.addedAt ?? DateTime.now();
   }
 

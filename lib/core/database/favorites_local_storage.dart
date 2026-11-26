@@ -37,12 +37,8 @@ class FavoritesLocalStorageImpl implements FavoritesLocalStorage {
   }
 
   QueryBuilder<SongCollection, SongCollection, QAfterSortBy>
-  get _favoriteSongs => _isar.songCollections
-      .filter()
-      .isFavoriteEqualTo(true)
-      .not()
-      .isHiddenEqualTo(true)
-      .sortByTitle();
+  get _favoriteSongs =>
+      _isar.songCollections.filter().isFavoriteEqualTo(true).sortByTitle();
 
   QueryBuilder<PlaylistCollection, PlaylistCollection, QAfterSortBy>
   get _favoritePlaylists => _isar.playlistCollections

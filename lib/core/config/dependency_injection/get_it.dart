@@ -164,8 +164,6 @@ Future<void> _setupDatabase() async {
   getIt.registerLazySingleton<MusicLocalStorage>(
     () => MusicLocalStorageImpl(getIt<Isar>(), filter: _libraryFilter),
   );
-  // Hiding songs was removed: bring back any hidden by an older version.
-  await getIt<MusicLocalStorage>().unhideAll();
   getIt.registerLazySingleton<VideoLocalStorage>(
     () => VideoLocalStorageImpl(getIt<Isar>()),
   );
@@ -254,7 +252,6 @@ void _setupMusicLibrary() {
   getIt.registerLazySingleton<PlaylistRepository>(
     () => PlaylistRepositoryImpl(
       storage: getIt<PlaylistLocalStorage>(),
-      songStorage: getIt<MusicLocalStorage>(),
       mapper: getIt<SongMapper>(),
     ),
   );

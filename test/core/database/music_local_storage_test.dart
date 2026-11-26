@@ -76,34 +76,28 @@ void main() {
       expect((await isar.songCollections.get(2))!.title, 'Renamed tag');
     }, skip: skip);
 
-    test(
-      'keeps favourite, play count, hidden state and first-seen date',
-      () async {
-        await storage.applyChanges(
-          upserts: [song(1)],
-          deletedIds: const [],
-          checkpoint: 'cp-1',
-        );
-        final addedAt = (await isar.songCollections.get(1))!.addedAt;
-        await storage.toggleFavorite(1);
-        await storage.recordPlay(1);
-        await storage.setHidden(1, hidden: true);
+    test('keeps favourite, play count and first-seen date', () async {
+      await storage.applyChanges(
+        upserts: [song(1)],
+        deletedIds: const [],
+        checkpoint: 'cp-1',
+      );
+      final addedAt = (await isar.songCollections.get(1))!.addedAt;
+      await storage.toggleFavorite(1);
+      await storage.recordPlay(1);
 
-        await storage.applyChanges(
-          upserts: [song(1, path: '/moved/1.mp3')], // renamed / moved
-          deletedIds: const [],
-          checkpoint: 'cp-2',
-        );
+      await storage.applyChanges(
+        upserts: [song(1, path: '/moved/1.mp3')], // renamed / moved
+        deletedIds: const [],
+        checkpoint: 'cp-2',
+      );
 
-        final row = (await isar.songCollections.get(1))!;
-        expect(row.path, '/moved/1.mp3');
-        expect(row.isFavorite, isTrue);
-        expect(row.playCount, 1);
-        expect(row.isHidden, isTrue);
-        expect(row.addedAt, addedAt);
-      },
-      skip: skip,
-    );
+      final row = (await isar.songCollections.get(1))!;
+      expect(row.path, '/moved/1.mp3');
+      expect(row.isFavorite, isTrue);
+      expect(row.playCount, 1);
+      expect(row.addedAt, addedAt);
+    }, skip: skip);
 
     test('deletes songs everywhere: library, recents and playlists', () async {
       await storage.applyChanges(
@@ -191,33 +185,6 @@ void main() {
 
   test('watchFavorite reports false for a song that is gone', () async {
     expect(await storage.watchFavorite(404).first, isFalse);
-  }, skip: skip);
-
-  test('getAllSongIds includes hidden songs', () async {
-    await storage.applyChanges(
-      upserts: [song(1), song(2)],
-      deletedIds: const [],
-      checkpoint: 'cp',
-    );
-    await storage.setHidden(2, hidden: true);
-
-    expect(await storage.getAllSongIds(), {1, 2});
-    expect(await storage.countSongs(), 1); // visible only
-  }, skip: skip);
-
-  test('unhideAll brings back songs hidden by older versions', () async {
-    await storage.applyChanges(
-      upserts: [song(1), song(2), song(3)],
-      deletedIds: const [],
-      checkpoint: 'cp',
-    );
-    await storage.setHiddenMany([1, 3], hidden: true);
-    expect(await storage.countSongs(), 1);
-
-    await storage.unhideAll();
-
-    expect(await storage.countSongs(), 3);
-    expect(await storage.watchHiddenSongs().first, isEmpty);
   }, skip: skip);
 
   test('a full sync saves its checkpoint too', () async {

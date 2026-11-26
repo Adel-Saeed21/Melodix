@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:melodix/core/database/collections/playlist_collection.dart';
-import 'package:melodix/core/database/collections/song_collection.dart';
 import 'package:melodix/core/database/music_local_storage.dart';
 import 'package:melodix/core/database/song_library_update.dart';
 import 'package:melodix/core/database/playlist_local_storage.dart';
@@ -23,7 +22,6 @@ import 'package:melodix/features/music_library/data/sync/full_library_scan.dart'
 import 'package:melodix/features/music_library/data/sync/incremental_library_scan.dart';
 import 'package:melodix/core/entities/library_permission.dart';
 import 'package:melodix/features/music_library/domain/entities/library_update.dart';
-import 'package:melodix/features/music_library/domain/entities/playlist.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../fixtures.dart';
@@ -77,11 +75,7 @@ void main() {
       musicService: musicService,
       mapper: mapper,
     );
-    playlistRepo = PlaylistRepositoryImpl(
-      storage: playlists,
-      songStorage: storage,
-      mapper: mapper,
-    );
+    playlistRepo = PlaylistRepositoryImpl(storage: playlists, mapper: mapper);
     artwork = ArtworkRepositoryImpl(musicService);
     permissionRepo = LibraryPermissionRepositoryImpl(permissions);
     registerFallbackValue(<LocalSong>[]);
@@ -347,8 +341,6 @@ void main() {
       when(() => playlists.watchAllPlaylists()).thenAnswer(
         (_) => Stream.value([row, PlaylistCollection.create('Empty')..id = 5]),
       );
-      when(() => storage.watchHiddenSongs())
-          .thenAnswer((_) => Stream.value(const []));
 
       final result = await playlistRepo.watchPlaylists().first;
 
@@ -358,41 +350,37 @@ void main() {
       expect(result.last.artworkSongId, isNull);
     });
 
-    test('hidden songs are left out of the count and the cover', () async {
-      final row = PlaylistCollection.create('Mix')..songIds = [8, 9, 10];
-      row.id = 4;
-      when(() => playlists.watchAllPlaylists())
-          .thenAnswer((_) => Stream.value([row]));
-      final hidden = StreamController<List<SongCollection>>();
-      when(() => storage.watchHiddenSongs()).thenAnswer((_) => hidden.stream);
+    test('watchPlaylists re-emits when the playlists change', () async {
+      final rows = StreamController<List<PlaylistCollection>>();
+      when(() => playlists.watchAllPlaylists()).thenAnswer((_) => rows.stream);
 
-      final emitted = <Playlist>[];
+      final emitted = <int>[];
       final sub = playlistRepo.watchPlaylists().listen(
-        (p) => emitted.add(p.single),
+        (p) => emitted.add(p.single.songCount),
       );
-      hidden.add([songRow(8)]);
+      rows.add([
+        PlaylistCollection.create('Mix')..songIds = [8],
+      ]);
       await pumpEventQueue();
-      // Unhiding re-emits with the song counted again.
-      hidden.add(const []);
+      rows.add([
+        PlaylistCollection.create('Mix')..songIds = [8, 9],
+      ]);
       await pumpEventQueue();
 
-      expect(emitted.map((p) => p.songCount), [2, 3]);
-      expect(emitted.map((p) => p.artworkSongId), [9, 8]);
+      expect(emitted, [1, 2]);
       await sub.cancel();
-      await hidden.close();
+      await rows.close();
     });
 
-    test('getPlaylists leaves hidden songs out too', () async {
+    test('getPlaylists maps the saved playlists', () async {
       final row = PlaylistCollection.create('Mix')..songIds = [8, 9];
       row.id = 4;
       when(() => playlists.getAllPlaylists()).thenAnswer((_) async => [row]);
-      when(() => storage.watchHiddenSongs())
-          .thenAnswer((_) => Stream.value([songRow(8), songRow(9)]));
 
       final result = (await playlistRepo.getPlaylists()).getOrElse(() => []);
 
-      expect(result.single.songCount, 0);
-      expect(result.single.artworkSongId, isNull);
+      expect(result.single.songCount, 2);
+      expect(result.single.artworkSongId, 8);
     });
 
     test('getPlaylistSongs returns entities in order', () async {

@@ -174,20 +174,8 @@ void main() {
         );
       }
 
-      final hide = <Sample>[];
-      for (var i = 0; i < runs; i++) {
-        final id = 7000 + i;
-        hide.add(
-          await measure(
-            () => storage.setHiddenMany([id], hidden: true),
-            (s) => !s.songs.any((x) => x.id == id),
-          ),
-        );
-      }
-
       report('play (recordPlay)', play);
       report('favourite toggle', favourite);
-      report('hide song', hide);
     },
     skip: skip,
     timeout: const Timeout(Duration(minutes: 3)),
