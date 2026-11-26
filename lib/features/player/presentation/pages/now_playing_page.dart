@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -18,7 +20,12 @@ import 'package:melodix/features/player/presentation/utils/player_rebuild_stats.
 import 'package:melodix/features/player/presentation/widgets/marquee_text.dart';
 import 'package:melodix/features/player/presentation/widgets/player_controls.dart';
 import 'package:melodix/features/player/presentation/widgets/player_progress.dart';
-import 'package:melodix/features/player/presentation/widgets/player_queue_sheet.dart';
+import 'package:melodix/core/config/dependency_injection/get_it.dart';
+import 'package:melodix/features/lyrics/domain/repositories/lyrics_repository.dart';
+import 'package:melodix/features/lyrics/presentation/logic/lyrics_cubit.dart';
+import 'package:melodix/features/lyrics/presentation/widgets/lyrics_view.dart';
+import 'package:melodix/features/player/presentation/widgets/now_playing_actions.dart';
+import 'package:melodix/features/player/presentation/widgets/now_playing_backdrop.dart';
 
 /// Full player: large cover, song info, seek bar and all controls. Reads the
 /// same [PlayerCubit] as the mini player, so both always match.
@@ -31,6 +38,9 @@ class NowPlayingPage extends StatefulWidget {
 
 class _NowPlayingPageState extends State<NowPlayingPage> {
   bool _closing = false;
+
+  /// Lyrics in place of the cover.
+  bool _showLyrics = false;
 
   /// Leaves the page once if nothing is loaded anymore.
   void _closeOnce() {
@@ -47,16 +57,31 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
       // Pull the page down (or tap ⌄) to go back to the mini player.
       child: DragToDismiss(
         onDismiss: () => Navigator.of(context).maybePop(),
-        child: Scaffold(
-          body: SafeArea(
-            child: BlocBuilder<PlayerCubit, NowPlaying>(
+        child: BlocProvider(
+          // Made the first time lyrics are shown.
+          create: (_) => LyricsCubit(getIt<LyricsRepository>()),
+          child: Scaffold(
+            body: BlocBuilder<PlayerCubit, NowPlaying>(
               builder: (context, state) {
                 final song = state.currentSong;
                 if (song == null) {
                   _closeOnce();
                   return const SizedBox.shrink();
                 }
-                return _NowPlayingBody(state: state, song: song);
+                return Stack(
+                  children: [
+                    Positioned.fill(child: NowPlayingBackdrop(songId: song.id)),
+                    SafeArea(
+                      child: _NowPlayingBody(
+                        state: state,
+                        song: song,
+                        showLyrics: _showLyrics,
+                        onLyrics: () =>
+                            setState(() => _showLyrics = !_showLyrics),
+                      ),
+                    ),
+                  ],
+                );
               },
             ),
           ),
@@ -67,10 +92,17 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
 }
 
 class _NowPlayingBody extends StatelessWidget {
-  const _NowPlayingBody({required this.state, required this.song});
+  const _NowPlayingBody({
+    required this.state,
+    required this.song,
+    required this.showLyrics,
+    required this.onLyrics,
+  });
 
   final NowPlaying state;
   final Song song;
+  final bool showLyrics;
+  final VoidCallback onLyrics;
 
   @override
   Widget build(BuildContext context) {
@@ -169,23 +201,29 @@ class _NowPlayingBody extends StatelessWidget {
         ),
       ],
     );
-    final queueButton = TextButton.icon(
-      onPressed: () => showPlayerQueue(context),
-      icon: Icon(
-        Icons.queue_music_rounded,
-        color: onSurface.withValues(alpha: 0.7),
-      ),
-      label: Text(
-        AppStrings.queue,
-        style: TextStyle(color: onSurface.withValues(alpha: 0.7)),
-      ),
+    final actionsRow = NowPlayingActions(
+      showingLyrics: showLyrics,
+      onLyrics: onLyrics,
     );
-    Widget cover(BoxConstraints constraints) => Center(
-      child: SongArtwork(
-        key: ValueKey(song.id),
-        songId: song.id,
-        size: constraints.biggest.shortestSide,
-      ),
+    if (showLyrics) {
+      // The lyrics follow the song playing (after this frame: loading
+      // them changes state).
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) unawaited(context.read<LyricsCubit>().show(song));
+      });
+    }
+    Widget cover(BoxConstraints constraints) => AnimatedSwitcher(
+      duration: const Duration(milliseconds: 300),
+      child: showLyrics
+          ? const LyricsView(key: ValueKey('lyrics'))
+          : Center(
+              key: const ValueKey('cover'),
+              child: SongArtwork(
+                key: ValueKey(song.id),
+                songId: song.id,
+                size: constraints.biggest.shortestSide,
+              ),
+            ),
     );
 
     if (landscape) {
@@ -216,7 +254,7 @@ class _NowPlayingBody extends StatelessWidget {
                       const PlaybackTimesRow(),
                       verticalSpace(8),
                       controls,
-                      queueButton,
+                      actionsRow,
                     ],
                   ),
                 ),
@@ -245,7 +283,7 @@ class _NowPlayingBody extends StatelessWidget {
           verticalSpace(12),
           controls,
           verticalSpace(4),
-          queueButton,
+          actionsRow,
           verticalSpace(8),
         ],
       ),

@@ -9,21 +9,20 @@ import 'package:melodix/features/music_library/domain/usecases/delete_playlist_u
 import 'package:melodix/features/music_library/domain/usecases/rename_playlist_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/toggle_playlist_favorite_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/watch_playlists_usecase.dart';
+import 'package:melodix/features/music_library/presentation/logic/action_feedback.dart';
 
 class PlaylistsState extends Equatable {
   const PlaylistsState({
     this.isLoading = true,
     this.playlists = const [],
-    this.message,
-    this.messageSequence = 0,
+    this.feedback,
   });
 
   final bool isLoading;
   final List<Playlist> playlists;
 
-  final String? message;
-
-  final int messageSequence;
+  /// The latest action's message (null until the first action).
+  final ActionFeedback? feedback;
 
   Playlist? byId(int id) {
     for (final playlist in playlists) {
@@ -35,22 +34,21 @@ class PlaylistsState extends Equatable {
   PlaylistsState copyWith({
     bool? isLoading,
     List<Playlist>? playlists,
-    String? message,
-    int? messageSequence,
+    ActionFeedback? feedback,
   }) {
     return PlaylistsState(
       isLoading: isLoading ?? this.isLoading,
       playlists: playlists ?? this.playlists,
-      message: message ?? this.message,
-      messageSequence: messageSequence ?? this.messageSequence,
+      feedback: feedback ?? this.feedback,
     );
   }
 
   @override
-  List<Object?> get props => [isLoading, playlists, message, messageSequence];
+  List<Object?> get props => [isLoading, playlists, feedback];
 }
 
-class PlaylistsCubit extends Cubit<PlaylistsState> {
+class PlaylistsCubit extends Cubit<PlaylistsState>
+    with ActionFeedbackReporter<PlaylistsState> {
   PlaylistsCubit({
     required WatchPlaylistsUseCase watchPlaylists,
     required this._createPlaylist,
@@ -61,6 +59,7 @@ class PlaylistsCubit extends Cubit<PlaylistsState> {
     _subscription = watchPlaylists().listen(
       (playlists) =>
           emit(state.copyWith(isLoading: false, playlists: playlists)),
+      onError: _onWatchError,
     );
   }
 
@@ -70,45 +69,47 @@ class PlaylistsCubit extends Cubit<PlaylistsState> {
   final TogglePlaylistFavoriteUseCase _toggleFavorite;
   late final StreamSubscription<List<Playlist>> _subscription;
 
+  @override
+  PlaylistsState withFeedback(ActionFeedback feedback) =>
+      state.copyWith(feedback: feedback);
+
+  /// Keeps the playlists already shown (or stops the spinner) and tells
+  /// the user, instead of an unhandled stream error.
+  void _onWatchError(Object error, StackTrace stackTrace) {
+    addError(error, stackTrace);
+    if (isClosed) return;
+    if (state.isLoading) emit(state.copyWith(isLoading: false));
+    report(AppStrings.playlistsLoadFailed, isError: true);
+  }
+
   Future<void> create(String name) async {
     final trimmed = name.trim();
-    final result = await _createPlaylist(CreatePlaylistParams(trimmed));
-    _report(
-      result.fold((f) => f.message, (_) => AppStrings.playlistCreated(trimmed)),
+    reportResult(
+      await _createPlaylist(CreatePlaylistParams(trimmed)),
+      (_) => AppStrings.playlistCreated(trimmed),
     );
   }
 
   Future<void> rename(Playlist playlist, String name) async {
-    final result = await _renamePlaylist(
-      RenamePlaylistParams(playlist.id, name.trim()),
+    reportResult(
+      await _renamePlaylist(RenamePlaylistParams(playlist.id, name.trim())),
+      (_) => AppStrings.playlistRenamed,
     );
-    _report(result.fold((f) => f.message, (_) => AppStrings.playlistRenamed));
   }
 
   Future<void> delete(Playlist playlist) async {
-    final result = await _deletePlaylist(playlist.id);
-    _report(result.fold((f) => f.message, (_) => AppStrings.playlistDeleted));
-  }
-
-  Future<void> toggleFavorite(Playlist playlist) async {
-    final result = await _toggleFavorite(playlist.id);
-    _report(
-      result.fold(
-        (f) => f.message,
-        (isFavorite) => isFavorite
-            ? AppStrings.playlistAddedToFavourites
-            : AppStrings.playlistRemovedFromFavourites,
-      ),
+    reportResult(
+      await _deletePlaylist(playlist.id),
+      (_) => AppStrings.playlistDeleted,
     );
   }
 
-  void _report(String message) {
-    if (isClosed) return;
-    emit(
-      state.copyWith(
-        message: message,
-        messageSequence: state.messageSequence + 1,
-      ),
+  Future<void> toggleFavorite(Playlist playlist) async {
+    reportResult(
+      await _toggleFavorite(playlist.id),
+      (isFavorite) => isFavorite
+          ? AppStrings.playlistAddedToFavourites
+          : AppStrings.playlistRemovedFromFavourites,
     );
   }
 

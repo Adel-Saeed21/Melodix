@@ -2,46 +2,48 @@ import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
-import 'package:melodix/core/config/dependency_injection/get_it.dart';
 import 'package:melodix/features/music_library/domain/entities/album.dart';
-import 'package:melodix/features/music_library/domain/usecases/get_album_songs_usecase.dart';
+import 'package:melodix/features/music_library/domain/entities/catalog_grouping.dart';
+import 'package:melodix/features/music_library/presentation/logic/music_library_bloc.dart';
 import 'package:melodix/features/music_library/presentation/logic/song_list_cubit.dart';
-import 'package:melodix/features/music_library/presentation/utils/duration_format.dart';
+import 'package:melodix/core/utils/duration_format.dart';
 import 'package:melodix/features/music_library/presentation/widgets/collection_header.dart';
+import 'package:melodix/features/music_library/presentation/widgets/collection_page_scaffold.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_list_body.dart';
-import 'package:melodix/features/player/presentation/widgets/mini_player_bar.dart';
 
+/// An album's songs, live from the library: songs hidden, deleted or
+/// added elsewhere show up here (and in the header) right away.
 class AlbumDetailsPage extends StatelessWidget {
   const AlbumDetailsPage({super.key, required this.album});
 
+  /// The album as it was when opened; its live songs replace it.
   final Album album;
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          SongListCubit(() => getIt<GetAlbumSongsUseCase>()(album))..load(),
-      child: Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          surfaceTintColor: Colors.transparent,
+      create: (context) => SongListCubit.live(
+        context.read<MusicLibraryBloc>().librarySongs().map(
+          (songs) => CatalogGrouping.albumSongs(songs, album),
         ),
-        // Keep the player controls available on this page too.
-        bottomNavigationBar: const MiniPlayerBar(),
-        body: SafeArea(
-          top: false,
-          child: SongListBody(
-            showGoToAlbum: false,
-            queueTitle: album.title,
-            header: CollectionHeader(
-              artworkSongId: album.artworkSongId,
-              title: album.title,
-              subtitle: album.artist,
+      ),
+      child: CollectionPageScaffold(
+        body: SongListBody(
+          showGoToAlbum: false,
+          queueTitle: album.title,
+          header: (songs) {
+            final live = songs.isEmpty
+                ? album
+                : CatalogGrouping.albums(songs).single;
+            return CollectionHeader(
+              artworkSongId: live.artworkSongId,
+              title: live.title,
+              subtitle: live.artist,
               details:
-                  '${AppStrings.songsCount(album.songCount)} · '
-                  '${formatDuration(album.duration)}',
-            ),
-          ),
+                  '${AppStrings.songsCount(live.songCount)} · '
+                  '${formatDuration(live.duration)}',
+            );
+          },
         ),
       ),
     );

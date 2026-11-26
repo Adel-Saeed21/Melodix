@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/service/media_session_guest.dart';
 import 'package:melodix/core/service/local_song_builder.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/music_library/domain/usecases/toggle_song_favorite_usecase.dart';
@@ -34,16 +35,24 @@ import 'package:melodix/features/player/domain/repositories/player_repository.da
 /// shuffle are custom session actions: Android 13+ shows them in the two
 /// extra slots of its media player (notification, lock screen, Quick
 /// Settings), and they follow changes made anywhere in the app.
+///
+/// **Video.** While a [MediaSessionGuest] (the video) owns the session, the
+/// same controls show and drive it instead: play / pause, previous / next
+/// and its own back / forward jumps. When the video is closed (or music
+/// starts), the music gets them back as they were.
 class MelodixAudioHandler extends BaseAudioHandler {
   MelodixAudioHandler(
     this._player, {
     required this._artwork,
     required this._watchFavorite,
     required this._toggleFavorite,
+    MediaSessionGuest? guest,
     DateTime Function()? clock,
-  }) : _clock = clock ?? DateTime.now {
+  }) : _guest = guest,
+       _clock = clock ?? DateTime.now {
     _subscription = _player.watch().listen(_onNowPlaying);
     _progressSubscription = _player.watchProgress().listen(_onProgress);
+    _guestSubscription = guest?.changes.listen(_onGuest);
   }
 
   final PlayerRepository _player;
@@ -51,7 +60,16 @@ class MelodixAudioHandler extends BaseAudioHandler {
   final WatchSongFavoriteUseCase _watchFavorite;
   final ToggleSongFavoriteUseCase _toggleFavorite;
   final DateTime Function() _clock;
+  final MediaSessionGuest? _guest;
   late final StreamSubscription<NowPlaying> _subscription;
+  StreamSubscription<GuestMedia?>? _guestSubscription;
+
+  /// What was last sent for the guest, and when; null while the music
+  /// owns the session.
+  ({GuestMedia media, DateTime time})? _guestSent;
+
+  /// The guest's state while it owns the session.
+  GuestMedia? get _guestMedia => _guest?.current;
   late final StreamSubscription<PlaybackProgress> _progressSubscription;
 
   /// Where playback is in the song (from the progress stream).
@@ -75,26 +93,45 @@ class MelodixAudioHandler extends BaseAudioHandler {
   /// Custom action names (sent back by the system when tapped).
   static const String favoriteAction = 'melodix.favorite';
   static const String shuffleAction = 'melodix.shuffle';
+  static const String rewindAction = 'melodix.rewind';
+  static const String forwardAction = 'melodix.forward';
 
   // Commands from the system
 
   @override
   Future<void> play() {
+    if (_guestMedia != null) return _guest!.play();
     _stopped = false;
     return _player.play();
   }
 
   @override
-  Future<void> pause() => _player.pause();
+  Future<void> pause() =>
+      _guestMedia != null ? _guest!.pause() : _player.pause();
 
   @override
-  Future<void> seek(Duration position) => _player.seek(position);
+  Future<void> seek(Duration position) =>
+      _guestMedia != null ? _guest!.seek(position) : _player.seek(position);
 
   @override
-  Future<void> skipToNext() => _player.next();
+  Future<void> skipToNext() =>
+      _guestMedia != null ? _guest!.next() : _player.next();
 
   @override
-  Future<void> skipToPrevious() => _player.previous();
+  Future<void> skipToPrevious() =>
+      _guestMedia != null ? _guest!.previous() : _player.previous();
+
+  /// Headsets and cars with jump buttons: the video's back / forward (a
+  /// song has none).
+  @override
+  Future<void> fastForward() async {
+    if (_guestMedia != null) await _guest!.fastForward();
+  }
+
+  @override
+  Future<void> rewind() async {
+    if (_guestMedia != null) await _guest!.rewind();
+  }
 
   @override
   Future<void> skipToQueueItem(int index) {
@@ -121,6 +158,15 @@ class MelodixAudioHandler extends BaseAudioHandler {
     String name, [
     Map<String, dynamic>? extras,
   ]) async {
+    if (_guestMedia != null) {
+      switch (name) {
+        case rewindAction:
+          await _guest!.rewind();
+        case forwardAction:
+          await _guest!.fastForward();
+      }
+      return;
+    }
     switch (name) {
       case favoriteAction:
         await _toggleCurrentFavorite();
@@ -133,6 +179,9 @@ class MelodixAudioHandler extends BaseAudioHandler {
   /// paused). The song and position stay, ready to resume in the app.
   @override
   Future<void> stop() async {
+    // The video's notification swiped away: it pauses (it stays open in
+    // the app).
+    if (_guestMedia != null) await _guest!.pause();
     await _player.pause();
     _stopped = true;
     _send(_player.current, force: true);
@@ -148,6 +197,7 @@ class MelodixAudioHandler extends BaseAudioHandler {
 
   /// Stops listening (tests; the app keeps one handler for its life).
   Future<void> dispose() async {
+    await _guestSubscription?.cancel();
     await _favoriteSubscription?.cancel();
     await _progressSubscription.cancel();
     await _subscription.cancel();
@@ -202,6 +252,8 @@ class MelodixAudioHandler extends BaseAudioHandler {
   }
 
   void _send(NowPlaying state, {bool force = false}) {
+    // The video has the controls: the music waits its turn.
+    if (_guestMedia != null) return;
     final song = _stopped ? null : state.currentSong;
     _followFavorite(song);
     _sendMediaItem(song, state.duration);
@@ -267,6 +319,95 @@ class MelodixAudioHandler extends BaseAudioHandler {
       shuffleMode: state.shuffle
           ? AudioServiceShuffleMode.all
           : AudioServiceShuffleMode.none,
+    );
+  }
+
+  // The guest (video)
+
+  void _onGuest(GuestMedia? media) {
+    if (media == null) {
+      if (_guestSent == null) return;
+      // Back to the music, exactly as it is now.
+      _guestSent = null;
+      _sent = null;
+      _send(_player.current, force: true);
+      return;
+    }
+    _sendGuest(media);
+  }
+
+  /// Like [_send], for the guest: details when they change, the state
+  /// when it changes or the position jumps.
+  void _sendGuest(GuestMedia media) {
+    final now = _clock();
+    final previous = _guestSent;
+    if (previous?.media.id != media.id ||
+        previous?.media.title != media.title ||
+        previous?.media.duration != media.duration) {
+      _sendGuestItem(media);
+    }
+    if (previous != null && previous.media.sameApartFromPosition(media)) {
+      final last = previous.media;
+      final expected = last.playing
+          ? last.position + now.difference(previous.time)
+          : last.position;
+      if ((media.position - expected).abs() <= _driftTolerance) return;
+    }
+    _guestSent = (media: media, time: now);
+    playbackState.add(
+      PlaybackState(
+        // Android 13+: back in the slot left of "previous", forward right
+        // of "next" (the music's ♥ and shuffle slots).
+        controls: [
+          _rewindControl,
+          _previous,
+          if (media.playing) _pause else _play,
+          _next,
+          _forwardControl,
+        ],
+        systemActions: const {
+          MediaAction.seek,
+          MediaAction.fastForward,
+          MediaAction.rewind,
+        },
+        androidCompactActionIndices: const [0, 1, 2],
+        processingState: media.loading
+            ? AudioProcessingState.loading
+            : media.completed
+            ? AudioProcessingState.completed
+            : AudioProcessingState.ready,
+        playing: media.playing,
+        updatePosition: media.position,
+        updateTime: now,
+      ),
+    );
+  }
+
+  void _sendGuestItem(GuestMedia media) {
+    final current = mediaItem.value;
+    final sameItem = current?.id == media.id;
+    mediaItem.add(
+      MediaItem(
+        id: media.id,
+        title: media.title,
+        artist: media.subtitle,
+        duration: media.duration,
+        // Keep the picture while only the duration is corrected.
+        artUri: sameItem ? current?.artUri : null,
+        displayTitle: media.title,
+        displaySubtitle: media.subtitle,
+      ),
+    );
+    if (sameItem) return;
+    final guest = _guest!;
+    unawaited(
+      _artwork.uriForKey(media.id, () => guest.artwork(media.id)).then((uri) {
+        final latest = mediaItem.value;
+        // Only if this is still what's showing.
+        if (uri != null && latest != null && latest.id == media.id) {
+          mediaItem.add(latest.copyWith(artUri: uri));
+        }
+      }),
     );
   }
 
@@ -358,6 +499,19 @@ class MelodixAudioHandler extends BaseAudioHandler {
     androidIcon: 'drawable/ic_media_next',
     label: AppStrings.next,
     action: MediaAction.skipToNext,
+  );
+
+  static const _rewindControl = MediaControl(
+    androidIcon: 'drawable/ic_media_rewind',
+    label: AppStrings.mediaRewind,
+    action: MediaAction.custom,
+    customAction: CustomMediaAction(name: rewindAction),
+  );
+  static const _forwardControl = MediaControl(
+    androidIcon: 'drawable/ic_media_forward',
+    label: AppStrings.mediaForward,
+    action: MediaAction.custom,
+    customAction: CustomMediaAction(name: forwardAction),
   );
 
   static MediaControl _favoriteControl(bool favorite) => MediaControl.custom(

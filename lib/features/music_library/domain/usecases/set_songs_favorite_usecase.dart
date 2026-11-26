@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:melodix/core/errors/failures.dart';
 import 'package:melodix/core/usecase/usecase.dart';
-import 'package:melodix/features/music_library/domain/repositories/music_library_repository.dart';
+import 'package:melodix/features/music_library/domain/repositories/song_repository.dart';
 
 class SetSongsFavoriteParams {
   const SetSongsFavoriteParams(this.songIds, {required this.favorite});
@@ -13,7 +13,7 @@ class SetSongsFavoriteParams {
 class SetSongsFavoriteUseCase implements UseCase<Unit, SetSongsFavoriteParams> {
   const SetSongsFavoriteUseCase(this.repository);
 
-  final MusicLibraryRepository repository;
+  final SongRepository repository;
 
   @override
   Future<Either<Failure, Unit>> call(SetSongsFavoriteParams params) =>

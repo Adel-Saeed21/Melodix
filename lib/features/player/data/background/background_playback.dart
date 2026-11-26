@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:audio_service/audio_service.dart';
 import 'package:melodix/core/config/theme/app_colors.dart';
+import 'package:melodix/core/service/media_session_guest.dart';
 import 'package:melodix/features/music_library/domain/repositories/artwork_repository.dart';
 import 'package:melodix/features/music_library/domain/usecases/toggle_song_favorite_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/watch_song_favorite_usecase.dart';
@@ -25,6 +26,7 @@ Future<void> startBackgroundPlayback({
   required ArtworkRepository artwork,
   required WatchSongFavoriteUseCase watchFavorite,
   required ToggleSongFavoriteUseCase toggleFavorite,
+  MediaSessionGuest? guest,
 }) async {
   try {
     await AudioService.init(
@@ -36,15 +38,19 @@ Future<void> startBackgroundPlayback({
             p.join((await getTemporaryDirectory()).path, 'now_playing_art'),
           ),
           fallbackCover: renderFallbackCover,
+          // The Melodix finish on every cover: the system player (lock
+          // screen, notification) takes its colours from it.
+          brand: renderBrandedCover,
         ),
         watchFavorite: watchFavorite,
         toggleFavorite: toggleFavorite,
+        guest: guest,
       ),
       config: const AudioServiceConfig(
         androidNotificationChannelId: 'com.melodix.playback',
-        androidNotificationChannelName: 'Playback',
+        androidNotificationChannelName: 'Melodix playback',
         androidNotificationChannelDescription:
-            'The song playing, with playback controls',
+            'The song or video playing, with playback controls',
         // The app's music note in the status bar and the notification header,
         // tinted with the app's green where Android supports it (12 and
         // below; Android 13+ colours the player from the cover instead).

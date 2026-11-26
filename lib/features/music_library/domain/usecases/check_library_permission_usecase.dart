@@ -1,10 +1,10 @@
-import 'package:melodix/features/music_library/domain/entities/library_permission.dart';
-import 'package:melodix/features/music_library/domain/repositories/music_library_repository.dart';
+import 'package:melodix/core/entities/library_permission.dart';
+import 'package:melodix/features/music_library/domain/repositories/library_permission_repository.dart';
 
 class CheckLibraryPermissionUseCase {
   const CheckLibraryPermissionUseCase(this.repository);
 
-  final MusicLibraryRepository repository;
+  final LibraryPermissionRepository repository;
 
   Future<LibraryPermission> call() => repository.checkPermission();
 }

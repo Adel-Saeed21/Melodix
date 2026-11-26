@@ -32,7 +32,7 @@ class Song extends Equatable {
 
   final bool isFavorite;
 
-  /// How many times the song was played (see `RecordSongPlayUseCase`).
+  /// How many times the song was played (counted by the player when a song starts).
   final int playCount;
 
   /// When the file arrived on the device; null if unknown.

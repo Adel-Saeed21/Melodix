@@ -1,16 +1,19 @@
 import 'dart:async';
 
+import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:melodix/core/errors/failures.dart';
 import 'package:melodix/core/service/app_lifecycle_service.dart';
-import 'package:melodix/core/usecase/usecase.dart';
-import 'package:melodix/features/music_library/domain/entities/library_permission.dart';
+import 'package:melodix/core/entities/library_permission.dart';
+import 'package:melodix/features/music_library/domain/entities/library_sync_result.dart';
+import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/music_library/domain/usecases/check_library_permission_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/get_last_library_sync_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/open_library_settings_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/request_library_permission_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/sync_music_library_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/watch_library_songs_usecase.dart';
+import 'package:melodix/features/music_library/domain/usecases/watch_library_sync_stage_usecase.dart';
 import 'package:melodix/features/music_library/presentation/logic/music_library_event.dart';
 import 'package:melodix/features/music_library/presentation/logic/music_library_state.dart';
 
@@ -29,6 +32,7 @@ class MusicLibraryBloc extends Bloc<MusicLibraryEvent, MusicLibraryState> {
     required this._syncLibrary,
     required this._getLastSync,
     required this._watchSongs,
+    required this._watchSyncStage,
     required this._lifecycle,
     required this._openSettings,
     this.resumeSyncInterval = const Duration(minutes: 10),
@@ -39,6 +43,7 @@ class MusicLibraryBloc extends Bloc<MusicLibraryEvent, MusicLibraryState> {
     on<MusicLibraryOpenSettingsRequested>((event, emit) => _openSettings());
     on<MusicLibraryAppResumed>(_onAppResumed);
     on<MusicLibrarySongsChanged>(_onSongsChanged);
+    on<MusicLibrarySyncStageReached>(_onSyncStageReached);
   }
 
   final CheckLibraryPermissionUseCase _checkPermission;
@@ -46,6 +51,7 @@ class MusicLibraryBloc extends Bloc<MusicLibraryEvent, MusicLibraryState> {
   final SyncMusicLibraryUseCase _syncLibrary;
   final GetLastLibrarySyncUseCase _getLastSync;
   final WatchLibrarySongsUseCase _watchSongs;
+  final WatchLibrarySyncStageUseCase _watchSyncStage;
   final AppLifecycleService _lifecycle;
   final OpenLibrarySettingsUseCase _openSettings;
 
@@ -55,13 +61,26 @@ class MusicLibraryBloc extends Bloc<MusicLibraryEvent, MusicLibraryState> {
 
   StreamSubscription<void>? _songsSubscription;
   StreamSubscription<void>? _resumeSubscription;
+  StreamSubscription<void>? _stageSubscription;
+
+  /// Syncs in progress. A forced refresh may run after a background sync,
+  /// so [MusicLibraryState.isSyncing] stays true until both finish.
+  int _syncsRunning = 0;
+
+  /// A forced rescan is running or waiting; another one adds nothing.
+  bool _forcedSyncPending = false;
 
   Future<void> _onStarted(
     MusicLibraryStarted event,
     Emitter<MusicLibraryState> emit,
   ) async {
     _songsSubscription ??= _watchSongs().listen(
-      (songs) => add(MusicLibrarySongsChanged(songs)),
+      (update) => add(MusicLibrarySongsChanged(update)),
+      // A failed reload keeps the songs shown; report it, don't crash.
+      onError: addError,
+    );
+    _stageSubscription ??= _watchSyncStage().listen(
+      (stage) => add(MusicLibrarySyncStageReached(stage)),
     );
     _resumeSubscription ??= _lifecycle.onResumed.listen(
       (_) => add(const MusicLibraryAppResumed()),
@@ -101,7 +120,8 @@ class MusicLibraryBloc extends Bloc<MusicLibraryEvent, MusicLibraryState> {
       emit(state.copyWith(status: MusicLibraryStatus.permissionRequired));
       return;
     }
-    await _sync(emit);
+    // Smart unless a full re-read was asked for explicitly.
+    await _sync(emit, force: event.full);
   }
 
   Future<void> _onAppResumed(
@@ -126,37 +146,71 @@ class MusicLibraryBloc extends Bloc<MusicLibraryEvent, MusicLibraryState> {
     if (!wasGranted || isStale) await _sync(emit);
   }
 
+  /// Progress of the running sync (ignored once it's over: a stage can't
+  /// outlive its sync).
+  void _onSyncStageReached(
+    MusicLibrarySyncStageReached event,
+    Emitter<MusicLibraryState> emit,
+  ) {
+    if (state.isSyncing) emit(state.copyWith(syncStage: event.stage));
+  }
+
+  /// Applies a library update. Single-song edits (play count, favourite,
+  /// hiding) replace or drop just those songs: no full reload, and no
+  /// emission at all if nothing visible changed.
   void _onSongsChanged(
     MusicLibrarySongsChanged event,
     Emitter<MusicLibraryState> emit,
   ) {
+    final songs = event.update.applyTo(state.songs);
+    if (songs == null) return;
     final becameReady =
-        event.songs.isNotEmpty &&
+        songs.isNotEmpty &&
         (state.status == MusicLibraryStatus.initial ||
             state.status == MusicLibraryStatus.failure);
     emit(
       state.copyWith(
-        songs: event.songs,
+        songs: songs,
         status: becameReady ? MusicLibraryStatus.ready : null,
       ),
     );
   }
 
-  Future<void> _sync(Emitter<MusicLibraryState> emit) async {
-    if (state.isSyncing) return;
+  /// [force] scans even if the device reports no changes (manual refresh).
+  ///
+  /// A normal sync is skipped while another sync runs (that one covers it).
+  /// A forced sync is not: the user asked for a full rescan, so it runs
+  /// after the current one (the repository queues it).
+  Future<void> _sync(
+    Emitter<MusicLibraryState> emit, {
+    bool force = false,
+  }) async {
+    if (force ? _forcedSyncPending : _syncsRunning > 0) return;
 
-    final isFirstScan = state.lastSyncedAt == null && state.songs.isEmpty;
-    emit(
-      state.copyWith(
-        status: isFirstScan
-            ? MusicLibraryStatus.scanning
-            : MusicLibraryStatus.ready,
-        isSyncing: true,
-        clearError: true,
-      ),
-    );
+    if (_syncsRunning == 0) {
+      final isFirstScan = state.lastSyncedAt == null && state.songs.isEmpty;
+      emit(
+        state.copyWith(
+          status: isFirstScan
+              ? MusicLibraryStatus.scanning
+              : MusicLibraryStatus.ready,
+          isSyncing: true,
+          clearSyncStage: true,
+          clearError: true,
+        ),
+      );
+    }
 
-    final result = await _syncLibrary(const NoParams());
+    _syncsRunning++;
+    if (force) _forcedSyncPending = true;
+    final Either<Failure, LibrarySyncResult> result;
+    try {
+      result = await _syncLibrary(SyncLibraryParams(force: force));
+    } finally {
+      _syncsRunning--;
+      if (force) _forcedSyncPending = false;
+    }
+    final isSyncing = _syncsRunning > 0;
 
     result.fold(
       (failure) {
@@ -167,7 +221,8 @@ class MusicLibraryBloc extends Bloc<MusicLibraryEvent, MusicLibraryState> {
               permission: failure.permanentlyDenied
                   ? LibraryPermission.permanentlyDenied
                   : LibraryPermission.denied,
-              isSyncing: false,
+              isSyncing: isSyncing,
+              clearSyncStage: !isSyncing,
               errorMessage: failure.message,
             ),
           );
@@ -178,7 +233,8 @@ class MusicLibraryBloc extends Bloc<MusicLibraryEvent, MusicLibraryState> {
             status: state.songs.isEmpty
                 ? MusicLibraryStatus.failure
                 : MusicLibraryStatus.ready,
-            isSyncing: false,
+            isSyncing: isSyncing,
+            clearSyncStage: !isSyncing,
             errorMessage: failure.message,
           ),
         );
@@ -186,7 +242,8 @@ class MusicLibraryBloc extends Bloc<MusicLibraryEvent, MusicLibraryState> {
       (sync) => emit(
         state.copyWith(
           status: MusicLibraryStatus.ready,
-          isSyncing: false,
+          isSyncing: isSyncing,
+          clearSyncStage: !isSyncing,
           lastSyncResult: sync,
           lastSyncedAt: sync.syncedAt,
         ),
@@ -194,10 +251,28 @@ class MusicLibraryBloc extends Bloc<MusicLibraryEvent, MusicLibraryState> {
     );
   }
 
+  /// The visible songs now, then again each time they change. For screens
+  /// that show part of the library live (an album's or artist's songs).
+  Stream<List<Song>> librarySongs() => Stream.multi((controller) {
+    var last = state.songs;
+    controller.add(last);
+    final sub = stream.listen(
+      (s) {
+        if (identical(s.songs, last)) return;
+        last = s.songs;
+        controller.add(last);
+      },
+      onError: controller.addError,
+      onDone: controller.close,
+    );
+    controller.onCancel = sub.cancel;
+  });
+
   @override
   Future<void> close() async {
     await _songsSubscription?.cancel();
     await _resumeSubscription?.cancel();
+    await _stageSubscription?.cancel();
     return super.close();
   }
 }

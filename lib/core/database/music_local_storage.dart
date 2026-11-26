@@ -1,3 +1,5 @@
+import 'package:melodix/core/preferences/library_filter.dart';
+
 import 'dart:async';
 
 import 'package:isar_community/isar.dart';
@@ -71,6 +73,10 @@ abstract interface class MusicLocalStorage {
 
   Future<List<SongCollection>> getAllSongs();
 
+  /// Sends the whole library again to [watchLibrary] listeners (the
+  /// library filter changed).
+  void reloadLibrary();
+
   /// The visible library (sorted by title) as a series of updates: the full
   /// list first, the full list again after changes to the library itself
   /// (sync, unhiding), and only the affected songs for single-song edits
@@ -97,6 +103,10 @@ abstract interface class MusicLocalStorage {
   /// Hides (or shows) several songs at once.
   Future<void> setHiddenMany(List<int> songIds, {required bool hidden});
 
+  /// Shows every hidden song again. Hiding songs is no longer offered, so
+  /// this runs at start-up to bring back songs hidden by older versions.
+  Future<void> unhideAll();
+
   /// Marks (or unmarks) several songs as favourites at once.
   Future<void> setFavoriteMany(List<int> songIds, {required bool favorite});
 
@@ -110,9 +120,18 @@ abstract interface class MusicLocalStorage {
 }
 
 class MusicLocalStorageImpl implements MusicLocalStorage {
-  MusicLocalStorageImpl(this._isar);
+  MusicLocalStorageImpl(this._isar, {LibraryFilter Function()? filter})
+    : _filter = filter ?? _showAll;
 
   final Isar _isar;
+
+  static LibraryFilter _showAll() => LibraryFilter.defaults;
+
+  /// What the library shows (Settings › Music filters); read each time.
+  final LibraryFilter Function() _filter;
+
+  bool _keeps(SongCollection s) =>
+      _filter().keeps(path: s.path, durationMs: s.durationMs);
 
   /// What each committed write changed, for [watchLibrary]. Every write to
   /// the songs collection goes through this class, so this is complete.
@@ -276,8 +295,9 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
   });
 
   @override
-  Future<int> countSongs() =>
-      _songs.filter().not().isHiddenEqualTo(true).count();
+  Future<int> countSongs() async => _filter().isDefault
+      ? _songs.filter().not().isHiddenEqualTo(true).count()
+      : (await getAllSongs()).length;
 
   @override
   Future<DateTime?> getLastSyncedAt() async =>
@@ -285,8 +305,19 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
           ?.lastSongSyncAt;
 
   @override
-  Future<List<SongCollection>> getAllSongs() =>
-      _songs.filter().not().isHiddenEqualTo(true).sortByTitle().findAll();
+  Future<List<SongCollection>> getAllSongs() async {
+    final songs = await _songs
+        .filter()
+        .not()
+        .isHiddenEqualTo(true)
+        .sortByTitle()
+        .findAll();
+    if (_filter().isDefault) return songs;
+    return songs.where(_keeps).toList(growable: false);
+  }
+
+  @override
+  void reloadLibrary() => _changes.add(const _Reload());
 
   @override
   Stream<SongLibraryUpdate> watchLibrary() {
@@ -369,6 +400,16 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
     _changes.add(
       hidden ? _Removed({for (final s in changed) s.id}) : const _Reload(),
     );
+  }
+
+  @override
+  Future<void> unhideAll() async {
+    final ids = await _songs
+        .filter()
+        .isHiddenEqualTo(true)
+        .idProperty()
+        .findAll();
+    await setHiddenMany(ids, hidden: false);
   }
 
   @override

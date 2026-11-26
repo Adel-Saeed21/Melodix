@@ -1,7 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
 import 'package:melodix/features/music_library/domain/entities/playlist.dart';
@@ -9,14 +8,14 @@ import 'package:melodix/features/music_library/domain/usecases/get_playlist_song
 import 'package:melodix/features/music_library/domain/usecases/reorder_playlist_songs_usecase.dart';
 import 'package:melodix/features/music_library/presentation/logic/playlists_cubit.dart';
 import 'package:melodix/features/music_library/presentation/logic/song_list_cubit.dart';
-import 'package:melodix/features/music_library/presentation/utils/duration_format.dart';
+import 'package:melodix/core/utils/duration_format.dart';
 import 'package:melodix/features/music_library/presentation/widgets/collection_header.dart';
-import 'package:melodix/features/music_library/presentation/widgets/library_status_view.dart';
-import 'package:melodix/features/music_library/presentation/widgets/playlist_feedback_listener.dart';
+import 'package:melodix/features/music_library/presentation/widgets/collection_page_scaffold.dart';
+import 'package:melodix/core/widgets/library_status_view.dart';
+import 'package:melodix/features/music_library/presentation/widgets/action_feedback_listener.dart';
 import 'package:melodix/features/music_library/presentation/widgets/playlist_options_button.dart';
 import 'package:melodix/features/music_library/presentation/widgets/playlist_tile.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_list_body.dart';
-import 'package:melodix/features/player/presentation/widgets/mini_player_bar.dart';
 
 /// A playlist's songs. The name, favourite state and song count stay live,
 /// and the page closes itself if the playlist is deleted.
@@ -32,6 +31,10 @@ class PlaylistDetailsPage extends StatefulWidget {
 
 class _PlaylistDetailsPageState extends State<PlaylistDetailsPage> {
   bool _closing = false;
+
+  /// The playlist was found in the live list at least once. Only then does
+  /// its absence mean "deleted" (not "failed to load").
+  bool _seenLive = false;
 
   Playlist get playlist => widget.playlist;
 
@@ -61,17 +64,24 @@ class _PlaylistDetailsPageState extends State<PlaylistDetailsPage> {
           )..load(),
         ),
       ],
-      child: PlaylistFeedbackListener(
+      child: ActionFeedbackListener<PlaylistsCubit, PlaylistsState>(
+        feedbackOf: (state) => state.feedback,
         child: BlocConsumer<PlaylistsCubit, PlaylistsState>(
-          // Song count changed (song added / removed elsewhere): reload.
+          // Song count changed (song added / removed / hidden elsewhere):
+          // reload. Not on the first load: the songs are loading already.
           listenWhen: (previous, current) =>
+              !previous.isLoading &&
               previous.byId(playlist.id)?.songCount !=
-              current.byId(playlist.id)?.songCount,
+                  current.byId(playlist.id)?.songCount,
           listener: (context, _) => context.read<SongListCubit>().load(),
           builder: (context, state) {
             final live = state.byId(playlist.id);
             // Deleted (here or elsewhere): leave the page.
-            if (!state.isLoading && live == null) _closeOnce();
+            if (live != null) {
+              _seenLive = true;
+            } else if (_seenLive) {
+              _closeOnce();
+            }
             final current = live ?? playlist;
             return _PlaylistScaffold(playlist: current);
           },
@@ -88,37 +98,25 @@ class _PlaylistScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        surfaceTintColor: Colors.transparent,
-        actions: [PlaylistOptionsButton(playlist: playlist)],
-      ),
-      // Keep the player controls available on this page too.
-      bottomNavigationBar: const MiniPlayerBar(),
-      body: SafeArea(
-        top: false,
-        child: BlocBuilder<SongListCubit, SongListState>(
-          buildWhen: (p, c) => p.songs != c.songs,
-          builder: (context, songsState) {
-            final totalDuration = songsState.songs.fold(
-              Duration.zero,
-              (sum, song) => sum + song.duration,
-            );
-            return SongListBody(
-              playlist: playlist,
-              queueTitle: playlist.name,
-              header: _Header(playlist: playlist, duration: totalDuration),
-              emptyView: const Padding(
-                padding: EdgeInsets.only(top: 24),
-                child: LibraryStatusView(
-                  icon: Icons.library_add_rounded,
-                  title: AppStrings.emptyPlaylistTitle,
-                  message: AppStrings.emptyPlaylistSubtitle,
-                ),
-              ),
-            );
-          },
+    return CollectionPageScaffold(
+      actions: [PlaylistOptionsButton(playlist: playlist)],
+      body: SongListBody(
+        playlist: playlist,
+        queueTitle: playlist.name,
+        header: (songs) => _Header(
+          playlist: playlist,
+          duration: songs.fold(
+            Duration.zero,
+            (sum, song) => sum + song.duration,
+          ),
+        ),
+        emptyView: const Padding(
+          padding: EdgeInsets.only(top: 24),
+          child: LibraryStatusView(
+            icon: Icons.library_add_rounded,
+            title: AppStrings.emptyPlaylistTitle,
+            message: AppStrings.emptyPlaylistSubtitle,
+          ),
         ),
       ),
     );
@@ -139,7 +137,10 @@ class _Header extends StatelessWidget {
               '${formatDuration(duration)}';
     return CollectionHeader(
       artworkSongId: playlist.artworkSongId ?? 0,
-      artwork: PlaylistCover(playlist: playlist, size: 200.r),
+      artwork: PlaylistCover(
+        playlist: playlist,
+        size: CollectionHeader.coverSize(context),
+      ),
       title: playlist.name,
       subtitle: playlist.isFavorite
           ? '♥ ${AppStrings.playlist}'

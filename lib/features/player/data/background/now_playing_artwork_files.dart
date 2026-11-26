@@ -9,8 +9,9 @@ import 'package:path/path.dart' as p;
 /// screen (the system loads artwork from a file, not from memory).
 ///
 /// Covers come from the same [ArtworkRepository] as the app's own screens,
-/// so they always match. Songs without one get the branded
-/// [_fallbackCover] (rendered once, then reused). Files are kept for the
+/// with the Melodix finish added ([_brand]: a green wash and the Melodix
+/// badge), so the system player looks like Melodix. Songs without one get
+/// the branded [_fallbackCover] (rendered once, then reused). Files are kept for the
 /// last [keep] songs played, so going back and forth costs nothing; older
 /// ones are deleted.
 class NowPlayingArtworkFiles {
@@ -18,6 +19,7 @@ class NowPlayingArtworkFiles {
     required this._artwork,
     required this._directory,
     required this._fallbackCover,
+    this._brand,
     this.size = 512,
     this.keep = 30,
   });
@@ -27,6 +29,14 @@ class NowPlayingArtworkFiles {
 
   /// PNG bytes of the cover for songs without one.
   final Future<Uint8List> Function() _fallbackCover;
+
+  /// Adds the Melodix finish to a cover (PNG out). Null: covers as they
+  /// are. If it fails for a cover, that cover is used as it is.
+  final Future<Uint8List> Function(Uint8List cover)? _brand;
+
+  /// Bump when the branded design changes (the system caches covers by
+  /// file name, so a new design needs new names).
+  static const String _brandVersion = 'm1';
 
   /// Cover size in pixels: sharp on a lock screen, small on disk.
   final int size;
@@ -42,21 +52,54 @@ class NowPlayingArtworkFiles {
   /// A file URI for [song]'s cover, or the branded fallback's if it has
   /// none. Null only if no file can be written (the notification then shows
   /// no cover; playback goes on).
-  Future<Uri?> uriFor(Song song) async {
+  Future<Uri?> uriFor(Song song) => uriForKey(
+    '${song.id}',
+    () async => _artwork.getArtwork(song.id, size: size),
+  );
+
+  /// Like [uriFor], for anything else shown in the media controls (e.g. a
+  /// video's thumbnail): [key] names the file, [load] gives the picture.
+  Future<Uri?> uriForKey(String key, Future<Uint8List?> Function() load) async {
     try {
       final dir = _dir ??= await _directory();
-      final file = File(p.join(dir.path, '${song.id}.jpg'));
+      final file = File(
+        p.join(
+          dir.path,
+          _brand == null
+              ? '${_safe(key)}.jpg'
+              : '${_safe(key)}_$_brandVersion.png',
+        ),
+      );
       if (await file.exists()) return file.uri;
 
-      final bytes = await _artwork.getArtwork(song.id, size: size);
+      final Uint8List? bytes;
+      try {
+        bytes = await load();
+      } on Object {
+        return await _fallbackUri(dir);
+      }
       if (bytes == null || bytes.isEmpty) return await _fallbackUri(dir);
-      await _write(file, bytes);
+      await _write(file, await _branded(bytes));
       await _prune(dir);
       return file.uri;
     } on FileSystemException {
       return null;
     }
   }
+
+  Future<Uint8List> _branded(Uint8List cover) async {
+    final brand = _brand;
+    if (brand == null) return cover;
+    try {
+      return await brand(cover);
+    } on Object {
+      return cover; // not decodable as an image: shown as it is
+    }
+  }
+
+  /// A file name from any key (video ids may hold slashes).
+  static String _safe(String key) =>
+      key.replaceAll(RegExp('[^A-Za-z0-9_-]'), '_');
 
   /// The fallback cover's file, rendered the first time it's needed.
   Future<Uri?> _fallbackUri(Directory dir) => _fallback ??= () async {
@@ -78,11 +121,15 @@ class NowPlayingArtworkFiles {
     await partial.rename(file.path);
   }
 
-  /// Deletes all but the [keep] most recently written covers.
+  /// Deletes all but the [keep] most recently written covers (older
+  /// designs' files included; never the fallback).
   Future<void> _prune(Directory dir) async {
     final files = [
       await for (final entity in dir.list())
-        if (entity is File && entity.path.endsWith('.jpg')) entity,
+        if (entity is File &&
+            (entity.path.endsWith('.jpg') || entity.path.endsWith('.png')) &&
+            p.basename(entity.path) != _fallbackName)
+          entity,
     ];
     if (files.length <= keep) return;
     final byAge = [

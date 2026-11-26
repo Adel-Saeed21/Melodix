@@ -1,3 +1,4 @@
+import 'package:melodix/core/preferences/library_filter.dart';
 import 'package:isar_community/isar.dart';
 import 'package:melodix/core/database/collections/playlist_collection.dart';
 import 'package:melodix/core/database/collections/song_collection.dart';
@@ -19,9 +20,21 @@ abstract interface class FavoritesLocalStorage {
 }
 
 class FavoritesLocalStorageImpl implements FavoritesLocalStorage {
-  FavoritesLocalStorageImpl(this._isar);
+  FavoritesLocalStorageImpl(this._isar, {LibraryFilter Function()? filter})
+    : _filter = filter ?? (() => LibraryFilter.defaults);
 
   final Isar _isar;
+
+  /// What the library shows (Settings › Music filters); read each time.
+  final LibraryFilter Function() _filter;
+
+  List<SongCollection> _shown(List<SongCollection> songs) {
+    final filter = _filter();
+    if (filter.isDefault) return songs;
+    return songs
+        .where((s) => filter.keeps(path: s.path, durationMs: s.durationMs))
+        .toList(growable: false);
+  }
 
   QueryBuilder<SongCollection, SongCollection, QAfterSortBy>
   get _favoriteSongs => _isar.songCollections
@@ -44,14 +57,14 @@ class FavoritesLocalStorageImpl implements FavoritesLocalStorage {
       _favoritePlaylists.findAll(),
     ]);
     return Favorites(
-      songs: results[0] as List<SongCollection>,
+      songs: _shown(results[0] as List<SongCollection>),
       playlists: results[1] as List<PlaylistCollection>,
     );
   }
 
   @override
   Stream<List<SongCollection>> watchFavoriteSongs() =>
-      _favoriteSongs.watch(fireImmediately: true);
+      _favoriteSongs.watch(fireImmediately: true).map(_shown);
 
   @override
   Stream<List<PlaylistCollection>> watchFavoritePlaylists() =>

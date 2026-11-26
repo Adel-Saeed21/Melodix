@@ -1,3 +1,4 @@
+import 'package:melodix/core/preferences/library_filter.dart';
 import 'package:isar_community/isar.dart';
 import 'package:melodix/core/database/collections/recent_music_collection.dart';
 import 'package:melodix/core/database/collections/song_collection.dart';
@@ -23,9 +24,16 @@ abstract interface class RecentMusicLocalStorage {
 }
 
 class RecentMusicLocalStorageImpl implements RecentMusicLocalStorage {
-  RecentMusicLocalStorageImpl(this._isar);
+  RecentMusicLocalStorageImpl(this._isar, {LibraryFilter Function()? filter})
+    : _filter = filter ?? (() => LibraryFilter.defaults);
 
   final Isar _isar;
+
+  /// What the library shows (Settings › Music filters); read each time.
+  final LibraryFilter Function() _filter;
+
+  bool _keeps(SongCollection s) =>
+      _filter().keeps(path: s.path, durationMs: s.durationMs);
 
   IsarCollection<RecentMusicCollection> get _recent =>
       _isar.recentMusicCollections;
@@ -45,7 +53,7 @@ class RecentMusicLocalStorageImpl implements RecentMusicLocalStorage {
     ]);
     return songs
         .whereType<SongCollection>()
-        .where((s) => !s.isHidden)
+        .where((s) => !s.isHidden && _keeps(s))
         .toList(growable: false);
   }
 

@@ -14,20 +14,27 @@ enum SongSortOrder {
 
 /// Returns a new list of [songs] in [order]. Ties fall back to title, then
 /// id, so the result is always stable.
+///
+/// Each title is lower-cased once up front, not inside the comparison:
+/// sorting 10,000 songs compares ~140,000 times, and lower-casing there
+/// made the sort several times slower (a visible stall on phones).
 List<Song> sortSongs(List<Song> songs, SongSortOrder order) {
-  int byTitle(Song a, Song b) {
-    final cmp = a.title.toLowerCase().compareTo(b.title.toLowerCase());
-    return cmp != 0 ? cmp : a.id.compareTo(b.id);
+  final keyed = [
+    for (final song in songs) (song: song, title: song.title.toLowerCase()),
+  ];
+
+  int byTitle(_Keyed a, _Keyed b) {
+    final cmp = a.title.compareTo(b.title);
+    return cmp != 0 ? cmp : a.song.id.compareTo(b.song.id);
   }
 
-  final sorted = [...songs];
   switch (order) {
     case SongSortOrder.title:
-      sorted.sort(byTitle);
+      keyed.sort(byTitle);
     case SongSortOrder.recentlyAdded:
-      sorted.sort((a, b) {
+      keyed.sort((a, b) {
         // Unknown dates go last.
-        final aDate = a.dateAdded, bDate = b.dateAdded;
+        final aDate = a.song.dateAdded, bDate = b.song.dateAdded;
         if (aDate != bDate) {
           if (aDate == null) return 1;
           if (bDate == null) return -1;
@@ -37,10 +44,12 @@ List<Song> sortSongs(List<Song> songs, SongSortOrder order) {
         return byTitle(a, b);
       });
     case SongSortOrder.mostPlayed:
-      sorted.sort((a, b) {
-        final cmp = b.playCount.compareTo(a.playCount);
+      keyed.sort((a, b) {
+        final cmp = b.song.playCount.compareTo(a.song.playCount);
         return cmp != 0 ? cmp : byTitle(a, b);
       });
   }
-  return sorted;
+  return [for (final k in keyed) k.song];
 }
+
+typedef _Keyed = ({Song song, String title});
