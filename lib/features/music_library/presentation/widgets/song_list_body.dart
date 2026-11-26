@@ -1,21 +1,24 @@
+import 'package:melodix/core/models/load_status.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/widgets/whole_pixel_height.dart';
+import 'package:melodix/core/widgets/app_snack_bar.dart';
 import 'package:melodix/features/music_library/domain/entities/playlist.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
-import 'package:melodix/features/music_library/presentation/logic/library_collections_cubit.dart';
 import 'package:melodix/features/music_library/presentation/logic/song_list_cubit.dart';
-import 'package:melodix/features/music_library/presentation/widgets/library_status_view.dart';
+import 'package:melodix/core/widgets/library_status_view.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_actions_scope.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_options_button.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_tile.dart';
 import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
 
 /// A header followed by the songs from the nearest [SongListCubit], each
-/// with its ⋮ options menu.
+/// with its ⋮ options menu. The header is built from the songs shown, so
+/// counts and durations always match the list.
 ///
 /// If the cubit can save an order ([SongListCubit.canReorder]), songs can be
 /// moved by long-pressing a row (or dragging its handle).
@@ -29,9 +32,10 @@ class SongListBody extends StatelessWidget {
     this.playlist,
     this.emptyView,
     this.queueTitle,
+    this.insideNestedScrollView = false,
   });
 
-  final Widget header;
+  final Widget Function(List<Song> songs) header;
 
   /// Custom subtitle per song (defaults to the artist).
   final String Function(Song song)? subtitleFor;
@@ -49,21 +53,24 @@ class SongListBody extends StatelessWidget {
   /// Names this list in the player's queue (e.g. the album title).
   final String? queueTitle;
 
+  /// In a [NestedScrollView] body whose pinned header is wrapped in a
+  /// [SliverOverlapAbsorber]: starts below that header instead of under
+  /// it. Only for lists that can't be reordered.
+  final bool insideNestedScrollView;
+
   @override
   Widget build(BuildContext context) {
+    final cubit = context.read<SongListCubit>();
     return SongActionsScope(
-      // This list isn't live, so reload it after favouriting / hiding.
-      onAction: () => context.read<SongListCubit>().load(),
+      // A list that isn't live is reloaded after favouriting / hiding.
+      onAction: cubit.isLive ? null : cubit.load,
       child: BlocConsumer<SongListCubit, SongListState>(
         listenWhen: (p, c) => c.reorderFailures > p.reorderFailures,
-        listener: (context, _) => ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(
-              content: Text(AppStrings.reorderFailed),
-              behavior: SnackBarBehavior.floating,
-            ),
-          ),
+        listener: (context, _) => AppSnackBar.show(
+          context,
+          AppStrings.reorderFailed,
+          kind: AppSnackBarKind.error,
+        ),
         builder: (context, state) {
           if (state.status == LoadStatus.loading && state.songs.isEmpty) {
             return const Center(child: CircularProgressIndicator());
@@ -74,25 +81,43 @@ class SongListBody extends StatelessWidget {
               title: AppStrings.libraryErrorTitle,
               message: state.errorMessage ?? '',
               actionLabel: AppStrings.tryAgain,
-              onAction: () => context.read<SongListCubit>().load(),
+              onAction: cubit.load,
             );
           }
-          final cubit = context.read<SongListCubit>();
+          final header = this.header(state.songs);
           final bottomPadding = EdgeInsets.only(
             bottom: MediaQuery.paddingOf(context).bottom + 16.h,
           );
 
+          assert(!insideNestedScrollView || !cubit.canReorder);
           if (state.songs.isEmpty || !cubit.canReorder) {
-            return ListView.builder(
-              padding: bottomPadding,
-              itemCount: state.songs.isEmpty && emptyView != null
-                  ? 2
-                  : state.songs.length + 1,
-              itemBuilder: (context, index) {
-                if (index == 0) return header;
-                if (state.songs.isEmpty) return emptyView!;
-                return _tile(context, state.songs, index - 1);
-              },
+            return CustomScrollView(
+              key: insideNestedScrollView
+                  ? const PageStorageKey('song-list')
+                  : null,
+              slivers: [
+                if (insideNestedScrollView)
+                  SliverOverlapInjector(
+                    handle: NestedScrollView.sliverOverlapAbsorberHandleFor(
+                      context,
+                    ),
+                  ),
+                SliverToBoxAdapter(child: header),
+                if (state.songs.isEmpty)
+                  ?(emptyView == null
+                      ? null
+                      : SliverToBoxAdapter(child: emptyView))
+                else
+                  // Every row as tall as a real one (measured once): long
+                  // lists never lay out the rows they skip.
+                  SliverPrototypeExtentList.builder(
+                    prototypeItem: _tile(context, state.songs, 0),
+                    itemCount: state.songs.length,
+                    itemBuilder: (context, index) =>
+                        _tile(context, state.songs, index),
+                  ),
+                SliverPadding(padding: bottomPadding),
+              ],
             );
           }
 
@@ -101,6 +126,8 @@ class SongListBody extends StatelessWidget {
             padding: bottomPadding,
             buildDefaultDragHandles: false,
             itemCount: state.songs.length,
+            // Same fixed row height as the plain list (with the handle).
+            prototypeItem: _tile(context, state.songs, 0, dragIndex: 0),
             onReorderStart: (_) => HapticFeedback.mediumImpact(),
             onReorderItem: cubit.reorder,
             proxyDecorator: _liftedRow,
@@ -125,21 +152,23 @@ class SongListBody extends StatelessWidget {
     int? dragIndex,
   }) {
     final song = songs[index];
-    return SongTile(
-      song: song,
-      // Play this list (album / artist / playlist) from the tapped song.
-      onTap: () => context.read<PlayerCubit>().playSongs(
-        songs,
-        index,
-        title: queueTitle,
-      ),
-      subtitle: subtitleFor?.call(song),
-      leading: dragIndex == null ? null : _DragHandle(index: dragIndex),
-      trailing: SongOptionsButton(
+    return WholePixelHeight(
+      child: SongTile(
         song: song,
-        showGoToAlbum: showGoToAlbum,
-        showGoToArtist: showGoToArtist,
-        playlist: playlist,
+        // Play this list (album / artist / playlist) from the tapped song.
+        onTap: () => context.read<PlayerCubit>().playSongs(
+          songs,
+          index,
+          title: queueTitle,
+        ),
+        subtitle: subtitleFor?.call(song),
+        leading: dragIndex == null ? null : _DragHandle(index: dragIndex),
+        trailing: SongOptionsButton(
+          song: song,
+          showGoToAlbum: showGoToAlbum,
+          showGoToArtist: showGoToArtist,
+          playlist: playlist,
+        ),
       ),
     );
   }

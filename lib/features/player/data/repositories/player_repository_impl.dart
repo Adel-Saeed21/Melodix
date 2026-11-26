@@ -292,6 +292,22 @@ class PlayerRepositoryImpl implements PlayerRepository {
   }
 
   @override
+  Future<void> setSpeed(double speed) => _player.setSpeed(speed.clamp(0.25, 4));
+
+  @override
+  Future<void> setSkipSilence(bool enabled) async {
+    try {
+      await _player.setSkipSilenceEnabled(enabled);
+    } catch (_) {
+      // Not supported on this platform: plays as it is.
+    }
+  }
+
+  @override
+  Future<void> setVolume(double volume) =>
+      _player.setVolume(volume.clamp(0.0, 1.0));
+
+  @override
   Future<void> setShuffle(bool enabled) async {
     await _serial.run(() async {
       _shuffle = enabled;

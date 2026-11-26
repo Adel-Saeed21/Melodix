@@ -53,6 +53,16 @@ abstract interface class PlayerRepository {
   Future<void> setRepeatMode(PlaybackRepeat mode);
   Future<void> setShuffle(bool enabled);
 
+  /// Playback speed (1 = normal); pitch is kept.
+  Future<void> setSpeed(double speed);
+
+  /// Skips silent stretches (Android; ignored where unsupported).
+  Future<void> setSkipSilence(bool enabled);
+
+  /// Loudness 0–1 of the app's own output (the sleep timer's fade-out);
+  /// the phone's volume is untouched.
+  Future<void> setVolume(double volume);
+
   /// Loads the last session (queue, song, position), paused. Does nothing
   /// if there's none or something is already playing.
   Future<void> restoreLastSession();

@@ -1,9 +1,12 @@
+import 'dart:math';
+
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/core/config/routing/routes.dart';
+import 'package:melodix/core/search/search_sources.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/navigation_extension.dart';
@@ -12,7 +15,7 @@ import 'package:melodix/features/music_library/domain/entities/album.dart';
 import 'package:melodix/features/music_library/domain/entities/library_search_results.dart';
 import 'package:melodix/features/music_library/presentation/logic/library_search_cubit.dart';
 import 'package:melodix/features/music_library/presentation/widgets/artist_tile.dart';
-import 'package:melodix/features/music_library/presentation/widgets/library_status_view.dart';
+import 'package:melodix/core/widgets/library_status_view.dart';
 import 'package:melodix/features/music_library/presentation/widgets/playlist_tile.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_artwork.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_options_button.dart';
@@ -21,8 +24,9 @@ import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
 
 enum _Section { songs, artists, albums, playlists }
 
-/// Search results grouped into Songs, Artists, Albums and Playlists. Each
-/// group shows a few items with "Show all" to expand.
+/// Search results grouped into Songs, Artists, Albums and Playlists, then
+/// any groups from [SearchSources] above (e.g. Videos). Each group shows a
+/// few items with "Show all" to expand.
 class LibrarySearchResultsView extends StatefulWidget {
   const LibrarySearchResultsView({super.key});
 
@@ -39,11 +43,24 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
     _Section.playlists: 3,
   };
 
-  final Set<_Section> _expanded = {};
+  /// Expanded groups: a [_Section], or an extra group's title.
+  final Set<Object> _expanded = {};
+
+  /// How many of an extra group's results show before "Show all".
+  static const int _extraPreview = 3;
   String _expandedForQuery = '';
 
   @override
   Widget build(BuildContext context) {
+    final sources = SearchSources.of(context);
+    // Extra sources' data changing (e.g. a video added) updates the results.
+    return ListenableBuilder(
+      listenable: Listenable.merge(sources),
+      builder: (context, _) => _results(context, sources),
+    );
+  }
+
+  Widget _results(BuildContext context, List<SearchSource> sources) {
     return BlocBuilder<LibrarySearchCubit, LibrarySearchState>(
       builder: (context, state) {
         // A new query collapses the groups again.
@@ -59,14 +76,10 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
             message: AppStrings.searchPromptSubtitle,
           );
         }
-        if (state.errorMessage != null) {
-          return LibraryStatusView(
-            icon: Icons.error_outline_rounded,
-            title: AppStrings.libraryErrorTitle,
-            message: state.errorMessage!,
-          );
-        }
-        if (state.results.isEmpty) {
+        final extra = [
+          for (final source in sources) ?source.search(state.query),
+        ];
+        if (state.results.isEmpty && extra.isEmpty) {
           if (state.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
@@ -77,7 +90,7 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
           );
         }
 
-        final rows = _buildRows(context, state.results);
+        final rows = _buildRows(context, state.results, extra);
         return Stack(
           children: [
             ListView.builder(
@@ -87,7 +100,8 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
                 bottom: MediaQuery.paddingOf(context).bottom + 16.h,
               ),
               itemCount: rows.length,
-              itemBuilder: (_, index) => rows[index],
+              // Each row is created when it scrolls into view.
+              itemBuilder: (_, index) => rows[index](),
             ),
             // Thin bar while newer results load over the current ones.
             if (state.isLoading)
@@ -103,24 +117,34 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
     );
   }
 
-  List<Widget> _buildRows(BuildContext context, LibrarySearchResults results) {
-    final rows = <Widget>[];
+  /// The rows as builders, not widgets: "Show all" on thousands of songs
+  /// makes thousands of cheap closures, and only the rows on screen are
+  /// ever built.
+  List<Widget Function()> _buildRows(
+    BuildContext context,
+    LibrarySearchResults results,
+    List<SearchSection> extra,
+  ) {
+    final rows = <Widget Function()>[];
 
     void addSection<T>(
-      _Section section,
+      Object section,
       String title,
       List<T> items,
-      Widget Function(T item) build,
-    ) {
+      Widget Function(T item, int index) build, {
+      int? previewCount,
+    }) {
       if (items.isEmpty) return;
-      final preview = _previewCounts[section]!;
+      final preview = previewCount ?? _previewCounts[section]!;
       final expanded = _expanded.contains(section);
-      final visible = expanded ? items : items.take(preview);
-      rows.add(_SectionHeader(title: title, count: items.length));
-      rows.addAll(visible.map(build));
+      final shown = expanded ? items.length : min(preview, items.length);
+      rows.add(() => _SectionHeader(title: title, count: items.length));
+      for (var i = 0; i < shown; i++) {
+        rows.add(() => build(items[i], i));
+      }
       if (!expanded && items.length > preview) {
         rows.add(
-          _ShowAllButton(
+          () => _ShowAllButton(
             count: items.length,
             onTap: () => setState(() => _expanded.add(section)),
           ),
@@ -132,13 +156,13 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
       _Section.songs,
       AppStrings.songs,
       results.songs,
-      (song) => SongTile(
+      (song, index) => SongTile(
         song: song,
         trailing: SongOptionsButton(song: song),
         // Play the matching songs, starting with this one.
         onTap: () => context.read<PlayerCubit>().playSongs(
           results.songs,
-          results.songs.indexOf(song),
+          index,
           title: AppStrings.searchResults,
         ),
       ),
@@ -147,7 +171,7 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
       _Section.artists,
       AppStrings.artists,
       results.artists,
-      (artist) => ArtistTile(
+      (artist, _) => ArtistTile(
         artist: artist,
         onTap: () => context.pushNamed(Routes.artistDetails, extra: artist),
       ),
@@ -156,7 +180,7 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
       _Section.albums,
       AppStrings.albums,
       results.albums,
-      (album) => _AlbumRow(
+      (album, _) => _AlbumRow(
         album: album,
         onTap: () => context.pushNamed(Routes.albumDetails, extra: album),
       ),
@@ -165,11 +189,20 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
       _Section.playlists,
       AppStrings.playlists,
       results.playlists,
-      (playlist) => PlaylistTile(
+      (playlist, _) => PlaylistTile(
         playlist: playlist,
         onTap: () => context.pushNamed(Routes.playlistDetails, extra: playlist),
       ),
     );
+    for (final section in extra) {
+      addSection(
+        'extra:${section.title}',
+        section.title,
+        List<int>.generate(section.count, (i) => i),
+        (index, _) => section.itemBuilder(context, index),
+        previewCount: _extraPreview,
+      );
+    }
     return rows;
   }
 }

@@ -41,15 +41,17 @@ class _AddToPlaylistSheetState extends State<_AddToPlaylistSheet> {
   Future<void> _createNew() async {
     final name = await showPlaylistNameDialog(context);
     if (name == null || !mounted) return;
-    final navigator = Navigator.of(context);
-    final added = await widget.cubit.createPlaylistWithMany(widget.songs, name);
-    navigator.pop(added);
+    _close(await widget.cubit.createPlaylistWithMany(widget.songs, name));
   }
 
   Future<void> _add(Playlist playlist) async {
-    final navigator = Navigator.of(context);
-    final added = await widget.cubit.addManyToPlaylist(widget.songs, playlist);
-    navigator.pop(added);
+    _close(await widget.cubit.addManyToPlaylist(widget.songs, playlist));
+  }
+
+  /// Closes the sheet with [added], unless it was already dismissed while
+  /// saving (then popping would close the page underneath instead).
+  void _close(bool added) {
+    if (mounted) Navigator.of(context).pop(added);
   }
 
   @override

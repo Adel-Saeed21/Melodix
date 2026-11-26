@@ -1,9 +1,12 @@
+import 'package:melodix/core/models/load_status.dart';
+
+import 'dart:async';
+
 import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:melodix/core/errors/failures.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
-import 'package:melodix/features/music_library/presentation/logic/library_collections_cubit.dart';
 
 class SongListState extends Equatable {
   const SongListState({
@@ -24,12 +27,28 @@ class SongListState extends Equatable {
   List<Object?> get props => [status, songs, errorMessage, reorderFailures];
 }
 
-/// Loads one list of songs, e.g. an album's or an artist's songs.
+/// One list of songs: loaded on demand (a playlist's songs, see [load]) or
+/// followed live (an album's or artist's songs, see [SongListCubit.live]).
 class SongListCubit extends Cubit<SongListState> {
   SongListCubit(this._loadSongs, {this.saveOrder})
     : super(const SongListState());
 
-  final Future<Either<Failure, List<Song>>> Function() _loadSongs;
+  /// Shows every list [songs] emits; nothing to load or reload.
+  SongListCubit.live(Stream<List<Song>> songs)
+    : _loadSongs = null,
+      saveOrder = null,
+      super(const SongListState()) {
+    _subscription = songs.listen(
+      (songs) => emit(SongListState(status: LoadStatus.ready, songs: songs)),
+      onError: addError,
+    );
+  }
+
+  final Future<Either<Failure, List<Song>>> Function()? _loadSongs;
+  StreamSubscription<List<Song>>? _subscription;
+
+  /// The list follows its source by itself: no need to [load] after edits.
+  bool get isLive => _loadSongs == null;
 
   /// Persists a new song order (e.g. for a playlist). When null, the list
   /// can't be reordered.
@@ -38,7 +57,9 @@ class SongListCubit extends Cubit<SongListState> {
   bool get canReorder => saveOrder != null;
 
   Future<void> load() async {
-    final result = await _loadSongs();
+    final loadSongs = _loadSongs;
+    if (loadSongs == null) return;
+    final result = await loadSongs();
     if (isClosed) return;
     emit(
       result.fold(
@@ -89,5 +110,11 @@ class SongListCubit extends Cubit<SongListState> {
         ),
       );
     }
+  }
+
+  @override
+  Future<void> close() async {
+    await _subscription?.cancel();
+    return super.close();
   }
 }
