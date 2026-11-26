@@ -2,9 +2,16 @@ package com.example.spotify
 
 import android.Manifest
 import android.annotation.TargetApi
+import android.content.ComponentName
 import android.content.ContentUris
 import android.content.Context
+import android.app.PendingIntent
 import android.app.PictureInPictureParams
+import android.app.RemoteAction
+import android.content.BroadcastReceiver
+import android.content.Intent
+import android.content.IntentFilter
+import android.graphics.drawable.Icon
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.database.Cursor
@@ -49,6 +56,22 @@ class MainActivity : AudioServiceActivity() {
     private var pipAutoEnter = false
     private var pipAspect = Rational(16, 9)
 
+    /** Whether the video plays: the window's middle button is pause, else play. */
+    private var pipPlaying = false
+
+    /**
+     * The window's own buttons (back, play / pause, forward). Without them
+     * Android shows the media session's buttons there, and that session is
+     * the music player's: they would control the music, not the video.
+     */
+    private val pipActionReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val action = intent.getStringExtra(PIP_EXTRA_ACTION) ?: return
+            pipChannel?.invokeMethod("pipAction", action)
+        }
+    }
+    private var pipReceiverRegistered = false
+
     private class PermissionDenied(message: String) : Exception(message)
     private class QueryFailed(message: String) : Exception(message)
 
@@ -73,6 +96,41 @@ class MainActivity : AudioServiceActivity() {
                     else -> result.notImplemented()
                 }
             }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "melodix/app_icon")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "current" -> result.success(currentAppIcon())
+                    "set" -> {
+                        val name = call.argument<String>("name")
+                        if (name == null || name !in APP_ICONS) {
+                            result.error("unknown_icon", "No icon named $name", null)
+                        } else {
+                            try {
+                                setAppIcon(name)
+                                result.success(true)
+                            } catch (e: Exception) {
+                                result.error("icon_failed", e.message, null)
+                            }
+                        }
+                    }
+                    else -> result.notImplemented()
+                }
+            }
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "melodix/subtitles")
+            .setMethodCallHandler { call, result ->
+                when (call.method) {
+                    "videoPath" -> {
+                        val uri = call.argument<String>("uri")
+                        if (uri == null) {
+                            result.success(null)
+                        } else {
+                            runInBackground(result) { videoPath(Uri.parse(uri)) }
+                        }
+                    }
+                    "pick" -> pickSubtitle(result)
+                    else -> result.notImplemented()
+                }
+            }
         pipChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "melodix/pip")
             .also { channel ->
                 channel.setMethodCallHandler { call, result ->
@@ -80,6 +138,7 @@ class MainActivity : AudioServiceActivity() {
                         "isSupported" -> result.success(pipSupported())
                         "setAutoEnter" -> {
                             pipAutoEnter = call.argument<Boolean>("enabled") ?: false
+                            pipPlaying = call.argument<Boolean>("playing") ?: pipAutoEnter
                             pipAspect = clampedAspect(
                                 call.argument<Int>("width") ?: 16,
                                 call.argument<Int>("height") ?: 9,
@@ -115,7 +174,9 @@ class MainActivity : AudioServiceActivity() {
 
     @TargetApi(Build.VERSION_CODES.O)
     private fun pipParams(): PictureInPictureParams {
-        val builder = PictureInPictureParams.Builder().setAspectRatio(pipAspect)
+        val builder = PictureInPictureParams.Builder()
+            .setAspectRatio(pipAspect)
+            .setActions(pipActions())
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             // Android 12+: slides into the window on its own when the user
             // goes home, only while a video plays.
@@ -124,6 +185,49 @@ class MainActivity : AudioServiceActivity() {
             builder.setSeamlessResizeEnabled(false)
         }
         return builder.build()
+    }
+
+    @TargetApi(Build.VERSION_CODES.O)
+    private fun pipActions(): List<RemoteAction> = listOf(
+        pipAction("rewind", 1, R.drawable.ic_media_rewind, "Back"),
+        if (pipPlaying) {
+            pipAction("pause", 2, R.drawable.ic_media_pause, "Pause")
+        } else {
+            pipAction("play", 3, R.drawable.ic_media_play, "Play")
+        },
+        pipAction("forward", 4, R.drawable.ic_media_forward, "Forward"),
+    )
+
+    @TargetApi(Build.VERSION_CODES.O)
+    private fun pipAction(name: String, requestCode: Int, icon: Int, title: String): RemoteAction {
+        val intent = Intent(PIP_BROADCAST)
+            .setPackage(packageName)
+            .putExtra(PIP_EXTRA_ACTION, name)
+        val pending = PendingIntent.getBroadcast(
+            this,
+            requestCode,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        return RemoteAction(Icon.createWithResource(this, icon), title, title, pending)
+    }
+
+    private fun registerPipReceiver() {
+        if (pipReceiverRegistered) return
+        val filter = IntentFilter(PIP_BROADCAST)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(pipActionReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("UnspecifiedRegisterReceiverFlag")
+            registerReceiver(pipActionReceiver, filter)
+        }
+        pipReceiverRegistered = true
+    }
+
+    private fun unregisterPipReceiver() {
+        if (!pipReceiverRegistered) return
+        unregisterReceiver(pipActionReceiver)
+        pipReceiverRegistered = false
     }
 
     private fun applyPipParams() {
@@ -156,11 +260,106 @@ class MainActivity : AudioServiceActivity() {
         newConfig: Configuration,
     ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        // The window's buttons are heard only while the window is up.
+        if (isInPictureInPictureMode) registerPipReceiver() else unregisterPipReceiver()
         // Flutter shows only the video while in the window.
         pipChannel?.invokeMethod("pipChanged", isInPictureInPictureMode)
     }
 
+    // ---- Subtitles ----------------------------------------------------------
+
+    /** The pick waiting for the system file picker's answer. */
+    private var pendingPick: MethodChannel.Result? = null
+
+    /**
+     * The video file's path (MediaStore's DATA column), so Flutter can look
+     * for subtitle files next to it. Null when unknown or not readable.
+     */
+    private fun videoPath(uri: Uri): String? {
+        @Suppress("DEPRECATION")
+        val column = MediaStore.MediaColumns.DATA
+        return try {
+            contentResolver.query(uri, arrayOf(column), null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) cursor.getString(0) else null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /** Opens the system file picker for one subtitle file. */
+    private fun pickSubtitle(result: MethodChannel.Result) {
+        if (pendingPick != null) {
+            result.error("busy", "A file picker is already open", null)
+            return
+        }
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+            .addCategory(Intent.CATEGORY_OPENABLE)
+            .setType("*/*")
+            .putExtra(
+                Intent.EXTRA_MIME_TYPES,
+                arrayOf(
+                    "application/x-subrip",
+                    "text/vtt",
+                    "text/plain",
+                    "application/octet-stream",
+                ),
+            )
+        pendingPick = result
+        try {
+            startActivityForResult(intent, PICK_SUBTITLE)
+        } catch (e: Exception) {
+            pendingPick = null
+            result.error("unavailable", "No file picker on this device", null)
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode != PICK_SUBTITLE) return
+        val result = pendingPick ?: return
+        pendingPick = null
+        val uri = data?.data
+        if (resultCode != RESULT_OK || uri == null) {
+            result.success(null) // cancelled
+            return
+        }
+        runInBackground(result) { readPicked(uri) }
+    }
+
+    /** The picked file's name and bytes (at most 5 MB: subtitles are small). */
+    private fun readPicked(uri: Uri): Map<String, Any> {
+        var name = "subtitles.srt"
+        contentResolver.query(
+            uri,
+            arrayOf(android.provider.OpenableColumns.DISPLAY_NAME),
+            null,
+            null,
+            null,
+        )?.use { cursor ->
+            if (cursor.moveToFirst()) cursor.getString(0)?.let { name = it }
+        }
+        val stream = contentResolver.openInputStream(uri)
+            ?: throw QueryFailed("The file can't be opened")
+        val bytes = stream.use { input ->
+            val out = java.io.ByteArrayOutputStream()
+            val buffer = ByteArray(16 * 1024)
+            var total = 0
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                total += read
+                if (total > MAX_SUBTITLE_BYTES) throw QueryFailed("The file is too large")
+                out.write(buffer, 0, read)
+            }
+            out.toByteArray()
+        }
+        return mapOf("name" to name, "bytes" to bytes)
+    }
+
     override fun onDestroy() {
+        unregisterPipReceiver()
         worker.shutdown()
         super.onDestroy()
     }
@@ -354,8 +553,54 @@ class MainActivity : AudioServiceActivity() {
         return columns.toTypedArray()
     }
 
+    /** The launcher alias for icon [name] ("classic", "blue", ...). */
+    private fun appIconComponent(name: String) = ComponentName(
+        this,
+        "com.example.spotify.Launcher" + name.replaceFirstChar { it.uppercase() },
+    )
+
+    /** The icon whose launcher entry is on ("classic" if none says so). */
+    private fun currentAppIcon(): String = APP_ICONS.firstOrNull { name ->
+        val state = packageManager.getComponentEnabledSetting(appIconComponent(name))
+        state == PackageManager.COMPONENT_ENABLED_STATE_ENABLED ||
+            (state == PackageManager.COMPONENT_ENABLED_STATE_DEFAULT && name == "classic")
+    } ?: "classic"
+
+    /**
+     * Turns on the launcher entry for [name] first, then the others off, so
+     * there is always one to open the app with. DONT_KILL_APP: the app keeps
+     * running (some launchers take a moment to show the new icon).
+     */
+    private fun setAppIcon(name: String) {
+        packageManager.setComponentEnabledSetting(
+            appIconComponent(name),
+            PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+            PackageManager.DONT_KILL_APP,
+        )
+        for (other in APP_ICONS) {
+            if (other == name) continue
+            packageManager.setComponentEnabledSetting(
+                appIconComponent(other),
+                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+                PackageManager.DONT_KILL_APP,
+            )
+        }
+    }
+
     private companion object {
+        /** Must match the activity-alias entries in AndroidManifest.xml. */
+        val APP_ICONS = listOf(
+            "classic", "blue", "purple", "pink", "red", "orange", "yellow", "teal", "green",
+        )
+
         /** MediaStore.Audio.AudioColumns.IS_AUDIOBOOK (API 29). */
         const val IS_AUDIOBOOK = "is_audiobook"
+
+        /** The picture-in-picture buttons' broadcast (to this app only). */
+        const val PIP_BROADCAST = "com.melodix.PIP_ACTION"
+        const val PIP_EXTRA_ACTION = "action"
+
+        const val PICK_SUBTITLE = 4711
+        const val MAX_SUBTITLE_BYTES = 5 * 1024 * 1024
     }
 }

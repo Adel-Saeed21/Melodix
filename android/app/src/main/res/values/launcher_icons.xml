@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Launcher icon choices (Settings › App icon). Android 8+ uses the
+     adaptive icons in mipmap-anydpi-v26; older versions show the classic
+     icon for every choice. -->
+<resources>
+    <item name="ic_launcher_blue" type="mipmap">@mipmap/ic_launcher</item>
+    <item name="ic_launcher_purple" type="mipmap">@mipmap/ic_launcher</item>
+    <item name="ic_launcher_pink" type="mipmap">@mipmap/ic_launcher</item>
+    <item name="ic_launcher_red" type="mipmap">@mipmap/ic_launcher</item>
+    <item name="ic_launcher_orange" type="mipmap">@mipmap/ic_launcher</item>
+    <item name="ic_launcher_yellow" type="mipmap">@mipmap/ic_launcher</item>
+    <item name="ic_launcher_teal" type="mipmap">@mipmap/ic_launcher</item>
+    <item name="ic_launcher_green" type="mipmap">@mipmap/ic_launcher</item>
+    <color name="ic_launcher_background">#FF0D0C0C</color>
+</resources>

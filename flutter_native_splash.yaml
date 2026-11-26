@@ -1,10 +1,23 @@
-# pubspec.yaml
+# Native splash: static. Regenerate after changes with
+#   dart run flutter_native_splash:create
+#
+# The logo images are rendered from assets/vectors/melodix_logo.svg (the
+# Flutter splash logo) at 4x, so they show at 120 dp / pt, the same size and
+# position as the Flutter splash. Its background colours match below.
 flutter_native_splash:
-  color: "#FFFFFF"                           
-  image: assets/images/app_logo.png        
+  color: "#FFFFFF"
+  image: assets/splash/splash_logo.png
 
-  color_dark: "#121212"                      
-  image_dark: assets/images/app_logo.png    
+  color_dark: "#121212"
+  image_dark: assets/splash/splash_logo.png
+
+  # Android 12+ uses its own splash API; without this it shows the launcher
+  # icon. The logo sits inside the 1152 px canvas at the same 120 dp size.
+  android_12:
+    color: "#FFFFFF"
+    image: assets/splash/splash_logo_android12.png
+    color_dark: "#121212"
+    image_dark: assets/splash/splash_logo_android12.png
 
   android: true
   ios: true

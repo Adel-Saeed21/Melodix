@@ -7,7 +7,11 @@
       "type": "dart",
       "flutterMode": "debug",
       "program": "lib/main_dev.dart",
-      "args": ["--flavor", "dev"]
+      "args": [
+        "--flavor",
+        "dev",
+        "--dart-define-from-file=config/opensubtitles.json"
+      ]
     },
     {
       "name": "Melodix (production)",
@@ -15,7 +19,11 @@
       "type": "dart",
       "flutterMode": "release",
       "program": "lib/main_production.dart",
-      "args": ["--flavor", "production"]
+      "args": [
+        "--flavor",
+        "production",
+        "--dart-define-from-file=config/opensubtitles.json"
+      ]
     }
   ]
 }
