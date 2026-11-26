@@ -4,20 +4,36 @@ import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
-import 'package:melodix/features/music_library/presentation/utils/duration_format.dart';
+import 'package:melodix/core/utils/duration_format.dart';
 import 'package:melodix/features/video/domain/entities/video.dart';
+import 'package:melodix/features/video/domain/entities/video_progress.dart';
 import 'package:melodix/features/video/presentation/widgets/video_thumbnail.dart';
 
 /// A video row: thumbnail (with its length), title, and a details line
 /// (quality, or where to resume). One line of title, so every row has the
 /// same height (lists can be fixed-height: fast to scroll and to jump in).
 class VideoTile extends StatelessWidget {
-  const VideoTile({super.key, required this.video, this.onTap, this.trailing});
+  const VideoTile({
+    super.key,
+    required this.video,
+    this.progress,
+    this.onTap,
+    this.onLongPress,
+    this.leading,
+    this.trailing,
+  });
 
   final Video video;
 
-  /// Null: the row isn't tappable (e.g. no player to open it yet).
+  /// How much was watched, if it was played ("Resume at …", a bar).
+  final VideoProgress? progress;
+
+  /// Null: the row isn't tappable.
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
+
+  /// Before the thumbnail (e.g. a check while selecting).
+  final Widget? leading;
   final Widget? trailing;
 
   @override
@@ -25,6 +41,7 @@ class VideoTile extends StatelessWidget {
     final onSurface = Theme.of(context).colorScheme.onSurface;
     return InkWell(
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           20.w,
@@ -34,7 +51,8 @@ class VideoTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            VideoThumbnail(video: video, width: 112.r),
+            ?leading,
+            VideoThumbnail(video: video, progress: progress, width: 112.r),
             horizontalSpace(14),
             Expanded(
               child: Column(
@@ -52,7 +70,7 @@ class VideoTile extends StatelessWidget {
                   ),
                   verticalSpace(3),
                   Text(
-                    _details(video),
+                    _details(video, progress),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -72,9 +90,9 @@ class VideoTile extends StatelessWidget {
 
   /// "Resume at 3:12" for a video started but not finished, else its
   /// quality ("1080p", "4K").
-  static String _details(Video video) {
-    if (video.lastPosition > Duration.zero) {
-      return AppStrings.resumeAt(formatDuration(video.lastPosition));
+  static String _details(Video video, VideoProgress? progress) {
+    if (progress != null && progress.canResume(video.duration)) {
+      return AppStrings.resumeAt(formatDuration(progress.position));
     }
     return qualityLabel(video.width, video.height);
   }

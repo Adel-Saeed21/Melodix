@@ -4,88 +4,140 @@ import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
-import 'package:melodix/core/widgets/app_snack_bar.dart';
+import 'package:melodix/features/subtitles/presentation/logic/subtitles_cubit.dart';
+import 'package:melodix/features/subtitles/presentation/widgets/subtitles_sheet.dart';
 import 'package:melodix/features/video/presentation/logic/video_player_cubit.dart';
+import 'package:melodix/features/video/presentation/widgets/library/video_favourite_button.dart';
+import 'package:melodix/features/video/presentation/widgets/player/video_minimize_button.dart';
 import 'package:melodix/features/video/presentation/widgets/player/video_player_controls.dart';
+import 'package:melodix/features/video/presentation/widgets/player/video_up_next_sheet.dart';
+import 'package:melodix/features/video/presentation/widgets/video_tile.dart';
 
-/// Back, the title, playback speed and ♥.
+/// Minimize; the title, and where it is in the list with its quality
+/// ("2 of 5 · 1080p"); Up next, subtitles, fill / fit, playback speed
+/// and ♥.
 class VideoTopBar extends StatelessWidget {
-  const VideoTopBar({super.key, required this.onTouched});
+  const VideoTopBar({
+    super.key,
+    required this.onTouched,
+    required this.fill,
+    required this.onToggleFill,
+  });
 
   final VoidCallback onTouched;
+
+  /// The picture fills the screen (cropped) rather than fits in it.
+  final bool fill;
+  final VoidCallback onToggleFill;
 
   @override
   Widget build(BuildContext context) {
     final cubit = context.read<VideoPlayerCubit>();
     return BlocBuilder<VideoPlayerCubit, VideoPlayerState>(
-      buildWhen: (p, c) => p.video != c.video || p.speed != c.speed,
-      builder: (context, state) => Row(
-        children: [
-          const BackButton(color: Colors.white),
-          Expanded(
-            child: Text(
-              state.video.title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: AppTextSizes.base,
-                fontWeight: FontWeightHelper.semiBold,
+      buildWhen: (p, c) =>
+          p.video != c.video ||
+          p.speed != c.speed ||
+          p.queue.length != c.queue.length ||
+          p.index != c.index,
+      builder: (context, state) {
+        final video = state.video;
+        final details = [
+          if (state.queue.length > 1)
+            AppStrings.videoPosition(state.index + 1, state.queue.length),
+          VideoTile.qualityLabel(video.width, video.height),
+        ].join(' · ');
+        return Row(
+          children: [
+            const VideoMinimizeButton(),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    video.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: AppTextSizes.base,
+                      fontWeight: FontWeightHelper.semiBold,
+                    ),
+                  ),
+                  Text(
+                    details,
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.7),
+                      fontSize: AppTextSizes.xs,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          PopupMenuButton<double>(
-            tooltip: AppStrings.playbackSpeed,
-            initialValue: state.speed,
-            onOpened: onTouched,
-            onSelected: cubit.setSpeed,
-            itemBuilder: (_) => [
-              for (final speed in VideoPlayerControls.speeds)
-                PopupMenuItem(value: speed, child: Text(_speedLabel(speed))),
-            ],
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
-              child: Text(
-                _speedLabel(state.speed),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: AppTextSizes.sm,
-                  fontWeight: FontWeightHelper.bold,
+            if (state.queue.length > 1)
+              IconButton(
+                tooltip: AppStrings.upNext,
+                color: Colors.white,
+                onPressed: () {
+                  onTouched();
+                  showVideoUpNext(context);
+                },
+                icon: const Icon(Icons.video_library_rounded),
+              ),
+            BlocSelector<SubtitlesCubit, SubtitlesState, bool>(
+              selector: (s) => s.isOn,
+              builder: (context, on) => IconButton(
+                tooltip: AppStrings.subtitles,
+                color: Colors.white,
+                onPressed: () {
+                  onTouched();
+                  showSubtitlesSheet(context, videoTitle: video.title);
+                },
+                icon: Icon(
+                  on
+                      ? Icons.closed_caption_rounded
+                      : Icons.closed_caption_off_outlined,
                 ),
               ),
             ),
-          ),
-          IconButton(
-            tooltip: state.video.isFavorite
-                ? AppStrings.removeFromFavourites
-                : AppStrings.addToFavourites,
-            onPressed: () async {
-              onTouched();
-              final isFavorite = await cubit.toggleFavorite();
-              if (!context.mounted) return;
-              AppSnackBar.show(
-                context,
-                isFavorite == null
-                    ? AppStrings.changeNotSaved
-                    : isFavorite
-                    ? AppStrings.addedToFavourites
-                    : AppStrings.removedFromFavourites,
-                kind: isFavorite == null
-                    ? AppSnackBarKind.error
-                    : AppSnackBarKind.success,
-              );
-            },
-            icon: Icon(
-              state.video.isFavorite
-                  ? Icons.favorite_rounded
-                  : Icons.favorite_border_rounded,
-              color: state.video.isFavorite
-                  ? Theme.of(context).primaryColor
-                  : Colors.white,
+            IconButton(
+              tooltip: fill ? AppStrings.fitScreen : AppStrings.fillScreen,
+              color: Colors.white,
+              onPressed: () {
+                onTouched();
+                onToggleFill();
+              },
+              icon: Icon(
+                fill ? Icons.fit_screen_rounded : Icons.crop_free_rounded,
+              ),
             ),
-          ),
-        ],
-      ),
+            PopupMenuButton<double>(
+              tooltip: AppStrings.playbackSpeed,
+              initialValue: state.speed,
+              onOpened: onTouched,
+              onSelected: cubit.setSpeed,
+              itemBuilder: (_) => [
+                for (final speed in VideoPlayerControls.speeds)
+                  PopupMenuItem(value: speed, child: Text(_speedLabel(speed))),
+              ],
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
+                child: Text(
+                  _speedLabel(state.speed),
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: AppTextSizes.sm,
+                    fontWeight: FontWeightHelper.bold,
+                  ),
+                ),
+              ),
+            ),
+            // Live: right even if changed elsewhere while this plays.
+            VideoFavouriteButton(video: video, color: Colors.white),
+          ],
+        );
+      },
     );
   }
 

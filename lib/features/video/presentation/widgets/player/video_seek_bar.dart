@@ -1,8 +1,8 @@
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
-import 'package:melodix/features/music_library/presentation/utils/duration_format.dart';
-import 'package:video_player/video_player.dart';
+import 'package:melodix/core/utils/duration_format.dart';
+import 'package:melodix/features/video/presentation/playback/video_engine.dart';
 
 /// Elapsed time, a seek slider and the length. While dragging, the slider
 /// follows the finger (the player isn't asked to seek on every pixel);
@@ -10,12 +10,12 @@ import 'package:video_player/video_player.dart';
 class VideoSeekBar extends StatefulWidget {
   const VideoSeekBar({
     super.key,
-    required this.controller,
+    required this.engine,
     required this.onSeek,
     this.onDragging,
   });
 
-  final VideoPlayerController controller;
+  final VideoEngine engine;
   final ValueChanged<Duration> onSeek;
 
   /// True while a finger is on the slider (to keep the controls shown).
@@ -38,17 +38,15 @@ class _VideoSeekBarState extends State<VideoSeekBar> {
     );
     // Its own layer: the ticking time never repaints the video or buttons.
     return RepaintBoundary(
-      child: ValueListenableBuilder<VideoPlayerValue>(
-        valueListenable: widget.controller,
+      child: ValueListenableBuilder<VideoEngineValue>(
+        valueListenable: widget.engine,
         builder: (context, value, _) {
           final totalMs = value.duration.inMilliseconds.toDouble();
           final max = totalMs > 0 ? totalMs : 1.0;
           final currentMs = (_dragMs ?? value.position.inMilliseconds)
               .toDouble()
               .clamp(0.0, max);
-          final buffered = value.buffered.isEmpty
-              ? 0.0
-              : value.buffered.last.end.inMilliseconds.clamp(0, max) / max;
+          final buffered = value.bufferedTo.inMilliseconds.clamp(0, max) / max;
           return Row(
             children: [
               SizedBox(

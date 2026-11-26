@@ -4,8 +4,9 @@ import 'package:melodix/core/config/dependency_injection/get_it.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/widgets/media_image.dart';
-import 'package:melodix/features/music_library/presentation/utils/duration_format.dart';
+import 'package:melodix/core/utils/duration_format.dart';
 import 'package:melodix/features/video/domain/entities/video.dart';
+import 'package:melodix/features/video/domain/entities/video_progress.dart';
 import 'package:melodix/features/video/domain/usecases/get_video_thumbnail_usecase.dart';
 
 /// A video's thumbnail (16:9 by default) with its length in a corner.
@@ -16,16 +17,16 @@ class VideoThumbnail extends StatelessWidget {
     super.key,
     required this.video,
     required this.width,
+    this.progress,
     this.showDuration = true,
-    this.showProgress = true,
   });
 
   final Video video;
   final double width;
   final bool showDuration;
 
-  /// A thin bar along the bottom for how much of a started video was seen.
-  final bool showProgress;
+  /// Shown as a thin bar along the bottom while the video can be resumed.
+  final VideoProgress? progress;
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +71,7 @@ class VideoThumbnail extends StatelessWidget {
                 ),
               ),
             ),
-          if (showProgress && video.canResume)
+          if (progress != null && progress!.canResume(video.duration))
             Positioned(
               left: 0,
               right: 0,
@@ -80,7 +81,7 @@ class VideoThumbnail extends StatelessWidget {
                   bottom: Radius.circular(10.r),
                 ),
                 child: LinearProgressIndicator(
-                  value: video.watchedFraction,
+                  value: progress!.fraction(video.duration),
                   minHeight: 3,
                   backgroundColor: Colors.white.withValues(alpha: 0.3),
                   color: Theme.of(context).primaryColor,

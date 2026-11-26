@@ -19,7 +19,7 @@ class LibraryMetadataCollection {
   /// until a sync saved one, or on devices without generations.
   String? songSyncCheckpoint;
 
-  /// When the video library was last synced (fully or found unchanged).
+  /// When the video library was last fully synced with the device.
   DateTime? lastVideoSyncAt;
 
   /// What the device's videos looked like at the last full video sync (how

@@ -1,11 +1,11 @@
-import 'package:melodix/features/music_library/domain/entities/library_permission.dart';
-import 'package:melodix/features/video/domain/repositories/video_library_repository.dart';
+import 'package:melodix/core/entities/library_permission.dart';
+import 'package:melodix/features/video/domain/repositories/video_permission_repository.dart';
 
 /// Whether the app may read the device's videos (never shows a dialog).
 class CheckVideoPermissionUseCase {
   const CheckVideoPermissionUseCase(this.repository);
 
-  final VideoLibraryRepository repository;
+  final VideoPermissionRepository repository;
 
   Future<LibraryPermission> call() => repository.checkPermission();
 }
@@ -14,7 +14,7 @@ class CheckVideoPermissionUseCase {
 class RequestVideoPermissionUseCase {
   const RequestVideoPermissionUseCase(this.repository);
 
-  final VideoLibraryRepository repository;
+  final VideoPermissionRepository repository;
 
   Future<LibraryPermission> call() => repository.requestPermission();
 }

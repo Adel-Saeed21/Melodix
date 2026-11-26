@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
+import 'package:melodix/features/video/presentation/widgets/player/video_minimize_button.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
@@ -22,7 +23,7 @@ class VideoPlaybackErrorView extends StatelessWidget {
         children: [
           const Align(
             alignment: Alignment.topLeft,
-            child: BackButton(color: Colors.white),
+            child: VideoMinimizeButton(),
           ),
           Center(
             child: Padding(
