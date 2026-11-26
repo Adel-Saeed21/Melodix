@@ -2,10 +2,11 @@ import 'dart:math' as math;
 
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
+import 'package:melodix/features/music_library/presentation/widgets/gradient_hero/hero_play_button.dart';
+import 'package:melodix/features/music_library/presentation/widgets/gradient_hero/hero_shuffle_button.dart';
 
 /// The top of the Favourites and Recently played pages: a tall [colors]
 /// gradient that runs behind the app bar and fades into the page, with an
@@ -139,9 +140,9 @@ class GradientHero extends StatelessWidget {
   Widget _actions() => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      _ShuffleButton(onPressed: onShuffle),
+      HeroShuffleButton(onPressed: onShuffle),
       horizontalSpace(16),
-      _PlayButton(onPressed: onPlay, color: colors.last),
+      HeroPlayButton(onPressed: onPlay, color: colors.last),
     ],
   );
 
@@ -228,69 +229,5 @@ class GradientHero extends StatelessWidget {
           ),
         ),
     ];
-  }
-}
-
-class _PlayButton extends StatelessWidget {
-  const _PlayButton({required this.onPressed, required this.color});
-
-  final VoidCallback? onPressed;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final size = 58.r;
-    return Tooltip(
-      message: AppStrings.playAll,
-      child: Material(
-        color: onPressed == null
-            ? Colors.white.withValues(alpha: 0.4)
-            : Colors.white,
-        shape: const CircleBorder(),
-        elevation: onPressed == null ? 0 : 6,
-        shadowColor: Colors.black.withValues(alpha: 0.4),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onPressed,
-          child: SizedBox.square(
-            dimension: size,
-            child: Icon(
-              Icons.play_arrow_rounded,
-              size: size * 0.6,
-              color: color,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ShuffleButton extends StatelessWidget {
-  const _ShuffleButton({required this.onPressed});
-
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return OutlinedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(Icons.shuffle_rounded, size: 18.r),
-      label: Text(
-        AppStrings.shufflePlay,
-        style: TextStyle(
-          fontSize: AppTextSizes.base,
-          fontWeight: FontWeightHelper.bold,
-        ),
-      ),
-      style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.white,
-        disabledForegroundColor: Colors.white.withValues(alpha: 0.4),
-        side: BorderSide(color: Colors.white.withValues(alpha: 0.6)),
-        backgroundColor: Colors.white.withValues(alpha: 0.12),
-        shape: const StadiumBorder(),
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
-      ),
-    );
   }
 }

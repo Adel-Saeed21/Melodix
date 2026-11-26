@@ -13,8 +13,8 @@ import 'package:melodix/features/player/presentation/widgets/sleep_timer_sheet.d
 import 'package:melodix/features/settings/presentation/widgets/app_icon_picker.dart';
 import 'package:melodix/features/settings/presentation/widgets/pill_choices.dart';
 import 'package:melodix/features/settings/presentation/widgets/preview_choices.dart';
-import 'package:melodix/features/settings/presentation/widgets/settings_section.dart';
-import 'package:melodix/features/subtitles/presentation/widgets/subtitle_overlay.dart';
+import 'package:melodix/core/widgets/settings/settings_section.dart';
+import 'package:melodix/features/subtitles/presentation/widgets/subtitle_text.dart';
 
 // Appearance
 

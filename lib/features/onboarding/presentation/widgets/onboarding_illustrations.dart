@@ -5,37 +5,9 @@ import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/widgets/melodix_mark.dart';
-
-/// A frosted rounded card the illustrations are drawn on.
-class _GlassCard extends StatelessWidget {
-  const _GlassCard({required this.child, this.width, this.height});
-
-  final Widget child;
-  final double? width;
-  final double? height;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: scheme.onSurface.withValues(alpha: 0.06),
-        borderRadius: BorderRadius.circular(28.r),
-        border: Border.all(color: scheme.onSurface.withValues(alpha: 0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.12),
-            blurRadius: 30,
-            offset: const Offset(0, 16),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-}
+import 'package:melodix/features/onboarding/presentation/widgets/onboarding_illustrations/onboarding_glass_card.dart';
+import 'package:melodix/features/onboarding/presentation/widgets/onboarding_illustrations/onboarding_now_playing_pill.dart';
+import 'package:melodix/features/onboarding/presentation/widgets/onboarding_illustrations/onboarding_badge.dart';
 
 /// Music: the Melodix bars dancing like an equalizer, notes floating
 /// around, and a "now playing" pill.
@@ -60,7 +32,7 @@ class MusicIllustration extends StatelessWidget {
           alignment: Alignment.center,
           clipBehavior: Clip.none,
           children: [
-            _GlassCard(
+            OnboardingGlassCard(
               width: 230.r,
               height: 230.r,
               child: Center(
@@ -81,7 +53,7 @@ class MusicIllustration extends StatelessWidget {
               ),
             Positioned(
               bottom: -10.r,
-              child: _NowPlayingPill(progress: time.value),
+              child: OnboardingNowPlayingPill(progress: time.value),
             ),
           ],
         );
@@ -99,82 +71,21 @@ class MusicIllustration extends StatelessWidget {
       );
 }
 
-class _NowPlayingPill extends StatelessWidget {
-  const _NowPlayingPill({required this.progress});
-
-  final double progress;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final accent = theme.primaryColor;
-    return Container(
-      width: 200.r,
-      padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 10.r),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(18.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 30.r,
-            height: 30.r,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [accent, accent.withValues(alpha: 0.5)],
-              ),
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-          ),
-          SizedBox(width: 10.r),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _line(context, 0.8),
-                SizedBox(height: 6.r),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(2),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 3,
-                    color: accent,
-                    backgroundColor: accent.withValues(alpha: 0.2),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(width: 8.r),
-          Icon(Icons.pause_rounded, color: accent, size: 22.r),
-        ],
-      ),
-    );
-  }
-}
-
-Widget _line(BuildContext context, double widthFactor, {double alpha = 0.5}) =>
-    FractionallySizedBox(
-      widthFactor: widthFactor,
-      alignment: Alignment.centerLeft,
-      child: Container(
-        height: 7,
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.onSurface
-              .withValues(alpha: alpha),
-          borderRadius: BorderRadius.circular(4),
-        ),
-      ),
-    );
+Widget onboardingLine(
+  BuildContext context,
+  double widthFactor, {
+  double alpha = 0.5,
+}) => FractionallySizedBox(
+  widthFactor: widthFactor,
+  alignment: Alignment.centerLeft,
+  child: Container(
+    height: 7,
+    decoration: BoxDecoration(
+      color: Theme.of(context).colorScheme.onSurface.withValues(alpha: alpha),
+      borderRadius: BorderRadius.circular(4),
+    ),
+  ),
+);
 
 /// A video screen with a play button and a moving progress bar, and a
 /// floating small window bobbing at its corner.
@@ -195,7 +106,7 @@ class VideoIllustration extends StatelessWidget {
           alignment: Alignment.center,
           clipBehavior: Clip.none,
           children: [
-            _GlassCard(
+            OnboardingGlassCard(
               width: 270.r,
               height: 170.r,
               child: ClipRRect(
@@ -320,7 +231,7 @@ class SubtitlesIllustration extends StatelessWidget {
           alignment: Alignment.center,
           clipBehavior: Clip.none,
           children: [
-            _GlassCard(
+            OnboardingGlassCard(
               width: 270.r,
               height: 170.r,
               child: ClipRRect(
@@ -384,7 +295,7 @@ class SubtitlesIllustration extends StatelessWidget {
             Positioned(
               top: -16.r,
               left: -10.r,
-              child: _Badge(
+              child: OnboardingBadge(
                 icon: Icons.closed_caption_rounded,
                 label: 'SRT · VTT',
                 color: accent,
@@ -393,7 +304,7 @@ class SubtitlesIllustration extends StatelessWidget {
             Positioned(
               bottom: -18.r,
               right: -6.r,
-              child: _Badge(
+              child: OnboardingBadge(
                 icon: Icons.cloud_off_rounded,
                 label: AppStrings.onboardingOffline,
                 color: accent,
@@ -403,55 +314,6 @@ class SubtitlesIllustration extends StatelessWidget {
           ],
         );
       },
-    );
-  }
-}
-
-class _Badge extends StatelessWidget {
-  const _Badge({
-    required this.icon,
-    required this.label,
-    required this.color,
-    this.filled = false,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final bool filled;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final foreground = filled ? Colors.white : color;
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 8.r),
-      decoration: BoxDecoration(
-        color: filled ? color : theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: foreground, size: 18.r),
-          SizedBox(width: 6.r),
-          Text(
-            label,
-            style: TextStyle(
-              color: foreground,
-              fontWeight: FontWeightHelper.bold,
-              fontSize: 12.sp,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

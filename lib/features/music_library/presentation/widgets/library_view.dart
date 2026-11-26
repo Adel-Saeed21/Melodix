@@ -18,6 +18,7 @@ import 'package:melodix/features/music_library/presentation/widgets/library_tabs
 import 'package:melodix/features/music_library/presentation/widgets/library_tabs/artists_tab.dart';
 import 'package:melodix/features/music_library/presentation/widgets/library_tabs/playlists_tab.dart';
 import 'package:melodix/features/music_library/presentation/widgets/library_tabs/songs_tab.dart';
+import 'package:melodix/core/widgets/keep_alive_tab.dart';
 
 /// The library tabs, with a search mode. Opening, the 🔍 button grows
 /// into a full-width search field while the title slides away, the tabs fold
@@ -189,10 +190,10 @@ class _LibraryViewState extends State<LibraryView>
               maintainState: true,
               child: TabBarView(
                 children: [
-                  _KeepAlive(child: SongsTab(songs: state.songs)),
-                  _KeepAlive(child: const PlaylistsTab()),
-                  _KeepAlive(child: const AlbumsTab()),
-                  _KeepAlive(child: const ArtistsTab()),
+                  KeepAliveTab(child: SongsTab(songs: state.songs)),
+                  KeepAliveTab(child: const PlaylistsTab()),
+                  KeepAliveTab(child: const AlbumsTab()),
+                  KeepAliveTab(child: const ArtistsTab()),
                 ],
               ),
             ),
@@ -303,28 +304,4 @@ class _LibraryViewState extends State<LibraryView>
 
   /// Keeps the tabs' state when the phone turns (see [build]).
   final GlobalKey _contentKey = GlobalKey();
-}
-
-/// Keeps a tab page alive while another tab is shown, so switching back
-/// doesn't rebuild it (no re-sorting, no cover reloads) and its scroll
-/// position and state are kept. It still updates when its data changes.
-class _KeepAlive extends StatefulWidget {
-  const _KeepAlive({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_KeepAlive> createState() => _KeepAliveState();
-}
-
-class _KeepAliveState extends State<_KeepAlive>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    return widget.child;
-  }
 }
