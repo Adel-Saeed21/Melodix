@@ -7,25 +7,33 @@ import 'package:melodix/features/video/presentation/widgets/player/video_control
 import 'package:melodix/features/video/presentation/widgets/player/video_seek_bar.dart';
 import 'package:melodix/features/video/presentation/widgets/player/video_top_bar.dart';
 import 'package:melodix/features/video/presentation/widgets/player/video_transport_buttons.dart';
-import 'package:video_player/video_player.dart';
+import 'package:melodix/features/video/presentation/playback/video_engine.dart';
 
-/// The buttons over the video: top bar, previous / play / next, and the
-/// seek bar with the rotate button.
+/// The buttons over the video: the top bar, the transport buttons, and
+/// the seek bar between lock and rotate.
 class VideoControlsLayer extends StatelessWidget {
   const VideoControlsLayer({
     super.key,
-    required this.controller,
+    required this.engine,
     required this.onRotate,
     required this.onTouched,
     required this.onDragging,
+    required this.fill,
+    required this.onToggleFill,
+    required this.onLock,
   });
 
-  final VideoPlayerController controller;
+  final VideoEngine engine;
   final VoidCallback onRotate;
 
   /// Any button pressed: keep the controls up a little longer.
   final VoidCallback onTouched;
   final ValueChanged<bool> onDragging;
+  final bool fill;
+  final VoidCallback onToggleFill;
+
+  /// Locks the screen against touches (only Unlock works then).
+  final VoidCallback onLock;
 
   @override
   Widget build(BuildContext context) {
@@ -46,18 +54,25 @@ class VideoControlsLayer extends StatelessWidget {
           ),
           child: Column(
             children: [
-              VideoTopBar(onTouched: onTouched),
-              const Spacer(),
-              VideoTransportButtons(
-                controller: controller,
+              VideoTopBar(
                 onTouched: onTouched,
+                fill: fill,
+                onToggleFill: onToggleFill,
               ),
+              const Spacer(),
+              VideoTransportButtons(engine: engine, onTouched: onTouched),
               const Spacer(),
               Row(
                 children: [
+                  IconButton(
+                    tooltip: AppStrings.lockControls,
+                    color: Colors.white,
+                    onPressed: onLock,
+                    icon: const Icon(Icons.lock_outline_rounded),
+                  ),
                   Expanded(
                     child: VideoSeekBar(
-                      controller: controller,
+                      engine: engine,
                       onSeek: cubit.seek,
                       onDragging: onDragging,
                     ),

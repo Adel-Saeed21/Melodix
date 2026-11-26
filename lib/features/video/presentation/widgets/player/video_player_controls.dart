@@ -1,30 +1,36 @@
+import 'package:melodix/core/config/assets/app_strings.dart';
+
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/features/video/presentation/logic/video_player_cubit.dart';
-import 'package:melodix/features/video/presentation/widgets/player/controller_selector.dart';
+import 'package:melodix/features/video/presentation/widgets/player/engine_selector.dart';
 import 'package:melodix/features/video/presentation/widgets/player/seek_jump_bubble.dart';
+import 'package:melodix/features/video/presentation/widgets/player/video_transport_buttons.dart';
 import 'package:melodix/features/video/presentation/widgets/player/video_controls_layer.dart';
-import 'package:video_player/video_player.dart';
+import 'package:melodix/features/video/presentation/playback/video_engine.dart';
 
 /// What's drawn over the video: tap to show / hide, double-tap a side to
-/// jump 10 s, and the buttons (hidden 3 s after the last touch while
+/// jump (by the step chosen in Settings), and the buttons (hidden 3 s after the last touch while
 /// playing; always shown when paused).
 class VideoPlayerControls extends StatefulWidget {
   const VideoPlayerControls({
     super.key,
-    required this.controller,
+    required this.engine,
     required this.onRotate,
+    required this.fill,
+    required this.onToggleFill,
     this.hideAfter = const Duration(seconds: 3),
   });
 
-  final VideoPlayerController controller;
+  final VideoEngine engine;
   final VoidCallback onRotate;
+  final bool fill;
+  final VoidCallback onToggleFill;
   final Duration hideAfter;
 
   static const List<double> speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
-  static const Duration doubleTapJump = Duration(seconds: 10);
 
   @override
   State<VideoPlayerControls> createState() => _VideoPlayerControlsState();
@@ -33,6 +39,10 @@ class VideoPlayerControls extends StatefulWidget {
 class _VideoPlayerControlsState extends State<VideoPlayerControls> {
   bool _visible = true;
   bool _dragging = false;
+
+  /// Locked: touches do nothing but show Unlock (no accidental pauses or
+  /// seeks, e.g. holding the phone or in a pocket).
+  bool _locked = false;
   Timer? _hideTimer;
 
   /// The last double-tap jump, shown briefly on its side; repeated taps
@@ -44,16 +54,16 @@ class _VideoPlayerControlsState extends State<VideoPlayerControls> {
   @override
   void initState() {
     super.initState();
-    widget.controller.addListener(_onPlayerChanged);
+    widget.engine.addListener(_onPlayerChanged);
     _scheduleHide();
   }
 
   @override
   void didUpdateWidget(VideoPlayerControls old) {
     super.didUpdateWidget(old);
-    if (old.controller != widget.controller) {
-      old.controller.removeListener(_onPlayerChanged);
-      widget.controller.addListener(_onPlayerChanged);
+    if (old.engine != widget.engine) {
+      old.engine.removeListener(_onPlayerChanged);
+      widget.engine.addListener(_onPlayerChanged);
       _show();
     }
   }
@@ -61,9 +71,10 @@ class _VideoPlayerControlsState extends State<VideoPlayerControls> {
   bool _wasPlaying = false;
 
   void _onPlayerChanged() {
-    final playing = widget.controller.value.isPlaying;
+    final playing = widget.engine.value.isPlaying;
     if (playing == _wasPlaying) return;
     _wasPlaying = playing;
+    if (_locked) return; // stays out of the way
     // Paused (or ended): keep the controls up. Playing: hide them soon.
     if (!playing) {
       _hideTimer?.cancel();
@@ -76,10 +87,21 @@ class _VideoPlayerControlsState extends State<VideoPlayerControls> {
   void _scheduleHide() {
     _hideTimer?.cancel();
     _hideTimer = Timer(widget.hideAfter, () {
-      if (mounted && !_dragging && widget.controller.value.isPlaying) {
+      // Locked, Unlock hides again whatever the video is doing.
+      if (mounted && !_dragging && (_locked || widget.engine.value.isPlaying)) {
         setState(() => _visible = false);
       }
     });
+  }
+
+  void _lock() {
+    setState(() => _locked = true);
+    _scheduleHide();
+  }
+
+  void _unlock() {
+    setState(() => _locked = false);
+    _show();
   }
 
   void _show() {
@@ -100,11 +122,10 @@ class _VideoPlayerControlsState extends State<VideoPlayerControls> {
     final at = _doubleTapAt;
     if (at == null) return;
     final forward = at.dx > width / 2;
-    final step = VideoPlayerControls.doubleTapJump.inSeconds;
+    final jump = videoSeekStepOf(context);
+    final step = jump.inSeconds;
     final cubit = context.read<VideoPlayerCubit>();
-    unawaited(
-      cubit.seekBy(VideoPlayerControls.doubleTapJump * (forward ? 1 : -1)),
-    );
+    unawaited(cubit.seekBy(jump * (forward ? 1 : -1)));
     setState(() {
       // Same direction as the last jump (still shown): add up.
       _jumpSeconds = (_jumpSeconds != 0 && (_jumpSeconds > 0) == forward)
@@ -119,7 +140,7 @@ class _VideoPlayerControlsState extends State<VideoPlayerControls> {
 
   @override
   void dispose() {
-    widget.controller.removeListener(_onPlayerChanged);
+    widget.engine.removeListener(_onPlayerChanged);
     _hideTimer?.cancel();
     _jumpTimer?.cancel();
     super.dispose();
@@ -127,6 +148,7 @@ class _VideoPlayerControlsState extends State<VideoPlayerControls> {
 
   @override
   Widget build(BuildContext context) {
+    if (_locked) return _lockedOverlay();
     return LayoutBuilder(
       builder: (context, constraints) => Stack(
         fit: StackFit.expand,
@@ -148,8 +170,8 @@ class _VideoPlayerControlsState extends State<VideoPlayerControls> {
             ),
           // Buffering: a spinner even while the controls are hidden.
           IgnorePointer(
-            child: ControllerSelector<bool>(
-              controller: widget.controller,
+            child: EngineSelector<bool>(
+              engine: widget.engine,
               select: (v) => v.isBuffering && !v.isCompleted,
               builder: (context, buffering) => buffering
                   ? const Center(
@@ -164,18 +186,55 @@ class _VideoPlayerControlsState extends State<VideoPlayerControls> {
               opacity: _visible ? 1 : 0,
               duration: const Duration(milliseconds: 200),
               child: VideoControlsLayer(
-                controller: widget.controller,
+                engine: widget.engine,
                 onRotate: widget.onRotate,
                 onTouched: _show,
                 onDragging: (dragging) {
                   _dragging = dragging;
                   if (!dragging) _scheduleHide();
                 },
+                fill: widget.fill,
+                onToggleFill: widget.onToggleFill,
+                onLock: _lock,
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  /// While locked: a tap only shows Unlock (for a few seconds).
+  Widget _lockedOverlay() {
+    final padding = MediaQuery.paddingOf(context);
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        GestureDetector(behavior: HitTestBehavior.opaque, onTap: _show),
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: padding.bottom + 32,
+          child: IgnorePointer(
+            ignoring: !_visible,
+            child: AnimatedOpacity(
+              opacity: _visible ? 1 : 0,
+              duration: const Duration(milliseconds: 200),
+              child: Center(
+                child: FilledButton.tonalIcon(
+                  onPressed: _unlock,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.black.withValues(alpha: 0.6),
+                    foregroundColor: Colors.white,
+                  ),
+                  icon: const Icon(Icons.lock_open_rounded),
+                  label: const Text(AppStrings.unlockControls),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

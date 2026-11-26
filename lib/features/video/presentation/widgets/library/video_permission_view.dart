@@ -1,8 +1,8 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
-import 'package:melodix/features/music_library/domain/entities/library_permission.dart';
-import 'package:melodix/features/music_library/presentation/widgets/library_status_view.dart';
+import 'package:melodix/core/entities/library_permission.dart';
+import 'package:melodix/core/widgets/library_status_view.dart';
 import 'package:melodix/features/video/presentation/logic/video_library_cubit.dart';
 
 /// Asks for access to the videos: the system dialog, or (once turned off

@@ -143,20 +143,144 @@ void main() {
     await cubit.close();
   });
 
-  test('returning to the app checks at most every 15 seconds', () async {
+  test('returning to the app checks at most every 5 minutes', () async {
     final cubit = build();
     await cubit.start();
     clearInteractions(sync);
 
     resumed.add(null);
     await pumpEventQueue();
+    now = now.add(const Duration(minutes: 4, seconds: 59));
+    resumed.add(null);
+    await pumpEventQueue();
     verifyNever(() => sync(any()));
 
-    now = now.add(const Duration(seconds: 20));
+    now = now.add(const Duration(seconds: 1));
     resumed.add(null);
     await pumpEventQueue();
     verify(() => sync(any())).called(1);
     await cubit.close();
+  });
+
+  test(
+    'access granted in the settings is noticed on return, however soon',
+    () async {
+      when(() => check()).thenAnswer((_) async => LibraryPermission.denied);
+      final cubit = build();
+      await cubit.start();
+      verifyNever(() => sync(any()));
+
+      // Seconds later, well within the 5 minutes.
+      now = now.add(const Duration(seconds: 3));
+      when(() => check()).thenAnswer((_) async => LibraryPermission.granted);
+      resumed.add(null);
+      await pumpEventQueue();
+      expect(cubit.state.status, VideoLibraryStatus.ready);
+      verify(() => sync(any())).called(1);
+      await cubit.close();
+    },
+  );
+
+  group('the spinner', () {
+    test('an automatic check of a shown library runs silently', () async {
+      final scanning = <bool>[];
+      final cubit = build();
+      final sub = cubit.stream.listen((s) => scanning.add(s.isScanning));
+      // The saved videos are on screen before the check.
+      cubit.emit(cubit.state.copyWith(videos: [testVideo('a')]));
+      await cubit.start();
+      verify(() => sync(const VideoSyncParams())).called(1);
+
+      now = now.add(const Duration(minutes: 5));
+      resumed.add(null);
+      await pumpEventQueue();
+      verify(() => sync(const VideoSyncParams())).called(1);
+
+      expect(scanning, everyElement(isFalse));
+      await sub.cancel();
+      await cubit.close();
+    });
+
+    test('changes found by a silent check still reach the list', () async {
+      final cubit = build();
+      final started = cubit.start();
+      videos.add([testVideo('a')]);
+      await started;
+      expect(cubit.state.isScanning, isFalse);
+
+      videos.add([testVideo('b'), testVideo('a')]); // the sync's save
+      await pumpEventQueue();
+      expect(cubit.state.videos.map((v) => v.id), ['b', 'a']);
+      await cubit.close();
+    });
+
+    test('shows while an empty library is first read', () async {
+      final gate = Completer<Either<Failure, VideoLibraryChanges>>();
+      when(() => sync(any())).thenAnswer((_) => gate.future);
+      final cubit = build();
+      final started = cubit.start();
+      await pumpEventQueue();
+      expect(cubit.state.isScanning, isTrue);
+
+      gate.complete(const Right(_noChanges));
+      await started;
+      expect(cubit.state.isScanning, isFalse);
+      await cubit.close();
+    });
+
+    test('shows for the Scan button, at once, until it ends', () async {
+      final gate = Completer<Either<Failure, VideoLibraryChanges>>();
+      final cubit = build();
+      cubit.emit(cubit.state.copyWith(videos: [testVideo('a')]));
+      await cubit.start();
+      when(() => sync(any())).thenAnswer((_) => gate.future);
+
+      final scan = cubit.scan();
+      expect(cubit.state.isScanning, isTrue);
+      gate.complete(const Right(_noChanges));
+      await scan;
+      expect(cubit.state.isScanning, isFalse);
+      await cubit.close();
+    });
+
+    test('Scan during a silent check: waits for it, then reads all', () async {
+      final check = Completer<Either<Failure, VideoLibraryChanges>>();
+      final cubit = build();
+      cubit.emit(cubit.state.copyWith(videos: [testVideo('a')]));
+      when(() => sync(const VideoSyncParams())).thenAnswer((_) => check.future);
+      final started = cubit.start();
+      await pumpEventQueue();
+      expect(cubit.state.isScanning, isFalse); // the check is silent
+
+      final scan = cubit.scan();
+      expect(cubit.state.isScanning, isTrue); // the tap shows at once
+      verifyNever(() => sync(const VideoSyncParams(force: true)));
+
+      check.complete(const Right(_noChanges));
+      await started;
+      expect(cubit.state.isScanning, isTrue); // still the Scan's turn
+      expect(await scan, isNotNull);
+      verify(() => sync(const VideoSyncParams(force: true))).called(1);
+      expect(cubit.state.isScanning, isFalse);
+      await cubit.close();
+    });
+
+    test('no automatic check on top of a running one', () async {
+      final gate = Completer<Either<Failure, VideoLibraryChanges>>();
+      when(() => sync(any())).thenAnswer((_) => gate.future);
+      final cubit = build();
+      cubit.emit(cubit.state.copyWith(videos: [testVideo('a')]));
+      final started = cubit.start();
+      await pumpEventQueue();
+
+      now = now.add(const Duration(minutes: 10));
+      resumed.add(null);
+      await pumpEventQueue();
+      gate.complete(const Right(_noChanges));
+      await started;
+      verify(() => sync(any())).called(1);
+      await cubit.close();
+    });
   });
 
   test('automatic syncs are cheap checks; the Scan button reads all', () async {
@@ -193,7 +317,7 @@ void main() {
         await setVideoOpen(true);
 
         for (var i = 0; i < 3; i++) {
-          now = now.add(const Duration(minutes: 1));
+          now = now.add(const Duration(minutes: 5)); // each one due
           resumed.add(null);
           await pumpEventQueue();
         }

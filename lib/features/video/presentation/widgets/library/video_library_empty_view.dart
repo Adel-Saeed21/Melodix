@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
-import 'package:melodix/features/music_library/presentation/widgets/library_status_view.dart';
+import 'package:melodix/core/widgets/library_status_view.dart';
 import 'package:melodix/features/video/presentation/widgets/library/scan_videos.dart';
 
 /// No videos yet: a spinner while the first scan runs, else a message

@@ -247,7 +247,6 @@ void main() {
         ),
       );
       await storage.syncVideos([video('a')], checkpoint: '1:a:100');
-      await storage.markVideosCheckedUnchanged();
 
       final row = await isar.libraryMetadataCollections.get(
         LibraryMetadataCollection.singletonId,

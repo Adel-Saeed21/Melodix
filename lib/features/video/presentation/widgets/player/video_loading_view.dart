@@ -1,4 +1,5 @@
 import 'package:material_ui/material_ui.dart';
+import 'package:melodix/features/video/presentation/widgets/player/video_minimize_button.dart';
 import 'package:melodix/features/video/domain/entities/video.dart';
 import 'package:melodix/features/video/presentation/widgets/video_thumbnail.dart';
 
@@ -29,7 +30,7 @@ class VideoLoadingView extends StatelessWidget {
         const SafeArea(
           child: Align(
             alignment: Alignment.topLeft,
-            child: BackButton(color: Colors.white),
+            child: VideoMinimizeButton(),
           ),
         ),
       ],

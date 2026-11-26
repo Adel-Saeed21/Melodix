@@ -63,7 +63,6 @@ void main() {
     setUp(() {
       when(() => service.checkpoint()).thenAnswer((_) async => now);
       when(() => storage.videoCheckpoint()).thenAnswer((_) async => before);
-      when(() => storage.markVideosCheckedUnchanged()).thenAnswer((_) async {});
       when(() => storage.countVideos()).thenAnswer((_) async => 2);
       when(
         () => storage.syncVideos(
@@ -93,7 +92,10 @@ void main() {
           checkpoint: any(named: 'checkpoint'),
         ),
       );
-      verify(() => storage.markVideosCheckedUnchanged()).called(1);
+      // A read-only check: two reads, nothing written.
+      verify(() => storage.videoCheckpoint()).called(1);
+      verify(() => storage.countVideos()).called(1);
+      verifyNoMoreInteractions(storage);
     });
 
     test(

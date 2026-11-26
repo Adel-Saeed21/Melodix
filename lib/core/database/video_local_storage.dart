@@ -49,9 +49,6 @@ abstract interface class VideoLocalStorage {
   /// The device's fingerprint at the last full sync; null if none yet.
   Future<String?> videoCheckpoint();
 
-  /// Notes a sync that found nothing changed (no scan, nothing written).
-  Future<void> markVideosCheckedUnchanged();
-
   /// How many videos the library has.
   Future<int> countVideos();
 
@@ -161,14 +158,6 @@ class VideoLocalStorageImpl implements VideoLocalStorage {
   Future<String?> videoCheckpoint() async =>
       (await _metadata.get(LibraryMetadataCollection.singletonId))
           ?.videoSyncCheckpoint;
-
-  @override
-  Future<void> markVideosCheckedUnchanged() => _isar.writeTxn(() async {
-    final metadata =
-        await _metadata.get(LibraryMetadataCollection.singletonId) ??
-        LibraryMetadataCollection();
-    await _metadata.put(metadata..lastVideoSyncAt = DateTime.now());
-  });
 
   @override
   Future<int> countVideos() => _videos.count();

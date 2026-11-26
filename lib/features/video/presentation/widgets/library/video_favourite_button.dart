@@ -1,41 +1,37 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
-import 'package:melodix/core/widgets/app_snack_bar.dart';
 import 'package:melodix/features/video/domain/entities/video.dart';
-import 'package:melodix/features/video/presentation/logic/video_library_cubit.dart';
+import 'package:melodix/features/video/presentation/logic/favorite_videos_cubit.dart';
+import 'package:melodix/features/video/presentation/widgets/video_favourite_action.dart';
 
-/// ♥ on a video row: favourites it, or takes it out.
+/// ♥ on a video: favourites it, or takes it out. Shows the app's live
+/// favourites, so it's right wherever the change was made.
 class VideoFavouriteButton extends StatelessWidget {
-  const VideoFavouriteButton({super.key, required this.video});
+  const VideoFavouriteButton({super.key, required this.video, this.color});
 
   final Video video;
 
+  /// The empty heart's colour (the full one is the app's accent).
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
-    final favourite = video.isFavorite;
+    final favourite = context.select(
+      (FavoriteVideosCubit c) => c.state.ids.contains(video.id),
+    );
     return IconButton(
       tooltip: favourite
           ? AppStrings.removeFromFavourites
           : AppStrings.addToFavourites,
-      onPressed: () async {
-        // The list updates by itself (it's live).
-        final result = await context.read<VideoLibraryCubit>().toggleFavorite(
-          video.id,
-        );
-        if (result == null && context.mounted) {
-          AppSnackBar.show(
-            context,
-            AppStrings.changeNotSaved,
-            kind: AppSnackBarKind.error,
-          );
-        }
-      },
+      onPressed: () => toggleVideoFavourite(context, video.id),
       icon: Icon(
         favourite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
         color: favourite
             ? Theme.of(context).primaryColor
-            : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+            : color ??
+                  Theme.of(context).colorScheme.onSurface
+                      .withValues(alpha: 0.5),
       ),
     );
   }
