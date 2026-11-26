@@ -53,7 +53,7 @@ class RecentMusicLocalStorageImpl implements RecentMusicLocalStorage {
     ]);
     return songs
         .whereType<SongCollection>()
-        .where((s) => !s.isHidden && _keeps(s))
+        .where(_keeps)
         .toList(growable: false);
   }
 

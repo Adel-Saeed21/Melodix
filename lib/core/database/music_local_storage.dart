@@ -45,7 +45,7 @@ abstract interface class MusicLocalStorage {
   });
 
   /// Applies an incremental scan in one transaction: adds or updates
-  /// [upserts] (keeping favourites, play counts and hidden state), forgets
+  /// [upserts] (keeping favourites and play counts), forgets
   /// [deletedIds] (also from recents and playlists) and saves [checkpoint].
   /// If anything fails nothing is saved, so the checkpoint never moves past
   /// changes that weren't applied.
@@ -55,7 +55,7 @@ abstract interface class MusicLocalStorage {
     required String checkpoint,
   });
 
-  /// Every saved song id, hidden songs included.
+  /// Every saved song id, including songs the library filter leaves out.
   Future<Set<int>> getAllSongIds();
 
   /// The checkpoint saved by the last sync, if any.
@@ -82,8 +82,6 @@ abstract interface class MusicLocalStorage {
   /// (sync, unhiding), and only the affected songs for single-song edits
   /// (favourite, play count, hiding, deleting). Updates follow committed
   /// writes in order; a failed write sends nothing.
-  ///
-  /// Hidden songs are excluded here and in every other query below.
   Stream<SongLibraryUpdate> watchLibrary();
 
   /// Flips the favorite flag and returns the new value.
@@ -92,20 +90,6 @@ abstract interface class MusicLocalStorage {
   /// Whether the song is a favourite, now and whenever that changes (false
   /// if it's gone). For the media notification's ♥ button.
   Stream<bool> watchFavorite(int songId);
-
-  /// Hides a song from the library (or shows it again). The file is never
-  /// touched.
-  Future<void> setHidden(int songId, {required bool hidden});
-
-  /// Songs the user hid, sorted by title, now and on every change.
-  Stream<List<SongCollection>> watchHiddenSongs();
-
-  /// Hides (or shows) several songs at once.
-  Future<void> setHiddenMany(List<int> songIds, {required bool hidden});
-
-  /// Shows every hidden song again. Hiding songs is no longer offered, so
-  /// this runs at start-up to bring back songs hidden by older versions.
-  Future<void> unhideAll();
 
   /// Marks (or unmarks) several songs as favourites at once.
   Future<void> setFavoriteMany(List<int> songIds, {required bool favorite});
@@ -295,9 +279,8 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
   });
 
   @override
-  Future<int> countSongs() async => _filter().isDefault
-      ? _songs.filter().not().isHiddenEqualTo(true).count()
-      : (await getAllSongs()).length;
+  Future<int> countSongs() async =>
+      _filter().isDefault ? _songs.count() : (await getAllSongs()).length;
 
   @override
   Future<DateTime?> getLastSyncedAt() async =>
@@ -306,12 +289,7 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
 
   @override
   Future<List<SongCollection>> getAllSongs() async {
-    final songs = await _songs
-        .filter()
-        .not()
-        .isHiddenEqualTo(true)
-        .sortByTitle()
-        .findAll();
+    final songs = await _songs.where().sortByTitle().findAll();
     if (_filter().isDefault) return songs;
     return songs.where(_keeps).toList(growable: false);
   }
@@ -384,35 +362,6 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
   }
 
   @override
-  Future<void> setHidden(int songId, {required bool hidden}) =>
-      setHiddenMany([songId], hidden: hidden);
-
-  @override
-  Future<void> setHiddenMany(List<int> songIds, {required bool hidden}) async {
-    final changed = await _updateMany(songIds, (song) {
-      if (song.isHidden == hidden) return false;
-      song.isHidden = hidden;
-      return true;
-    });
-    if (changed.isEmpty) return;
-    // Hiding only removes rows; showing adds them back in title order, which
-    // is the database's to decide: reload.
-    _changes.add(
-      hidden ? _Removed({for (final s in changed) s.id}) : const _Reload(),
-    );
-  }
-
-  @override
-  Future<void> unhideAll() async {
-    final ids = await _songs
-        .filter()
-        .isHiddenEqualTo(true)
-        .idProperty()
-        .findAll();
-    await setHiddenMany(ids, hidden: false);
-  }
-
-  @override
   Future<void> setFavoriteMany(
     List<int> songIds, {
     required bool favorite,
@@ -455,13 +404,6 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
       .watchObject(songId, fireImmediately: true)
       .map((song) => song?.isFavorite ?? false)
       .distinct();
-
-  @override
-  Stream<List<SongCollection>> watchHiddenSongs() => _songs
-      .filter()
-      .isHiddenEqualTo(true)
-      .sortByTitle()
-      .watch(fireImmediately: true);
 
   @override
   Future<void> recordPlay(int songId) async {

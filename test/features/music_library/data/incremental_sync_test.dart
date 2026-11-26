@@ -235,20 +235,6 @@ void main() {
       final playlist = await isar.playlistCollections.where().findFirst();
       expect(playlist!.songIds, [ids['b']]);
     }, skip: skip);
-
-    test(
-      'a hidden song stays hidden and is not mistaken for deleted',
-      () async {
-        final ids = await seeded();
-        await storage.setHidden(ids['b']!, hidden: true);
-        device.add(title: 'Echo'); // some other change triggers a delta
-
-        await sync();
-
-        expect((await saved(ids['b']!))!.isHidden, isTrue);
-      },
-      skip: skip,
-    );
   });
 
   group('volumes', () {

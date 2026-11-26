@@ -31,8 +31,8 @@ abstract interface class PlaylistLocalStorage {
 
   Future<void> moveSong(int playlistId, int from, int to);
 
-  /// Saves a new order for the visible songs; hidden songs keep their
-  /// positions (see [PlaylistCollection.reorderVisible]).
+  /// Saves a new order for the visible songs; songs the library filter
+  /// leaves out keep their positions (see [PlaylistCollection.reorderVisible]).
   Future<void> reorderSongs(int playlistId, List<int> orderedSongIds);
 
   /// Flips the favorite flag and returns the new value.
@@ -87,7 +87,7 @@ class PlaylistLocalStorageImpl implements PlaylistLocalStorage {
     final songs = await _isar.songCollections.getAll(playlist.songIds);
     return songs
         .whereType<SongCollection>()
-        .where((s) => !s.isHidden && _keeps(s))
+        .where(_keeps)
         .toList(growable: false);
   }
 

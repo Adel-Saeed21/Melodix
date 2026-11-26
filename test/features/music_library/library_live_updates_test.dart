@@ -178,12 +178,7 @@ void main() {
   /// Mapped songs straight from the database, for comparison.
   Future<List<Song>> fromDatabase() async => [
     for (final row
-        in await isar.songCollections
-            .filter()
-            .not()
-            .isHiddenEqualTo(true)
-            .sortByTitle()
-            .findAll())
+        in await isar.songCollections.where().sortByTitle().findAll())
       const SongMapper(isAndroid: true).toEntity(row),
   ];
 
@@ -247,51 +242,20 @@ void main() {
     }, skip: skip);
   });
 
-  group('3. hide / unhide', () {
-    test('hiding removes the song in memory; showing reloads', () async {
+  group('3. removing songs', () {
+    test('deleting songs removes them in memory', () async {
       final before = bloc.state.songs;
 
-      await storage.setHiddenMany([9], hidden: true);
+      await storage.removeSongs([4, 6]);
       await settle();
 
-      expect(bloc.state.songs.map((s) => s.id), isNot(contains(9)));
-      expect(bloc.state.songs, hasLength(19));
+      expect(bloc.state.songs, hasLength(18));
       expect(storage.fullReads, 0);
       // Every other song is the same instance, in the same order.
       expect(
         bloc.state.songs.every((s) => before.any((b) => identical(b, s))),
         isTrue,
       );
-      expect(bloc.state.songs, await fromDatabase());
-
-      await storage.setHiddenMany([9], hidden: false);
-      await settle();
-
-      // Back in its title position: a reload (the database decides order).
-      expect(storage.fullReads, 1);
-      expect(bloc.state.songs, await fromDatabase());
-      expect(bloc.state.songs.map((s) => s.id), before.map((s) => s.id));
-    }, skip: skip);
-
-    test('bulk hide, and hiding an already hidden song', () async {
-      await storage.setHiddenMany([1, 2, 3], hidden: true);
-      await settle();
-      final afterHide = bloc.state;
-      await storage.setHiddenMany([1, 2], hidden: true); // no-op
-      await settle();
-
-      expect(bloc.state.songs, hasLength(17));
-      expect(identical(bloc.state, afterHide), isTrue);
-      expect(storage.fullReads, 0);
-      expect(bloc.state.songs, await fromDatabase());
-    }, skip: skip);
-
-    test('deleting songs removes them in memory', () async {
-      await storage.removeSongs([4, 6]);
-      await settle();
-
-      expect(bloc.state.songs, hasLength(18));
-      expect(storage.fullReads, 0);
       expect(bloc.state.songs, await fromDatabase());
     }, skip: skip);
   });
@@ -325,17 +289,13 @@ void main() {
 
       await expectLater(failing.recordPlay(5), throwsStateError);
       await expectLater(failing.toggleFavorite(5), throwsStateError);
-      await expectLater(
-        failing.setHiddenMany([5], hidden: true),
-        throwsStateError,
-      );
       await settle();
       await sub.cancel();
 
       expect(updates, hasLength(1)); // only the initial load
       expect(updates.single, isA<SongLibraryLoaded>());
       final row = (await isar.songCollections.get(5))!;
-      expect((row.playCount, row.isFavorite, row.isHidden), (0, false, false));
+      expect((row.playCount, row.isFavorite), (0, false));
     }, skip: skip);
 
     test('a rolled-back play is never shown', () async {
@@ -383,7 +343,7 @@ void main() {
     expect(search.state.results.songs, hasLength(10));
 
     await songs.toggleFavorite(11);
-    await storage.setHiddenMany([12], hidden: true);
+    await storage.removeSongs([12]);
     await settle();
 
     final found = search.state.results.songs;
@@ -505,20 +465,18 @@ void main() {
     }, skip: skip);
 
     test('a slow reload never overwrites a newer play count', () async {
-      await storage.setHiddenMany([20], hidden: true);
-      await settle();
+      final readsBefore = storage.fullReads;
       storage.holdReads = Completer();
 
-      // Unhiding reloads the library; its read is held after the snapshot.
-      final unhide = storage.setHiddenMany([20], hidden: false);
+      // A full reload; its read is held after the snapshot.
+      storage.reloadLibrary();
       await storage.readTaken.future;
       // A play commits while that (now stale) reload is still in flight.
       await storage.recordPlay(5);
       storage.holdReads!.complete();
-      await unhide;
       await settle();
 
-      expect(byId(20).id, 20); // the reload arrived
+      expect(storage.fullReads, readsBefore + 1); // the reload arrived
       expect(byId(5).playCount, 1); // and the play still shows
       expect(bloc.state.songs, await fromDatabase());
     }, skip: skip);
