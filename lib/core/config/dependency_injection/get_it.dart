@@ -1,7 +1,33 @@
+import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
+import 'package:melodix/features/subtitles/data/datasources/opensubtitles/opensubtitles_api.dart';
+import 'package:melodix/features/subtitles/data/datasources/opensubtitles/opensubtitles_config.dart';
+import 'package:melodix/features/subtitles/data/datasources/opensubtitles/opensubtitles_remote_data_source.dart';
+import 'package:melodix/features/subtitles/data/datasources/subtitle_device_source.dart';
+import 'package:melodix/features/subtitles/data/datasources/subtitle_local_storage.dart';
+import 'package:melodix/features/subtitles/data/repositories/subtitle_repository_impl.dart';
+import 'package:melodix/features/subtitles/domain/repositories/subtitle_repository.dart';
+import 'package:melodix/features/subtitles/domain/usecases/subtitle_usecases.dart';
+import 'package:melodix/features/subtitles/presentation/logic/subtitles_cubit.dart';
+
 import 'dart:io';
 
 import 'package:get_it/get_it.dart';
+import 'package:melodix/core/preferences/ui_preferences.dart';
+import 'package:melodix/features/video/presentation/playback/video_media_session.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:melodix/core/service/app_icon_service.dart';
+import 'package:melodix/core/preferences/library_filter.dart';
+import 'package:melodix/features/lyrics/data/lrclib_client.dart';
+import 'package:melodix/features/lyrics/data/lyrics_repository_impl.dart';
+import 'package:melodix/features/lyrics/domain/repositories/lyrics_repository.dart';
+import 'package:melodix/features/player/data/audio_settings_binder.dart';
+import 'package:melodix/features/player/data/equalizer/android_equalizer_engine.dart';
+import 'package:melodix/features/player/domain/repositories/equalizer_engine.dart';
+import 'package:melodix/features/player/presentation/logic/audio_settings_cubit.dart';
+import 'package:melodix/features/player/presentation/logic/sleep_timer_cubit.dart';
+import 'package:melodix/features/player/presentation/logic/cover_accent_cubit.dart';
 import 'package:melodix/core/database/playback_state_local_storage.dart';
 import 'package:melodix/features/music_library/data/mappers/song_mapper.dart';
 import 'package:melodix/features/player/data/repositories/player_repository_impl.dart';
@@ -52,7 +78,6 @@ import 'package:melodix/features/music_library/domain/usecases/request_library_p
 import 'package:melodix/features/music_library/domain/usecases/sync_music_library_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/watch_library_songs_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/toggle_song_favorite_usecase.dart';
-import 'package:melodix/features/music_library/domain/usecases/watch_hidden_songs_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/watch_song_favorite_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/watch_library_sync_stage_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/watch_recently_played_usecase.dart';
@@ -70,7 +95,6 @@ import 'package:melodix/features/music_library/domain/usecases/toggle_playlist_f
 import 'package:melodix/features/music_library/domain/usecases/remove_song_from_playlist_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/reorder_playlist_songs_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/set_songs_favorite_usecase.dart';
-import 'package:melodix/features/music_library/domain/usecases/set_songs_hidden_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/delete_songs_usecase.dart';
 import 'package:melodix/features/music_library/presentation/logic/library_collections_cubit.dart';
 import 'package:melodix/features/music_library/presentation/logic/library_search_cubit.dart';
@@ -104,6 +128,20 @@ import 'package:melodix/features/video/presentation/logic/video_player_cubit.dar
 
 final getIt = GetIt.instance;
 
+/// What the library shows (Settings › Music filters).
+LibraryFilter _libraryFilter() => getIt<LibraryFilterCubit>().state;
+
+/// Starts what keeps saved settings applied: speed, skip silence and the
+/// equalizer on the player; the music filters on the library. Call once
+/// `HydratedBloc.storage` is set.
+void startSettingsBindings() {
+  getIt<AudioSettingsBinder>();
+  // A filter change shows the library again, filtered anew.
+  getIt<LibraryFilterCubit>().stream.listen(
+    (_) => getIt<MusicLocalStorage>().reloadLibrary(),
+  );
+}
+
 Future<void> setupGetIt() async {
   await _setupDatabase();
   _setupMedia();
@@ -113,25 +151,35 @@ Future<void> setupGetIt() async {
 }
 
 Future<void> _setupDatabase() async {
+  getIt.registerLazySingleton<AppIconCubit>(
+    () => AppIconCubit(AppIconService()),
+    dispose: (cubit) => cubit.close(),
+  );
+  getIt.registerLazySingleton<LibraryFilterCubit>(
+    LibraryFilterCubit.new,
+    dispose: (cubit) => cubit.close(),
+  );
   getIt.registerSingleton<Isar>(await IsarDatabase.open());
 
   getIt.registerLazySingleton<MusicLocalStorage>(
-    () => MusicLocalStorageImpl(getIt<Isar>()),
+    () => MusicLocalStorageImpl(getIt<Isar>(), filter: _libraryFilter),
   );
+  // Hiding songs was removed: bring back any hidden by an older version.
+  await getIt<MusicLocalStorage>().unhideAll();
   getIt.registerLazySingleton<VideoLocalStorage>(
     () => VideoLocalStorageImpl(getIt<Isar>()),
   );
   getIt.registerLazySingleton<PlaylistLocalStorage>(
-    () => PlaylistLocalStorageImpl(getIt<Isar>()),
+    () => PlaylistLocalStorageImpl(getIt<Isar>(), filter: _libraryFilter),
   );
   getIt.registerLazySingleton<RecentMusicLocalStorage>(
-    () => RecentMusicLocalStorageImpl(getIt<Isar>()),
+    () => RecentMusicLocalStorageImpl(getIt<Isar>(), filter: _libraryFilter),
   );
   getIt.registerLazySingleton<PlaybackStateLocalStorage>(
     () => PlaybackStateLocalStorageImpl(getIt<Isar>()),
   );
   getIt.registerLazySingleton<FavoritesLocalStorage>(
-    () => FavoritesLocalStorageImpl(getIt<Isar>()),
+    () => FavoritesLocalStorageImpl(getIt<Isar>(), filter: _libraryFilter),
   );
 }
 
@@ -252,9 +300,6 @@ void _setupMusicLibrary() {
       () => ToggleSongFavoriteUseCase(getIt<SongRepository>()),
     )
     ..registerLazySingleton(
-      () => WatchHiddenSongsUseCase(getIt<SongRepository>()),
-    )
-    ..registerLazySingleton(
       () => WatchSongFavoriteUseCase(getIt<SongRepository>()),
     )
     ..registerLazySingleton(
@@ -294,9 +339,6 @@ void _setupMusicLibrary() {
       () => ReorderPlaylistSongsUseCase(getIt<PlaylistRepository>()),
     )
     ..registerLazySingleton(
-      () => SetSongsHiddenUseCase(getIt<SongRepository>()),
-    )
-    ..registerLazySingleton(
       () => SetSongsFavoriteUseCase(getIt<SongRepository>()),
     )
     ..registerLazySingleton(() => DeleteSongsUseCase(getIt<SongRepository>()));
@@ -328,7 +370,6 @@ void _setupMusicLibrary() {
       createPlaylist: getIt(),
       addToPlaylist: getIt(),
       removeFromPlaylist: getIt(),
-      setSongsHidden: getIt(),
       setSongsFavorite: getIt(),
       deleteSongs: getIt(),
     ),
@@ -425,6 +466,25 @@ void _setupVideo() {
     ),
     dispose: (cubit) => cubit.close(),
   );
+  // Settings' look and layout choices (and the video skip length), one
+  // instance for the screens and the media controls. Created on first use,
+  // after the saved state's storage is ready.
+  getIt.registerLazySingleton<UiPreferencesCubit>(
+    UiPreferencesCubit.new,
+    dispose: (cubit) => cubit.close(),
+  );
+  // While a video plays, the notification, lock screen and headset buttons
+  // control it instead of the music.
+  getIt.registerLazySingleton<VideoMediaSession>(
+    () => VideoMediaSession(
+      session: getIt(),
+      musicStarted: getIt<PlaybackCoordinator>().musicStarted,
+      seekStep: () => getIt<UiPreferencesCubit>().state.videoSeekStep,
+      thumbnail: (id) async => getIt<GetVideoThumbnailUseCase>()(id, size: 512),
+    ),
+    dispose: (session) => session.dispose(),
+  );
+  _setupSubtitles();
   // Lets the library search find videos too.
   getIt.registerLazySingleton<VideoSearchSource>(
     () => VideoSearchSource(getIt()),
@@ -442,8 +502,47 @@ void _setupVideo() {
 }
 
 void _setupPlayer() {
+  // The phone's equalizer (Android), in the player's audio pipeline.
+  final androidEqualizer = defaultTargetPlatform == TargetPlatform.android
+      ? AndroidEqualizer()
+      : null;
+  getIt.registerLazySingleton<EqualizerEngine>(
+    () => androidEqualizer == null
+        ? const UnsupportedEqualizerEngine()
+        : AndroidEqualizerEngine(androidEqualizer),
+  );
   // The app's only audio player instance.
-  getIt.registerLazySingleton<AudioPlayer>(AudioPlayer.new);
+  getIt.registerLazySingleton<AudioPlayer>(
+    () => AudioPlayer(
+      audioPipeline: AudioPipeline(androidAudioEffects: [?androidEqualizer]),
+    ),
+  );
+  // Speed, skip silence and the equalizer, saved; applied by the binder
+  // (started by [startAudioSettings]).
+  getIt.registerLazySingleton<AudioSettingsCubit>(
+    AudioSettingsCubit.new,
+    dispose: (cubit) => cubit.close(),
+  );
+  getIt.registerLazySingleton<AudioSettingsBinder>(
+    () => AudioSettingsBinder(
+      settings: getIt<AudioSettingsCubit>().stream,
+      initial: getIt<AudioSettingsCubit>().state,
+      player: getIt<PlayerRepository>(),
+      equalizer: getIt<EqualizerEngine>(),
+    ),
+    dispose: (binder) => binder.dispose(),
+  );
+  // Lyrics: saved, beside the song, in its tags; LRCLIB when asked.
+  getIt.registerLazySingleton<LyricsRepository>(
+    () => LyricsRepositoryImpl(
+      savedDirectory: getApplicationDocumentsDirectory,
+      online: LrclibClient(),
+    ),
+  );
+  getIt.registerLazySingleton<SleepTimerCubit>(
+    () => SleepTimerCubit(getIt<PlayerRepository>()),
+    dispose: (cubit) => cubit.close(),
+  );
 
   getIt.registerLazySingleton<PlayerRepository>(
     () => PlayerRepositoryImpl(
@@ -487,4 +586,59 @@ void _setupPlayer() {
     ),
     dispose: (cubit) => cubit.close(),
   );
+  // "Colours from the cover": the playing song's cover colour.
+  getIt.registerLazySingleton<CoverAccentCubit>(
+    () => CoverAccentCubit(
+      nowPlaying: getIt<PlayerCubit>().stream,
+      current: getIt<PlayerCubit>().state,
+      preferences: getIt<UiPreferencesCubit>().stream,
+      enabled: getIt<UiPreferencesCubit>().state.dynamicAccent,
+      artwork: (songId) =>
+          getIt<GetSongArtworkUseCase>()(SongArtworkParams(songId, size: 96)),
+    ),
+    dispose: (cubit) => cubit.close(),
+  );
+}
+
+/// Subtitles: files next to the video, imported, or downloaded from
+/// OpenSubtitles and kept, so all of them work offline.
+void _setupSubtitles() {
+  final config = OpenSubtitlesConfig.fromEnvironment();
+  getIt
+    ..registerLazySingleton<SubtitleRepository>(
+      () => SubtitleRepositoryImpl(
+        storage: SubtitleLocalStorage(
+          root: () async => Directory(
+            p.join((await getApplicationSupportDirectory()).path, 'subtitles'),
+          ),
+        ),
+        device: SubtitleDeviceSourceImpl(),
+        remote: OpenSubtitlesRemoteDataSource(
+          config: config,
+          api: OpenSubtitlesApi(
+            OpenSubtitlesRemoteDataSource.createDio(config),
+          ),
+          files: OpenSubtitlesRemoteDataSource.createFileDio(config),
+        ),
+        playbackUri: (id) => getIt<GetVideoPlaybackUriUseCase>()(id),
+      ),
+    )
+    ..registerLazySingleton(() => GetSubtitleTracksUseCase(getIt()))
+    ..registerLazySingleton(() => LoadSubtitleUseCase(getIt()))
+    ..registerLazySingleton(() => SubtitleSelectionUseCase(getIt()))
+    ..registerLazySingleton(() => ImportSubtitleUseCase(getIt()))
+    ..registerLazySingleton(() => SearchOnlineSubtitlesUseCase(getIt()))
+    ..registerLazySingleton(() => DownloadSubtitleUseCase(getIt()))
+    ..registerLazySingleton<SubtitlesCubit>(() {
+      final session = getIt<VideoPlayerCubit>();
+      String? videoOf(VideoPlayerState s) => s.isActive ? s.video.id : null;
+      return SubtitlesCubit(
+        getTracks: getIt(),
+        load: getIt(),
+        selection: getIt(),
+        import: getIt(),
+        currentVideo: session.stream.map(videoOf).distinct(),
+        initialVideo: videoOf(session.state),
+      );
+    }, dispose: (cubit) => cubit.close());
 }

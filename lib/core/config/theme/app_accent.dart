@@ -40,6 +40,14 @@ abstract final class AccentColors {
     return hsl.withLightness((hsl.lightness * 0.55).clamp(0.0, 1.0)).toColor();
   }
 
+  /// Text and icons on any [color]: white, or near-black where white
+  /// can't be read (very light colours).
+  static Color onColorFor(Color color) {
+    final l = color.computeLuminance();
+    // White's contrast against the colour (WCAG), at least 2:1.
+    return 1.05 / (l + 0.05) >= 2.0 ? Colors.white : const Color(0xff1A1A1A);
+  }
+
   /// The colour for text and icons drawn on [accent].
   static Color on(BuildContext context) =>
       Theme.of(context).colorScheme.onPrimary;
