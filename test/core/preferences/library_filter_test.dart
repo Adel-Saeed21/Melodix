@@ -88,14 +88,23 @@ void main() {
 
         final updates = <SongLibraryUpdate>[];
         final sub = storage.watchLibrary().listen(updates.add);
-        await pumpEventQueue();
+
+        /// Waits for the next library update (database reads finish off
+        /// the event loop: a fixed number of microtasks isn't enough).
+        Future<void> nextUpdate(int seen) async {
+          while (updates.length <= seen) {
+            await Future<void>.delayed(const Duration(milliseconds: 5));
+          }
+        }
+
+        await nextUpdate(0); // the first load
 
         filter = const LibraryFilter(
           minSeconds: 60,
           excludedFolders: {'/music/voice'},
         );
         storage.reloadLibrary();
-        await pumpEventQueue();
+        await nextUpdate(1);
         final shown = (updates.last as SongLibraryLoaded).songs;
         expect([for (final s in shown) s.id], [1]);
         expect(await storage.countSongs(), 1);
@@ -104,7 +113,7 @@ void main() {
         // Back on: the song returns, still a favourite, its play kept.
         filter = LibraryFilter.defaults;
         storage.reloadLibrary();
-        await pumpEventQueue();
+        await nextUpdate(2);
         final back = (updates.last as SongLibraryLoaded).songs;
         final voice = back.firstWhere((s) => s.id == 2);
         expect(voice.isFavorite, isTrue);

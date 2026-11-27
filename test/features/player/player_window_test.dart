@@ -92,6 +92,11 @@ class _Harness {
     when(() => music.recordPlay(any())).thenAnswer((invocation) async {
       plays.add(invocation.positionalArguments.first as int);
     });
+    when(() => music.addListening(any(), any())).thenAnswer((invocation) async {
+      final id = invocation.positionalArguments[0] as int;
+      final heard = invocation.positionalArguments[1] as Duration;
+      listened[id] = (listened[id] ?? Duration.zero) + heard;
+    });
     repository = PlayerRepositoryImpl(
       player: player,
       sessionStorage: session,
@@ -107,6 +112,22 @@ class _Harness {
   final session = _Session();
   late final PlayerRepositoryImpl repository;
   final plays = <int>[];
+
+  /// Listening time saved per song id.
+  final listened = <int, Duration>{};
+
+  /// Plays [heard] of the current song (in steps, like the player's
+  /// position updates).
+  Future<void> listen(Duration heard) async {
+    var left = heard;
+    const step = Duration(seconds: 5);
+    while (left > Duration.zero) {
+      final now = left < step ? left : step;
+      native.advance(now);
+      left -= now;
+      await settle();
+    }
+  }
 
   FakeNativePlayer get native => audio.player!;
   NowPlaying get state => repository.current;
@@ -140,6 +161,8 @@ class _Harness {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() => registerFallbackValue(Duration.zero));
 
   late _Harness h;
   setUp(() => h = _Harness());
@@ -290,13 +313,15 @@ void main() {
       final seen = <int>[h.songId!];
 
       for (var i = 0; i < 40; i++) {
+        await h.listen(const Duration(seconds: 31)); // each one really heard
         await h.finishSong();
         seen.add(h.songId!);
         h.expectConsistent();
       }
 
       expect(seen, [for (var id = 1; id <= 41; id++) id]);
-      expect(h.plays, [for (var id = 1; id <= 41; id++) id]);
+      // A play counts once heard (not when it starts): the 41st just began.
+      expect(h.plays, [for (var id = 1; id <= 40; id++) id]);
       expect(h.native.loads, 1);
       // A handful of small updates, not one per song.
       expect(h.native.playlistUpdates, lessThan(40));
@@ -942,6 +967,232 @@ void main() {
       await sub.cancel();
 
       expect(states.map((s) => s.currentIndex), contains(1));
+    });
+  });
+
+  group('listening (plays and time really heard)', () {
+    /// Listening saved for [id], to the nearest second (while playing, the
+    /// position also moves a few milliseconds on its own).
+    int heard(int id) =>
+        ((h.listened[id] ?? Duration.zero).inMilliseconds / 1000).round();
+
+    test('skipped before 30 s: no play, only the seconds heard', () async {
+      await h.play(_songs(5), 0);
+      await h.listen(const Duration(seconds: 20));
+      await h.repository.next();
+      await h.settle();
+
+      expect(h.plays, isEmpty);
+      expect(heard(1), 20);
+    });
+
+    test('past 30 s: one play, however long it goes on', () async {
+      await h.play(_songs(5), 0);
+      await h.listen(const Duration(seconds: 25));
+      expect(h.plays, isEmpty);
+      await h.listen(const Duration(seconds: 10));
+      expect(h.plays, [1]);
+      await h.listen(const Duration(seconds: 60));
+      await h.repository.pause();
+      await h.settle();
+
+      expect(h.plays, [1], reason: 'counted once per listen');
+      expect(heard(1), 95);
+    });
+
+    test(
+      'paused time is not listening; resuming continues the listen',
+      () async {
+        await h.play(_songs(5), 0);
+        await h.listen(const Duration(seconds: 20));
+        await h.repository.pause();
+        await h.settle();
+        // A long pause: the position doesn't move.
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+        await h.repository.play();
+        await h.settle();
+        await h.listen(const Duration(seconds: 15));
+        await h.repository.pause();
+        await h.settle();
+
+        expect(h.plays, [1], reason: '20 s + 15 s is one listen past 30 s');
+        expect(heard(1), 35);
+      },
+    );
+
+    test('a seek is not listening', () async {
+      await h.play(_songs(5), 0);
+      await h.listen(const Duration(seconds: 5));
+      await h.repository.seek(const Duration(minutes: 2));
+      await h.settle();
+      await h.listen(const Duration(seconds: 5));
+      await h.repository.pause();
+      await h.settle();
+
+      expect(h.plays, isEmpty);
+      expect(heard(1), 10);
+    });
+
+    test('a short song counts after half of it', () async {
+      final short = Song(
+        id: 77,
+        title: 'Jingle',
+        artist: 'A',
+        album: 'B',
+        albumId: 1,
+        duration: const Duration(seconds: 40),
+        path: '/m/77.mp3',
+        playbackUri: Uri.parse('content://media/external/audio/media/77'),
+        isFavorite: false,
+        playCount: 0,
+      );
+      await h.play([short], 0);
+      await h.listen(const Duration(seconds: 15));
+      expect(h.plays, isEmpty);
+      await h.listen(const Duration(seconds: 6));
+      expect(h.plays, [77], reason: '21 s of a 40 s song is past half');
+    });
+
+    test('repeat one: each loop heard is a play', () async {
+      await h.play(_songs(5), 2);
+      await h.repository.setRepeatMode(PlaybackRepeat.one);
+      await h.settle();
+
+      await h.listen(const Duration(seconds: 31));
+      await h.finishSong(); // same song again, from the start
+      await h.listen(const Duration(seconds: 31));
+      await h.finishSong();
+      await h.listen(const Duration(seconds: 10)); // a third loop, skipped
+      await h.repository.pause();
+      await h.settle();
+
+      expect(h.state.currentIndex, 2);
+      expect(h.plays, [3, 3]);
+      expect(heard(3), 72);
+    });
+
+    test('repeat one: Next restarts the song as a new listen', () async {
+      await h.play(_songs(5), 0);
+      await h.repository.setRepeatMode(PlaybackRepeat.one);
+      await h.settle();
+      await h.listen(const Duration(seconds: 31));
+      await h.repository.next();
+      await h.settle();
+      await h.listen(const Duration(seconds: 31));
+
+      expect(h.plays, [1, 1]);
+    });
+
+    test(
+      'repeat all: around the end and back, each song heard counts',
+      () async {
+        await h.play(_songs(2), 0);
+        await h.repository.setRepeatMode(PlaybackRepeat.all);
+        await h.settle();
+
+        await h.listen(const Duration(seconds: 31));
+        await h.finishSong(); // → song 2
+        await h.listen(const Duration(seconds: 31));
+        await h.finishSong(); // → song 1 again
+        await h.listen(const Duration(seconds: 31));
+
+        expect(h.plays, [1, 2, 1]);
+      },
+    );
+
+    test('a one-song queue on repeat all counts every loop', () async {
+      await h.play(_songs(1), 0);
+      await h.repository.setRepeatMode(PlaybackRepeat.all);
+      await h.settle();
+      await h.listen(const Duration(seconds: 31));
+      await h.finishSong();
+      await h.listen(const Duration(seconds: 31));
+
+      expect(h.plays, [1, 1]);
+    });
+
+    test('next and previous: each song heard counts once per listen', () async {
+      await h.play(_songs(5), 0);
+      await h.listen(const Duration(seconds: 31));
+      await h.repository.next(); // song 2, skipped quickly
+      await h.settle();
+      await h.listen(const Duration(seconds: 2));
+      await h.repository.previous(); // back to song 1 (within 3 s)
+      await h.settle();
+      expect(h.songId, 1);
+      await h.listen(const Duration(seconds: 31));
+      // Previous after a few seconds restarts it: a new listen.
+      await h.repository.previous();
+      await h.settle();
+      await h.listen(const Duration(seconds: 10));
+      await h.repository.pause();
+      await h.settle();
+
+      expect(h.plays, [1, 1], reason: 'song 2 was skipped after 2 s');
+      expect(heard(2), 2);
+      expect(heard(1), 72);
+    });
+
+    test(
+      'in the background (rare position updates) all of it counts',
+      () async {
+        await h.play(_songs(5), 0);
+        // One update after a minute, as when the screen is off.
+        h.native.advance(const Duration(minutes: 1));
+        await h.settle();
+
+        expect(h.plays, [1]);
+        expect(heard(1), 60);
+      },
+    );
+
+    test('listening is saved while playing, not only at the end', () async {
+      await h.play(_songs(5), 0);
+      await h.listen(const Duration(seconds: 25));
+
+      // Still playing, never paused: if the app were killed now, at most
+      // one batch (10 s) would be lost.
+      expect(heard(1), greaterThanOrEqualTo(15));
+      expect(heard(1), lessThanOrEqualTo(25));
+    });
+
+    group('after a restart (restored session)', () {
+      SavedPlayback saved(Duration position) => SavedPlayback(
+        queue: [songRow(1), songRow(2)],
+        originalQueue: const [],
+        currentIndex: 0,
+        position: position,
+        shuffle: false,
+        repeatMode: PlayerRepeatMode.off,
+        speed: 1,
+        source: PlaybackSource.allSongs,
+        sourceId: null,
+      );
+
+      test('a song already past 30 s is not counted again', () async {
+        h.session.saved = saved(const Duration(seconds: 42));
+        await h.repository.restoreLastSession();
+        await h.settle();
+        await h.repository.play();
+        await h.settle();
+        await h.listen(const Duration(seconds: 20));
+        await h.repository.pause();
+        await h.settle();
+
+        expect(h.plays, isEmpty);
+        expect(heard(1), 20, reason: 'new listening still counts as time');
+      });
+
+      test('a song stopped early continues its listen', () async {
+        h.session.saved = saved(const Duration(seconds: 20));
+        await h.repository.restoreLastSession();
+        await h.settle();
+        await h.repository.play();
+        await h.settle();
+        await h.listen(const Duration(seconds: 11));
+
+        expect(h.plays, [1], reason: '20 s before the restart + 11 s now');
+      });
     });
   });
 }

@@ -17,6 +17,9 @@ import 'package:melodix/features/player/domain/repositories/play_recorder.dart';
 class _Music extends Fake implements PlayRecorder {
   @override
   Future<void> recordPlay(int songId) async {}
+
+  @override
+  Future<void> addListening(int songId, Duration listened) async {}
 }
 
 /// Accepts every save; nothing to restore.

@@ -40,19 +40,24 @@ const SongCollectionSchema = CollectionSchema(
       name: r'isFavorite',
       type: IsarType.bool,
     ),
-    r'path': PropertySchema(id: 7, name: r'path', type: IsarType.string),
+    r'listenedMs': PropertySchema(
+      id: 7,
+      name: r'listenedMs',
+      type: IsarType.long,
+    ),
+    r'path': PropertySchema(id: 8, name: r'path', type: IsarType.string),
     r'playCount': PropertySchema(
-      id: 8,
+      id: 9,
       name: r'playCount',
       type: IsarType.long,
     ),
     r'sizeBytes': PropertySchema(
-      id: 9,
+      id: 10,
       name: r'sizeBytes',
       type: IsarType.long,
     ),
-    r'title': PropertySchema(id: 10, name: r'title', type: IsarType.string),
-    r'uri': PropertySchema(id: 11, name: r'uri', type: IsarType.string),
+    r'title': PropertySchema(id: 11, name: r'title', type: IsarType.string),
+    r'uri': PropertySchema(id: 12, name: r'uri', type: IsarType.string),
   },
 
   estimateSize: _songCollectionEstimateSize,
@@ -194,11 +199,12 @@ void _songCollectionSerialize(
   writer.writeDateTime(offsets[4], object.dateAdded);
   writer.writeLong(offsets[5], object.durationMs);
   writer.writeBool(offsets[6], object.isFavorite);
-  writer.writeString(offsets[7], object.path);
-  writer.writeLong(offsets[8], object.playCount);
-  writer.writeLong(offsets[9], object.sizeBytes);
-  writer.writeString(offsets[10], object.title);
-  writer.writeString(offsets[11], object.uri);
+  writer.writeLong(offsets[7], object.listenedMs);
+  writer.writeString(offsets[8], object.path);
+  writer.writeLong(offsets[9], object.playCount);
+  writer.writeLong(offsets[10], object.sizeBytes);
+  writer.writeString(offsets[11], object.title);
+  writer.writeString(offsets[12], object.uri);
 }
 
 SongCollection _songCollectionDeserialize(
@@ -216,11 +222,12 @@ SongCollection _songCollectionDeserialize(
   object.durationMs = reader.readLong(offsets[5]);
   object.id = id;
   object.isFavorite = reader.readBool(offsets[6]);
-  object.path = reader.readString(offsets[7]);
-  object.playCount = reader.readLong(offsets[8]);
-  object.sizeBytes = reader.readLong(offsets[9]);
-  object.title = reader.readString(offsets[10]);
-  object.uri = reader.readStringOrNull(offsets[11]);
+  object.listenedMs = reader.readLongOrNull(offsets[7]);
+  object.path = reader.readString(offsets[8]);
+  object.playCount = reader.readLong(offsets[9]);
+  object.sizeBytes = reader.readLong(offsets[10]);
+  object.title = reader.readString(offsets[11]);
+  object.uri = reader.readStringOrNull(offsets[12]);
   return object;
 }
 
@@ -246,14 +253,16 @@ P _songCollectionDeserializeProp<P>(
     case 6:
       return (reader.readBool(offset)) as P;
     case 7:
-      return (reader.readString(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 8:
-      return (reader.readLong(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 9:
       return (reader.readLong(offset)) as P;
     case 10:
-      return (reader.readString(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 11:
+      return (reader.readString(offset)) as P;
+    case 12:
       return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1556,6 +1565,79 @@ extension SongCollectionQueryFilter
   }
 
   QueryBuilder<SongCollection, SongCollection, QAfterFilterCondition>
+  listenedMsIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNull(property: r'listenedMs'),
+      );
+    });
+  }
+
+  QueryBuilder<SongCollection, SongCollection, QAfterFilterCondition>
+  listenedMsIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        const FilterCondition.isNotNull(property: r'listenedMs'),
+      );
+    });
+  }
+
+  QueryBuilder<SongCollection, SongCollection, QAfterFilterCondition>
+  listenedMsEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.equalTo(property: r'listenedMs', value: value),
+      );
+    });
+  }
+
+  QueryBuilder<SongCollection, SongCollection, QAfterFilterCondition>
+  listenedMsGreaterThan(int? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.greaterThan(
+          include: include,
+          property: r'listenedMs',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SongCollection, SongCollection, QAfterFilterCondition>
+  listenedMsLessThan(int? value, {bool include = false}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.lessThan(
+          include: include,
+          property: r'listenedMs',
+          value: value,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SongCollection, SongCollection, QAfterFilterCondition>
+  listenedMsBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(
+        FilterCondition.between(
+          property: r'listenedMs',
+          lower: lower,
+          includeLower: includeLower,
+          upper: upper,
+          includeUpper: includeUpper,
+        ),
+      );
+    });
+  }
+
+  QueryBuilder<SongCollection, SongCollection, QAfterFilterCondition>
   pathEqualTo(String value, {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(
@@ -2207,6 +2289,20 @@ extension SongCollectionQuerySortBy
     });
   }
 
+  QueryBuilder<SongCollection, SongCollection, QAfterSortBy>
+  sortByListenedMs() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'listenedMs', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SongCollection, SongCollection, QAfterSortBy>
+  sortByListenedMsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'listenedMs', Sort.desc);
+    });
+  }
+
   QueryBuilder<SongCollection, SongCollection, QAfterSortBy> sortByPath() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'path', Sort.asc);
@@ -2376,6 +2472,20 @@ extension SongCollectionQuerySortThenBy
     });
   }
 
+  QueryBuilder<SongCollection, SongCollection, QAfterSortBy>
+  thenByListenedMs() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'listenedMs', Sort.asc);
+    });
+  }
+
+  QueryBuilder<SongCollection, SongCollection, QAfterSortBy>
+  thenByListenedMsDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'listenedMs', Sort.desc);
+    });
+  }
+
   QueryBuilder<SongCollection, SongCollection, QAfterSortBy> thenByPath() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'path', Sort.asc);
@@ -2490,6 +2600,13 @@ extension SongCollectionQueryWhereDistinct
     });
   }
 
+  QueryBuilder<SongCollection, SongCollection, QDistinct>
+  distinctByListenedMs() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'listenedMs');
+    });
+  }
+
   QueryBuilder<SongCollection, SongCollection, QDistinct> distinctByPath({
     bool caseSensitive = true,
   }) {
@@ -2577,6 +2694,12 @@ extension SongCollectionQueryProperty
   QueryBuilder<SongCollection, bool, QQueryOperations> isFavoriteProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'isFavorite');
+    });
+  }
+
+  QueryBuilder<SongCollection, int?, QQueryOperations> listenedMsProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'listenedMs');
     });
   }
 

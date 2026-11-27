@@ -46,6 +46,18 @@ class SongCollection {
 
   int playCount = 0;
 
+  /// How long the song was really listened to, in milliseconds (paused,
+  /// buffering and skipped time not included).
+  ///
+  /// Null on rows saved before this was tracked: their time is estimated
+  /// as [playCount] × the song's length (see [listenedOrEstimateMs]), and
+  /// that estimate is written here the first time it changes.
+  int? listenedMs;
+
+  /// [listenedMs], or the estimate for rows saved before it was tracked.
+  @ignore
+  int get listenedOrEstimateMs => listenedMs ?? playCount * durationMs;
+
   // An `isHidden` field used to live here (hiding songs was removed).
   // Isar ignores the values older versions stored, so songs they hid show
   // again with no migration. Don't reuse the name for something else.
@@ -73,6 +85,7 @@ class SongCollection {
       ..dateAdded = song.dateAdded
       ..isFavorite = previous?.isFavorite ?? false
       ..playCount = previous?.playCount ?? 0
+      ..listenedMs = previous?.listenedMs
       ..addedAt = previous?.addedAt ?? DateTime.now();
   }
 
