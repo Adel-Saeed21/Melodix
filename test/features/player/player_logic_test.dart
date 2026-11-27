@@ -9,6 +9,7 @@ import 'package:melodix/features/player/presentation/utils/playback_time_format.
 import 'package:mocktail/mocktail.dart';
 
 import 'player_fixtures.dart';
+import '../../support/l10n_support.dart';
 
 class MockRepository extends Mock implements PlayerRepository {}
 
@@ -63,10 +64,10 @@ void main() {
   group('playback errors', () {
     test('every error has words for the user', () {
       for (final error in PlaybackError.values) {
-        expect(playbackErrorText(error), isNotEmpty);
+        expect(playbackErrorText(error, english), isNotEmpty);
       }
       expect(
-        playbackErrorText(PlaybackError.cannotPlay),
+        playbackErrorText(PlaybackError.cannotPlay, english),
         "Can't play this song",
       );
     });

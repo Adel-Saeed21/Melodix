@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/errors/failures.dart';
 import 'package:melodix/core/widgets/app_snack_bar.dart';
 import 'package:melodix/features/video/presentation/logic/video_library_cubit.dart';
@@ -16,15 +16,15 @@ Future<void> scanVideos(BuildContext context) async {
       if (failure is PermissionFailure) return; // the page says so
       AppSnackBar.show(
         context,
-        AppStrings.videoScanFailed,
+        context.l10n.videoScanFailed,
         kind: AppSnackBarKind.error,
       );
     },
     (changes) => AppSnackBar.show(
       context,
       changes.added == 0 && changes.removed == 0
-          ? AppStrings.videosUpToDate
-          : AppStrings.videoLibraryUpdated(changes.added, changes.removed),
+          ? context.l10n.videosUpToDate
+          : context.l10n.videoLibraryUpdated(changes.added, changes.removed),
     ),
   );
 }

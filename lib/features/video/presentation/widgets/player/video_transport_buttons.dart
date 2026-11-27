@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/preferences/ui_preferences.dart';
 import 'package:melodix/features/video/presentation/logic/video_player_cubit.dart';
 import 'package:melodix/features/video/presentation/playback/video_engine.dart';
@@ -39,14 +39,14 @@ class VideoTransportButtons extends StatelessWidget {
         children: [
           VideoRoundButton(
             icon: Icons.skip_previous_rounded,
-            tooltip: AppStrings.previousVideo,
+            tooltip: context.l10n.previousVideo,
             size: 44.r,
             onPressed: tap(cubit.previous),
           ),
           SizedBox(width: 12.w),
           VideoRoundButton(
             icon: _backIcon(seconds),
-            tooltip: AppStrings.backSeconds(seconds),
+            tooltip: context.l10n.backSeconds(seconds),
             size: 48.r,
             onPressed: tap(() => cubit.seekBy(-jump)),
           ),
@@ -63,10 +63,10 @@ class VideoTransportButtons extends StatelessWidget {
                     ? Icons.pause_rounded
                     : Icons.play_arrow_rounded,
                 tooltip: completed
-                    ? AppStrings.replay
+                    ? context.l10n.replay
                     : playing
-                    ? AppStrings.pause
-                    : AppStrings.play,
+                    ? context.l10n.pause
+                    : context.l10n.play,
                 size: 72.r,
                 filled: true,
                 // Frosted only on a still picture (see VideoRoundButton).
@@ -78,14 +78,14 @@ class VideoTransportButtons extends StatelessWidget {
           SizedBox(width: 16.w),
           VideoRoundButton(
             icon: _forwardIcon(seconds),
-            tooltip: AppStrings.forwardSeconds(seconds),
+            tooltip: context.l10n.forwardSeconds(seconds),
             size: 48.r,
             onPressed: tap(() => cubit.seekBy(jump)),
           ),
           SizedBox(width: 12.w),
           VideoRoundButton(
             icon: Icons.skip_next_rounded,
-            tooltip: AppStrings.nextVideo,
+            tooltip: context.l10n.nextVideo,
             size: 44.r,
             onPressed: state.hasNext ? tap(cubit.next) : null,
           ),

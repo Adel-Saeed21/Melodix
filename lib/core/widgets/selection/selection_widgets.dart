@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
@@ -19,7 +19,7 @@ class SelectionCheck extends StatelessWidget {
     final size = 22.r;
 
     return Padding(
-      padding: EdgeInsets.only(left: 8.w, right: 10.w),
+      padding: EdgeInsetsDirectional.only(start: 8.w, end: 10.w),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOut,
@@ -74,14 +74,14 @@ class SelectionHeader extends StatelessWidget {
     return Row(
       children: [
         IconButton(
-          tooltip: AppStrings.cancelSelection,
+          tooltip: context.l10n.cancelSelection,
           onPressed: onClose,
           icon: Icon(Icons.close_rounded, color: onSurface),
         ),
         horizontalSpace(4),
         Expanded(
           child: Text(
-            AppStrings.selectedCount(count),
+            context.l10n.selectedCount(count),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
@@ -94,7 +94,7 @@ class SelectionHeader extends StatelessWidget {
         TextButton(
           onPressed: allSelected ? onDeselectAll : onSelectAll,
           child: Text(
-            allSelected ? AppStrings.deselectAll : AppStrings.selectAll,
+            allSelected ? context.l10n.deselectAll : context.l10n.selectAll,
             style: TextStyle(color: theme.primaryColor),
           ),
         ),

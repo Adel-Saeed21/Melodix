@@ -1,3 +1,7 @@
+import 'package:melodix/core/l10n/app_translations.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:melodix/core/preferences/app_language.dart';
+
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
@@ -43,11 +47,21 @@ Future<void> main() async {
       toggleFavorite: getIt<ToggleSongFavoriteUseCase>(),
       // A playing video takes over the notification and headset buttons.
       guest: getIt<VideoMediaSession>(),
+      // The notification's buttons in the app's language.
+      strings: () => getIt<AppLanguageCubit>().strings,
     ),
   );
 
   // Saved speed, skip silence, equalizer and music filters, applied.
   startSettingsBindings();
 
-  runApp(const MelodixApp());
+  // The app's languages (English / Arabic), starting in the one chosen in
+  // Settings, or the phone's.
+  await EasyLocalization.ensureInitialized();
+  runApp(
+    AppTranslations(
+      startLocale: getIt<AppLanguageCubit>().resolvedLocale,
+      child: const MelodixApp(),
+    ),
+  );
 }

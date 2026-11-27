@@ -1,5 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/core/usecase/usecase.dart';
 import 'package:melodix/features/music_library/domain/entities/album.dart';
 import 'package:melodix/features/music_library/domain/entities/artist.dart';
@@ -53,8 +52,8 @@ class SongActionsCubit extends Cubit<ActionFeedback?>
     reportResult(
       await _toggleFavorite(song.id),
       (isFavorite) => isFavorite
-          ? AppStrings.addedToFavourites
-          : AppStrings.removedFromFavourites,
+          ? ((l) => l.addedToFavourites)
+          : ((l) => l.removedFromFavourites),
     );
   }
 
@@ -73,7 +72,8 @@ class SongActionsCubit extends Cubit<ActionFeedback?>
       await _removeFromPlaylist(
         RemoveSongFromPlaylistParams(playlist.id, song.id),
       ),
-      (_) => AppStrings.removedFromPlaylist(playlist.name),
+      (_) =>
+          (l) => l.removedFromPlaylist(playlist.name),
     );
   }
 
@@ -81,7 +81,7 @@ class SongActionsCubit extends Cubit<ActionFeedback?>
   /// if it's no longer there.
   Album? albumFor(Song song, List<Song> library) {
     final album = CatalogGrouping.albumOf(library, song);
-    if (album == null) report(AppStrings.albumNotFound, isError: true);
+    if (album == null) report((l) => l.albumNotFound, isError: true);
     return album;
   }
 
@@ -89,7 +89,7 @@ class SongActionsCubit extends Cubit<ActionFeedback?>
   /// if they're no longer there.
   Artist? artistFor(Song song, List<Song> library) {
     final artist = CatalogGrouping.artistNamed(library, song.artist);
-    if (artist == null) report(AppStrings.artistNotFound, isError: true);
+    if (artist == null) report((l) => l.artistNotFound, isError: true);
     return artist;
   }
 
@@ -104,8 +104,8 @@ class SongActionsCubit extends Cubit<ActionFeedback?>
         SetSongsFavoriteParams(_ids(songs), favorite: favorite),
       ),
       (_) => favorite
-          ? AppStrings.addedSongsToFavourites(songs.length)
-          : AppStrings.removedSongsFromFavourites(songs.length),
+          ? ((l) => l.addedSongsToFavourites(songs.length))
+          : ((l) => l.removedSongsFromFavourites(songs.length)),
     );
   }
 
@@ -115,10 +115,10 @@ class SongActionsCubit extends Cubit<ActionFeedback?>
           AddSongsToPlaylistParams(playlist.id, _ids(songs)),
         ),
         (added) => added == 0
-            ? AppStrings.alreadyInPlaylist(playlist.name)
+            ? ((l) => l.alreadyInPlaylist(playlist.name))
             : songs.length == 1
-            ? AppStrings.addedToPlaylist(playlist.name)
-            : AppStrings.addedSongsToPlaylist(added, playlist.name),
+            ? ((l) => l.addedToPlaylist(playlist.name))
+            : ((l) => l.addedSongsToPlaylist(added, playlist.name)),
       );
 
   Future<bool> createPlaylistWithMany(List<Song> songs, String name) async {
@@ -128,8 +128,8 @@ class SongActionsCubit extends Cubit<ActionFeedback?>
         CreatePlaylistParams(trimmed, songIds: _ids(songs)),
       ),
       (_) => songs.length == 1
-          ? AppStrings.addedToPlaylist(trimmed)
-          : AppStrings.addedSongsToPlaylist(songs.length, trimmed),
+          ? ((l) => l.addedToPlaylist(trimmed))
+          : ((l) => l.addedSongsToPlaylist(songs.length, trimmed)),
     );
   }
 
@@ -140,8 +140,8 @@ class SongActionsCubit extends Cubit<ActionFeedback?>
     reportResult(await _deleteSongs(_ids(songs)), (deleted) {
       deletedAny = deleted > 0;
       return deletedAny
-          ? AppStrings.deletedSongs(deleted)
-          : AppStrings.nothingDeleted;
+          ? ((l) => l.deletedSongs(deleted))
+          : ((l) => l.nothingDeleted);
     });
     return deletedAny;
   }

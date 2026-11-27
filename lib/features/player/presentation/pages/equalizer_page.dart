@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/features/player/domain/entities/equalizer_preset.dart';
 import 'package:melodix/features/player/presentation/logic/audio_settings_cubit.dart';
@@ -23,13 +23,13 @@ class EqualizerPage extends StatelessWidget {
     final settings = context.watch<AudioSettingsCubit>();
     final state = settings.state;
     return SettingsSubpage(
-      title: AppStrings.equalizer,
+      title: context.l10n.equalizer,
       children: [
         if (!supported)
-          const SettingsSection(
+          SettingsSection(
             icon: Icons.info_outline_rounded,
-            title: AppStrings.equalizer,
-            children: [SettingRow(title: AppStrings.equalizerUnsupported)],
+            title: context.l10n.equalizer,
+            children: [SettingRow(title: context.l10n.equalizerUnsupported)],
           )
         else ...[
           SettingsSection(
@@ -37,12 +37,12 @@ class EqualizerPage extends StatelessWidget {
             title: state.preset.label,
             children: [
               SwitchListTile(
-                title: const Text(AppStrings.equalizerOn),
+                title: Text(context.l10n.equalizerOn),
                 value: state.equalizerOn,
                 onChanged: settings.setEqualizerOn,
               ),
               Padding(
-                padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 16.h),
+                padding: EdgeInsetsDirectional.fromSTEB(16.w, 4.h, 16.w, 16.h),
                 child: AnimatedOpacity(
                   duration: const Duration(milliseconds: 200),
                   opacity: state.equalizerOn ? 1 : 0.45,
@@ -70,7 +70,7 @@ class EqualizerPage extends StatelessWidget {
                       ),
                       SizedBox(height: 6.h),
                       Text(
-                        AppStrings.equalizerBars,
+                        context.l10n.equalizerBars,
                         style: TextStyle(
                           fontSize: AppTextSizes.xs,
                           color: Theme.of(context).colorScheme.onSurface
@@ -85,7 +85,7 @@ class EqualizerPage extends StatelessWidget {
           ),
           SettingsSection(
             icon: Icons.tune_rounded,
-            title: AppStrings.equalizerPresets,
+            title: context.l10n.equalizerPresets,
             children: [
               Padding(
                 padding: EdgeInsets.all(14.r),

@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/music_library/presentation/logic/song_actions_cubit.dart';
 
@@ -42,8 +42,8 @@ class _FavouriteButtonState extends State<NowPlayingFavouriteButton> {
         final isFavorite = snapshot.data ?? widget.song.isFavorite;
         return IconButton(
           tooltip: isFavorite
-              ? AppStrings.removeFromFavourites
-              : AppStrings.addToFavourites,
+              ? context.l10n.removeFromFavourites
+              : context.l10n.addToFavourites,
           onPressed: () =>
               context.read<SongActionsCubit>().toggleFavorite(widget.song),
           icon: Icon(

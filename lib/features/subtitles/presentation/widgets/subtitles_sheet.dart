@@ -1,6 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/features/subtitles/presentation/logic/subtitles_cubit.dart';
 import 'package:melodix/features/subtitles/presentation/widgets/subtitles_sheet/subtitles_sheet.dart';
 
@@ -22,10 +21,10 @@ Future<void> showSubtitlesSheet(
   );
 }
 
-/// The languages online subtitle search offers: a code (null: any
-/// language) and its name in that language.
-const List<(String?, String)> subtitleSearchLanguages = [
-  (null, AppStrings.subtitlesAnyLanguage),
+/// The languages online subtitle search offers: a code and its name in
+/// that language (both null: any language, named in the app's language).
+const List<(String?, String?)> subtitleSearchLanguages = [
+  (null, null),
   ('en', 'English'),
   ('ar', 'العربية'),
   ('fr', 'Français'),

@@ -18,7 +18,7 @@ class SearchSectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final onSurface = Theme.of(context).colorScheme.onSurface;
     return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 4.h),
+      padding: EdgeInsetsDirectional.fromSTEB(20.w, 16.h, 20.w, 4.h),
       child: Row(
         children: [
           Text(

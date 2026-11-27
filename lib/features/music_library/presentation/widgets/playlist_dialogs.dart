@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/features/music_library/presentation/widgets/playlist_dialogs/playlist_name_sheet.dart';
 
 /// Asks for a playlist name in a bottom sheet that rises with the keyboard.
@@ -11,8 +11,8 @@ import 'package:melodix/features/music_library/presentation/widgets/playlist_dia
 /// action stays disabled until the name actually changes.
 Future<String?> showPlaylistNameDialog(
   BuildContext context, {
-  String title = AppStrings.newPlaylist,
-  String actionLabel = AppStrings.create,
+  String? title,
+  String? actionLabel,
   String initialName = '',
 }) {
   return showModalBottomSheet<String>(
@@ -24,8 +24,8 @@ Future<String?> showPlaylistNameDialog(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
     ),
     builder: (_) => PlaylistNameSheet(
-      title: title,
-      actionLabel: actionLabel,
+      title: title ?? context.l10n.newPlaylist,
+      actionLabel: actionLabel ?? context.l10n.create,
       initialName: initialName,
     ),
   );
@@ -37,16 +37,16 @@ Future<bool> confirmDeletePlaylist(BuildContext context, String name) async {
   final confirmed = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      title: const Text(AppStrings.deletePlaylist),
-      content: Text(AppStrings.deletePlaylistConfirm(name)),
+      title: Text(context.l10n.deletePlaylist),
+      content: Text(context.l10n.deletePlaylistConfirm(name)),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(false),
-          child: const Text(AppStrings.cancel),
+          child: Text(context.l10n.cancel),
         ),
         TextButton(
           onPressed: () => Navigator.of(dialogContext).pop(true),
-          child: Text(AppStrings.delete, style: TextStyle(color: error)),
+          child: Text(context.l10n.delete, style: TextStyle(color: error)),
         ),
       ],
     ),

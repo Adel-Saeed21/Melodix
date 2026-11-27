@@ -1,6 +1,6 @@
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/widgets/melodix_mark.dart';
@@ -19,7 +19,7 @@ class SettingsFooter extends StatelessWidget {
           MelodixMark(size: 28.r, color: theme.primaryColor),
           SizedBox(height: 8.h),
           Text(
-            AppStrings.appName,
+            context.l10n.appName,
             style: TextStyle(
               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
               fontSize: AppTextSizes.base,
@@ -29,7 +29,7 @@ class SettingsFooter extends StatelessWidget {
           ),
           SizedBox(height: 2.h),
           Text(
-            AppStrings.settingsFooter,
+            context.l10n.settingsFooter,
             style: TextStyle(color: faint, fontSize: AppTextSizes.sm),
           ),
         ],

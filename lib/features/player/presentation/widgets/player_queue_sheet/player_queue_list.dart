@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
@@ -69,13 +69,13 @@ class _QueueListState extends State<PlayerQueueList> {
           onTap: () => context.read<PlayerCubit>().playAt(index),
           trailing: isCurrent
               ? Padding(
-                  padding: EdgeInsets.only(left: 8.w, right: 16.w),
+                  padding: EdgeInsetsDirectional.only(start: 8.w, end: 16.w),
                   child: Icon(
                     widget.state.isPlaying
                         ? Icons.graphic_eq_rounded
                         : Icons.pause_rounded,
                     color: primary,
-                    semanticLabel: AppStrings.nowPlaying,
+                    semanticLabel: context.l10n.nowPlaying,
                   ),
                 )
               : null,
@@ -95,7 +95,7 @@ class _QueueListState extends State<PlayerQueueList> {
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
+            padding: EdgeInsetsDirectional.fromSTEB(20.w, 0, 20.w, 12.h),
             child: Row(
               children: [
                 Icon(Icons.queue_music_rounded, color: primary),
@@ -105,14 +105,14 @@ class _QueueListState extends State<PlayerQueueList> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        AppStrings.playingFrom,
+                        context.l10n.playingFrom,
                         style: TextStyle(
                           color: onSurface.withValues(alpha: 0.6),
                           fontSize: AppTextSizes.sm,
                         ),
                       ),
                       Text(
-                        state.queueTitle ?? AppStrings.queue,
+                        state.queueTitle ?? context.l10n.queue,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
@@ -125,7 +125,7 @@ class _QueueListState extends State<PlayerQueueList> {
                   ),
                 ),
                 Text(
-                  AppStrings.songsCount(state.queue.length),
+                  context.l10n.songsCount(state.queue.length),
                   style: TextStyle(
                     color: onSurface.withValues(alpha: 0.6),
                     fontSize: AppTextSizes.sm,

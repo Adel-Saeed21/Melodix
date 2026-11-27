@@ -2,7 +2,7 @@ import 'package:melodix/core/search/search_history.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
@@ -180,11 +180,11 @@ class _LibraryViewState extends State<LibraryView>
         fontSize: AppTextSizes.lg,
         fontWeight: FontWeightHelper.medium,
       ),
-      tabs: const [
-        Tab(text: AppStrings.songs),
-        Tab(text: AppStrings.playlists),
-        Tab(text: AppStrings.albums),
-        Tab(text: AppStrings.artists),
+      tabs: [
+        Tab(text: context.l10n.songs),
+        Tab(text: context.l10n.playlists),
+        Tab(text: context.l10n.albums),
+        Tab(text: context.l10n.artists),
       ],
     );
     // The tabs, and search results over them. Kept under one key so turning
@@ -294,7 +294,12 @@ class _LibraryViewState extends State<LibraryView>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Padding(
-                    padding: EdgeInsets.fromLTRB(20.w, 16.h, 16.w, 0),
+                    padding: EdgeInsetsDirectional.fromSTEB(
+                      20.w,
+                      16.h,
+                      16.w,
+                      0,
+                    ),
                     child: header,
                   ),
                   verticalSpace(8),

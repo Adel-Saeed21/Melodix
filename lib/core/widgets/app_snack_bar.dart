@@ -58,7 +58,7 @@ class AppSnackBarTarget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           padding: EdgeInsets.zero,
-          margin: EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
+          margin: EdgeInsetsDirectional.fromSTEB(20.w, 0, 20.w, 12.h),
           duration: !hasAction
               ? AppSnackBar.duration
               : _accessible

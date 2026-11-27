@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/entities/library_permission.dart';
 import 'package:melodix/core/widgets/library_status_view.dart';
 import 'package:melodix/features/video/presentation/logic/video_library_cubit.dart';
@@ -18,11 +18,13 @@ class VideoPermissionView extends StatelessWidget {
     final blocked = permission == LibraryPermission.permanentlyDenied;
     return LibraryStatusView(
       icon: Icons.video_library_outlined,
-      title: AppStrings.videoPermissionTitle,
+      title: context.l10n.videoPermissionTitle,
       message: blocked
-          ? AppStrings.videoPermissionBlockedMessage
-          : AppStrings.videoPermissionMessage,
-      actionLabel: blocked ? AppStrings.openSettings : AppStrings.allowAccess,
+          ? context.l10n.videoPermissionBlockedMessage
+          : context.l10n.videoPermissionMessage,
+      actionLabel: blocked
+          ? context.l10n.openSettings
+          : context.l10n.allowAccess,
       onAction: blocked ? cubit.openSettings : cubit.requestPermission,
     );
   }

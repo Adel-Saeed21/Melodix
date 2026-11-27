@@ -1,3 +1,4 @@
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -34,7 +35,7 @@ class ActionFeedbackListener<B extends StateStreamable<S>, S>
         onFeedback?.call(feedback);
         AppSnackBar.show(
           context,
-          feedback.message,
+          feedback.message(context.l10n),
           kind: feedback.isError
               ? AppSnackBarKind.error
               : AppSnackBarKind.success,

@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/features/player/presentation/utils/player_rebuild_stats.dart';
 import 'package:melodix/features/player/domain/entities/now_playing.dart';
 
@@ -72,7 +72,7 @@ class _SeekBarState extends State<SeekBar> {
                 }
               : null,
           semanticFormatterCallback: (v) =>
-              '${(v / 1000).round()} ${AppStrings.secondsShort}',
+              '${(v / 1000).round()} ${context.l10n.secondsShort}',
         ),
       ),
     );
@@ -113,10 +113,10 @@ class PlayPauseButton extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: isPlaying ? AppStrings.pause : AppStrings.play,
+      label: isPlaying ? context.l10n.pause : context.l10n.play,
       excludeSemantics: true,
       child: Tooltip(
-        message: isPlaying ? AppStrings.pause : AppStrings.play,
+        message: isPlaying ? context.l10n.pause : context.l10n.play,
         child: Material(
           color: primary,
           shape: const CircleBorder(),
@@ -168,9 +168,9 @@ class RepeatButton extends StatelessWidget {
     final active = mode != PlaybackRepeat.off;
     return IconButton(
       tooltip: switch (mode) {
-        PlaybackRepeat.off => AppStrings.repeatOff,
-        PlaybackRepeat.all => AppStrings.repeatAll,
-        PlaybackRepeat.one => AppStrings.repeatOne,
+        PlaybackRepeat.off => context.l10n.repeatOff,
+        PlaybackRepeat.all => context.l10n.repeatAll,
+        PlaybackRepeat.one => context.l10n.repeatOne,
       },
       onPressed: onPressed,
       icon: Icon(

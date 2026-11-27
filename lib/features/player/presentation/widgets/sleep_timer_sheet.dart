@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/utils/duration_format.dart';
@@ -38,7 +38,7 @@ class SleepTimerSheet extends StatelessWidget {
     return SafeArea(
       // Scrolls when the sheet is short (small phones, large text).
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 16.h),
+        padding: EdgeInsetsDirectional.fromSTEB(20.w, 0, 20.w, 16.h),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -48,7 +48,7 @@ class SleepTimerSheet extends StatelessWidget {
                 Icon(Icons.bedtime_rounded, color: accent),
                 SizedBox(width: 10.w),
                 Text(
-                  AppStrings.sleepTimer,
+                  context.l10n.sleepTimer,
                   style: TextStyle(
                     color: onSurface,
                     fontSize: AppTextSizes.xl,
@@ -59,7 +59,7 @@ class SleepTimerSheet extends StatelessWidget {
             ),
             SizedBox(height: 4.h),
             Text(
-              AppStrings.sleepTimerHint,
+              context.l10n.sleepTimerHint,
               style: TextStyle(
                 color: onSurface.withValues(alpha: 0.6),
                 fontSize: AppTextSizes.sm,
@@ -78,8 +78,8 @@ class SleepTimerSheet extends StatelessWidget {
                     Expanded(
                       child: Text(
                         state.endOfSong
-                            ? AppStrings.sleepTimerStopsAtEnd
-                            : AppStrings.sleepTimerLeft(
+                            ? context.l10n.sleepTimerStopsAtEnd
+                            : context.l10n.sleepTimerLeft(
                                 formatDuration(state.remaining!),
                               ),
                         style: TextStyle(
@@ -93,11 +93,11 @@ class SleepTimerSheet extends StatelessWidget {
                       TextButton(
                         onPressed: () =>
                             timer.extend(const Duration(minutes: 5)),
-                        child: const Text(AppStrings.sleepTimerAddFive),
+                        child: Text(context.l10n.sleepTimerAddFive),
                       ),
                     TextButton(
                       onPressed: () => choose(timer.cancel),
-                      child: const Text(AppStrings.sleepTimerOff),
+                      child: Text(context.l10n.sleepTimerOff),
                     ),
                   ],
                 ),
@@ -110,13 +110,13 @@ class SleepTimerSheet extends StatelessWidget {
               children: [
                 for (final minutes in SleepTimerCubit.minuteChoices)
                   ActionChip(
-                    label: Text(AppStrings.sleepTimerMinutes(minutes)),
+                    label: Text(context.l10n.sleepTimerMinutes(minutes)),
                     onPressed: () =>
                         choose(() => timer.start(Duration(minutes: minutes))),
                   ),
                 ActionChip(
                   avatar: const Icon(Icons.music_note_rounded),
-                  label: const Text(AppStrings.sleepTimerEndOfSong),
+                  label: Text(context.l10n.sleepTimerEndOfSong),
                   onPressed: () => choose(timer.stopAtEndOfSong),
                 ),
               ],

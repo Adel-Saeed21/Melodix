@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/utils/duration_format.dart';
 import 'package:melodix/features/player/presentation/logic/audio_settings_cubit.dart';
 import 'package:melodix/features/player/presentation/logic/sleep_timer_cubit.dart';
@@ -32,8 +32,10 @@ class NowPlayingActions extends StatelessWidget {
       children: [
         NowPlayingActionButton(
           icon: Icons.lyrics_rounded,
-          label: AppStrings.lyrics,
-          tooltip: showingLyrics ? AppStrings.showCover : AppStrings.showLyrics,
+          label: context.l10n.lyrics,
+          tooltip: showingLyrics
+              ? context.l10n.showCover
+              : context.l10n.showLyrics,
           active: showingLyrics,
           onTap: onLyrics,
         ),
@@ -41,24 +43,25 @@ class NowPlayingActions extends StatelessWidget {
           icon: Icons.bedtime_rounded,
           label: switch (sleep) {
             SleepTimerState(:final remaining?) => formatDuration(remaining),
-            SleepTimerState(endOfSong: true) => AppStrings.sleepTimerEndOfSong,
-            _ => AppStrings.sleepTimer,
+            SleepTimerState(endOfSong: true) =>
+              context.l10n.sleepTimerEndOfSong,
+            _ => context.l10n.sleepTimer,
           },
-          tooltip: AppStrings.sleepTimer,
+          tooltip: context.l10n.sleepTimer,
           active: sleep.isActive,
           onTap: () => showSleepTimerSheet(context),
         ),
         NowPlayingActionButton(
           icon: Icons.speed_rounded,
-          label: AppStrings.speedValue(speed),
-          tooltip: AppStrings.speed,
+          label: context.l10n.speedValue(speed),
+          tooltip: context.l10n.speed,
           active: speed != 1,
           onTap: () => showSpeedSheet(context),
         ),
         NowPlayingActionButton(
           icon: Icons.queue_music_rounded,
-          label: AppStrings.queue,
-          tooltip: AppStrings.queue,
+          label: context.l10n.queue,
+          tooltip: context.l10n.queue,
           active: false,
           onTap: () => showPlayerQueue(context),
         ),

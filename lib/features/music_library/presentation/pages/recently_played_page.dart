@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
 import 'package:melodix/core/usecase/usecase.dart';
 import 'package:melodix/core/widgets/app_snack_bar.dart';
@@ -19,7 +19,10 @@ class RecentlyPlayedPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => SongListCubit.live(getIt<WatchRecentlyPlayedUseCase>()()),
+      create: (_) => SongListCubit.live(
+        getIt<WatchRecentlyPlayedUseCase>()(),
+        clearAll: () => getIt<ClearRecentlyPlayedUseCase>()(const NoParams()),
+      ),
       child: Builder(
         builder: (context) => CollectionPageScaffold(
           extendBehindAppBar: true,
@@ -27,7 +30,7 @@ class RecentlyPlayedPage extends StatelessWidget {
             BlocBuilder<SongListCubit, SongListState>(
               buildWhen: (p, c) => p.songs.isEmpty != c.songs.isEmpty,
               builder: (context, state) => IconButton(
-                tooltip: AppStrings.clearHistory,
+                tooltip: context.l10n.clearHistory,
                 icon: const Icon(Icons.delete_sweep_rounded),
                 onPressed: state.songs.isEmpty
                     ? null
@@ -36,14 +39,14 @@ class RecentlyPlayedPage extends StatelessWidget {
             ),
           ],
           body: SongListBody(
-            queueTitle: AppStrings.recentlyPlayed,
+            queueTitle: context.l10n.recentlyPlayed,
             header: (songs) => RecentlyPlayedHero(songs: songs),
-            emptyView: const Padding(
+            emptyView: Padding(
               padding: EdgeInsets.only(top: 8),
               child: LibraryStatusView(
                 icon: Icons.history_rounded,
-                title: AppStrings.noRecentTitle,
-                message: AppStrings.noRecentSubtitle,
+                title: context.l10n.noRecentTitle,
+                message: context.l10n.noRecentSubtitle,
               ),
             ),
           ),
@@ -56,17 +59,17 @@ class RecentlyPlayedPage extends StatelessWidget {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text(AppStrings.clearHistory),
-        content: const Text(AppStrings.clearHistoryConfirm),
+        title: Text(context.l10n.clearHistory),
+        content: Text(context.l10n.clearHistoryConfirm),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text(AppStrings.cancel),
+            child: Text(context.l10n.cancel),
           ),
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: Text(
-              AppStrings.clear,
+              context.l10n.clear,
               style: TextStyle(
                 color: Theme.of(dialogContext).colorScheme.error,
               ),
@@ -76,16 +79,16 @@ class RecentlyPlayedPage extends StatelessWidget {
       ),
     );
     if (confirmed != true || !context.mounted) return;
-    final result = await getIt<ClearRecentlyPlayedUseCase>()(const NoParams());
+    final result = await context.read<SongListCubit>().clearAll!();
     if (!context.mounted) return;
     result.fold(
       (failure) => AppSnackBar.show(
         context,
-        failure.message,
+        context.l10n.failure(failure.message),
         kind: AppSnackBarKind.error,
       ),
       // The list empties itself (it's live).
-      (_) => AppSnackBar.show(context, AppStrings.historyCleared),
+      (_) => AppSnackBar.show(context, context.l10n.historyCleared),
     );
   }
 }

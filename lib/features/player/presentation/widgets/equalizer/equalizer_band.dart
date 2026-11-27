@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/features/player/domain/entities/equalizer_preset.dart';
@@ -45,7 +45,7 @@ class EqualizerBand extends StatelessWidget {
                 thumbColor: theme.primaryColor,
               ),
               child: Semantics(
-                label: '${AppStrings.bandLabel(hz)} Hz',
+                label: '${context.l10n.bandLabel(hz)} Hz',
                 child: Slider(
                   value: db,
                   min: -equalizerMaxGainDb,
@@ -58,7 +58,7 @@ class EqualizerBand extends StatelessWidget {
           ),
         ),
         Text(
-          AppStrings.bandLabel(hz),
+          context.l10n.bandLabel(hz),
           style: TextStyle(fontSize: AppTextSizes.xs, color: faint),
         ),
       ],

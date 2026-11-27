@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/utils/duration_format.dart';
@@ -45,8 +45,8 @@ class _UpNextState extends State<VideoUpNextList> {
             Padding(
               padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 8.h),
               child: Text(
-                '${AppStrings.upNext} · '
-                '${AppStrings.videoPosition(state.index + 1, queue.length)}',
+                '${context.l10n.upNext} · '
+                '${context.l10n.videoPosition(state.index + 1, queue.length)}',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: AppTextSizes.lg,
@@ -103,7 +103,7 @@ class _UpNextState extends State<VideoUpNextList> {
                                   ),
                                   Text(
                                     current
-                                        ? AppStrings.nowPlayingVideo
+                                        ? context.l10n.nowPlayingVideo
                                         : formatDuration(video.duration),
                                     style: TextStyle(
                                       color: current

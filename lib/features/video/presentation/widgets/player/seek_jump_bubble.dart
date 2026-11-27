@@ -1,6 +1,6 @@
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 
@@ -30,7 +30,7 @@ class SeekJumpBubble extends StatelessWidget {
             ),
             SizedBox(width: 6.w),
             Text(
-              AppStrings.seekSeconds(seconds),
+              context.l10n.seekSeconds(seconds),
               style: TextStyle(
                 color: Colors.white,
                 fontSize: AppTextSizes.base,

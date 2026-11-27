@@ -1,3 +1,4 @@
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/preferences/ui_preferences.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -32,7 +33,7 @@ class MiniPlayer extends StatelessWidget {
             c.errorSequence != p.errorSequence && c.error != null,
         listener: (context, state) => AppSnackBar.show(
           context,
-          playbackErrorText(state.error!),
+          playbackErrorText(state.error!, context.l10n),
           kind: AppSnackBarKind.error,
         ),
         builder: (context, state) {

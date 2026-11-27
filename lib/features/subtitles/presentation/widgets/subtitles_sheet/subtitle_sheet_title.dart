@@ -13,7 +13,7 @@ class SubtitleSheetTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: padded
-          ? EdgeInsets.fromLTRB(20.w, 0, 20.w, 8.h)
+          ? EdgeInsetsDirectional.fromSTEB(20.w, 0, 20.w, 8.h)
           : EdgeInsets.zero,
       child: Text(
         text,

@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/preferences/library_filter.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
@@ -36,22 +36,22 @@ class LibraryFiltersPage extends StatelessWidget {
     final onSurface = Theme.of(context).colorScheme.onSurface;
 
     return SettingsSubpage(
-      title: AppStrings.libraryFilters,
+      title: context.l10n.libraryFilters,
       children: [
         SettingsSection(
           icon: Icons.timer_rounded,
-          title: AppStrings.minimumLength,
+          title: context.l10n.minimumLength,
           children: [
             SettingRow(
-              title: AppStrings.minimumLength,
-              subtitle: AppStrings.minimumLengthHint,
+              title: context.l10n.minimumLength,
+              subtitle: context.l10n.minimumLengthHint,
               below: Wrap(
                 spacing: 8.r,
                 runSpacing: 8.r,
                 children: [
                   for (final seconds in LibraryFilter.minSecondsChoices)
                     ChoiceChip(
-                      label: Text(AppStrings.minimumLengthValue(seconds)),
+                      label: Text(context.l10n.minimumLengthValue(seconds)),
                       selected: filter.minSeconds == seconds,
                       onSelected: (_) => filters.setMinSeconds(seconds),
                     ),
@@ -62,12 +62,12 @@ class LibraryFiltersPage extends StatelessWidget {
         ),
         SettingsSection(
           icon: Icons.folder_rounded,
-          title: AppStrings.folders,
+          title: context.l10n.folders,
           children: [
             Padding(
-              padding: EdgeInsets.fromLTRB(16.w, 14.h, 16.w, 6.h),
+              padding: EdgeInsetsDirectional.fromSTEB(16.w, 14.h, 16.w, 6.h),
               child: Text(
-                AppStrings.foldersHint,
+                context.l10n.foldersHint,
                 style: TextStyle(
                   color: onSurface.withValues(alpha: 0.6),
                   fontSize: AppTextSizes.sm,
@@ -75,7 +75,7 @@ class LibraryFiltersPage extends StatelessWidget {
               ),
             ),
             if (folders.isEmpty)
-              const SettingRow(title: AppStrings.noFolders)
+              SettingRow(title: context.l10n.noFolders)
             else
               for (final folder in folders)
                 SwitchListTile(
@@ -95,7 +95,7 @@ class LibraryFiltersPage extends StatelessWidget {
                   subtitle: Text(
                     [
                       if (counts[folder] case final count?)
-                        AppStrings.folderSongs(count),
+                        context.l10n.folderSongs(count),
                       folder,
                     ].join(' · '),
                     maxLines: 1,

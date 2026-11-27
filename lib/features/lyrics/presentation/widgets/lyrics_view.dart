@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/features/lyrics/presentation/logic/lyrics_clock.dart';
 import 'package:melodix/features/lyrics/presentation/logic/lyrics_cubit.dart';
 import 'package:melodix/features/lyrics/presentation/widgets/lyrics_view/lyrics_message.dart';
@@ -24,7 +24,7 @@ class LyricsView extends StatelessWidget {
             key: ValueKey(state.status),
             icon: Icons.lyrics_rounded,
             text: state.status == LyricsStatus.searching
-                ? AppStrings.lyricsSearching
+                ? context.l10n.lyricsSearching
                 : null,
             busy: true,
           ),
@@ -35,18 +35,18 @@ class LyricsView extends StatelessWidget {
           LyricsStatus.none => LyricsMessage(
             key: const ValueKey('none'),
             icon: Icons.lyrics_outlined,
-            text: AppStrings.lyricsNone,
+            text: context.l10n.lyricsNone,
             searchOnline: true,
           ),
           LyricsStatus.notFound => LyricsMessage(
             key: const ValueKey('notFound'),
             icon: Icons.search_off_rounded,
-            text: AppStrings.lyricsNotFound,
+            text: context.l10n.lyricsNotFound,
           ),
           LyricsStatus.failed => LyricsMessage(
             key: const ValueKey('failed'),
             icon: Icons.wifi_off_rounded,
-            text: AppStrings.lyricsFailed,
+            text: context.l10n.lyricsFailed,
             searchOnline: true,
           ),
         },

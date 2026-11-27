@@ -35,6 +35,8 @@ class AppRoute {
       transitionDuration: const Duration(milliseconds: 280),
       transitionsBuilder: (context, animation, secondaryAnimation, child) {
         return SlideTransition(
+          // From the end side: the right in English, the left in Arabic.
+          textDirection: Directionality.of(context),
           position: Tween<Offset>(
             begin: const Offset(0.05, 0),
             end: Offset.zero,

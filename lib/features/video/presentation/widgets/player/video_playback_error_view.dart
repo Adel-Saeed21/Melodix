@@ -2,7 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/features/video/presentation/widgets/player/video_minimize_button.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
@@ -41,8 +41,8 @@ class VideoPlaybackErrorView extends StatelessWidget {
                   verticalSpace(16),
                   Text(
                     missing
-                        ? AppStrings.videoMissing
-                        : AppStrings.videoUnplayable,
+                        ? context.l10n.videoMissing
+                        : context.l10n.videoUnplayable,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
@@ -74,13 +74,13 @@ class VideoPlaybackErrorView extends StatelessWidget {
                             foregroundColor: Colors.white,
                             side: const BorderSide(color: Colors.white54),
                           ),
-                          child: const Text(AppStrings.tryAgain),
+                          child: Text(context.l10n.tryAgain),
                         ),
                       if (state.hasNext)
                         FilledButton.icon(
                           onPressed: cubit.next,
                           icon: const Icon(Icons.skip_next_rounded),
-                          label: const Text(AppStrings.nextVideo),
+                          label: Text(context.l10n.nextVideo),
                         ),
                     ],
                   ),

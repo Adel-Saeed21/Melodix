@@ -16,7 +16,7 @@ class SubtitleText extends StatelessWidget {
   final UiPreferences? style;
 
   /// Around the caption (default: clear of the player's seek bar).
-  final EdgeInsets? padding;
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +53,7 @@ class SubtitleText extends StatelessWidget {
       alignment: Alignment.bottomCenter,
       child: Padding(
         // Clear of the seek bar and buttons.
-        padding: padding ?? EdgeInsets.fromLTRB(24.w, 0, 24.w, 96.h),
+        padding: padding ?? EdgeInsetsDirectional.fromSTEB(24.w, 0, 24.w, 96.h),
         child: outline
             ? words
             : DecoratedBox(

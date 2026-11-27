@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/theme_cubit/theme_cubit.dart';
 import 'package:melodix/core/widgets/theme_mode_picker/theme_mode_card.dart';
 
@@ -11,15 +11,12 @@ import 'package:melodix/core/widgets/theme_mode_picker/theme_mode_card.dart';
 class ThemeModePicker extends StatelessWidget {
   const ThemeModePicker({super.key});
 
-  static const _options = [
-    (ThemeMode.dark, Icons.dark_mode_rounded, AppStrings.themeDark),
-    (ThemeMode.light, Icons.light_mode_rounded, AppStrings.themeLight),
-    (
-      ThemeMode.system,
-      Icons.brightness_auto_rounded,
-      AppStrings.onboardingAuto,
-    ),
-  ];
+  static List<(ThemeMode, IconData, String)> _options(AppLocalizations l10n) =>
+      [
+        (ThemeMode.dark, Icons.dark_mode_rounded, l10n.themeDark),
+        (ThemeMode.light, Icons.light_mode_rounded, l10n.themeLight),
+        (ThemeMode.system, Icons.brightness_auto_rounded, l10n.onboardingAuto),
+      ];
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +26,7 @@ class ThemeModePicker extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        for (final (value, icon, label) in _options)
+        for (final (value, icon, label) in _options(context.l10n))
           Padding(
             padding: EdgeInsets.symmetric(horizontal: 8.r),
             child: ThemeModeCard(

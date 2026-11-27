@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/widgets/app_snack_bar.dart';
 import 'package:melodix/core/widgets/selection/selection_cubit.dart';
 import 'package:melodix/core/widgets/selection/selection_widgets.dart';
@@ -21,7 +21,7 @@ List<BulkAction> videoSelectionActions(
   return [
     BulkAction(
       icon: Icons.play_arrow_rounded,
-      label: AppStrings.play,
+      label: context.l10n.play,
       onTap: () {
         openVideoPlayer(context, selected, 0);
         selection.exit();
@@ -31,28 +31,27 @@ List<BulkAction> videoSelectionActions(
       icon: allFavourite
           ? Icons.heart_broken_rounded
           : Icons.favorite_border_rounded,
-      label: allFavourite ? AppStrings.unfavourite : AppStrings.favourite,
+      label: allFavourite ? context.l10n.unfavourite : context.l10n.favourite,
       onTap: () async {
         final messages = AppSnackBarTarget.of(context);
+        final l10n = context.l10n;
         final saved = await context.read<FavoriteVideosCubit>().setFavorite(
           ids,
           favorite: !allFavourite,
         );
         if (!saved) {
-          messages.show(AppStrings.changeNotSaved, kind: AppSnackBarKind.error);
+          messages.show(l10n.changeNotSaved, kind: AppSnackBarKind.error);
           return;
         }
         selection.exit();
         messages.show(
-          allFavourite
-              ? AppStrings.removedFromFavourites
-              : AppStrings.addedToFavourites,
+          allFavourite ? l10n.removedFromFavourites : l10n.addedToFavourites,
         );
       },
     ),
     BulkAction(
       icon: Icons.delete_outline_rounded,
-      label: AppStrings.delete,
+      label: context.l10n.delete,
       destructive: true,
       onTap: () async {
         final deleted = await deleteVideosAsking(context, ids);

@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/features/subtitles/presentation/logic/subtitles_cubit.dart';
@@ -43,8 +43,8 @@ class VideoTopBar extends StatelessWidget {
         final video = state.video;
         final details = [
           if (state.queue.length > 1)
-            AppStrings.videoPosition(state.index + 1, state.queue.length),
-          VideoTile.qualityLabel(video.width, video.height),
+            context.l10n.videoPosition(state.index + 1, state.queue.length),
+          VideoTile.qualityLabel(video.width, video.height, context.l10n),
         ].join(' · ');
         return Row(
           children: [
@@ -77,7 +77,7 @@ class VideoTopBar extends StatelessWidget {
             ),
             if (state.queue.length > 1)
               IconButton(
-                tooltip: AppStrings.upNext,
+                tooltip: context.l10n.upNext,
                 color: Colors.white,
                 onPressed: () {
                   onTouched();
@@ -88,7 +88,7 @@ class VideoTopBar extends StatelessWidget {
             BlocSelector<SubtitlesCubit, SubtitlesState, bool>(
               selector: (s) => s.isOn,
               builder: (context, on) => IconButton(
-                tooltip: AppStrings.subtitles,
+                tooltip: context.l10n.subtitles,
                 color: Colors.white,
                 onPressed: () {
                   onTouched();
@@ -102,7 +102,7 @@ class VideoTopBar extends StatelessWidget {
               ),
             ),
             IconButton(
-              tooltip: fill ? AppStrings.fitScreen : AppStrings.fillScreen,
+              tooltip: fill ? context.l10n.fitScreen : context.l10n.fillScreen,
               color: Colors.white,
               onPressed: () {
                 onTouched();
@@ -113,7 +113,7 @@ class VideoTopBar extends StatelessWidget {
               ),
             ),
             PopupMenuButton<double>(
-              tooltip: AppStrings.playbackSpeed,
+              tooltip: context.l10n.playbackSpeed,
               initialValue: state.speed,
               onOpened: onTouched,
               onSelected: cubit.setSpeed,

@@ -5,7 +5,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/routing/routes.dart';
 import 'package:melodix/core/config/theme/app_colors.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
@@ -55,16 +55,16 @@ class LibraryShortcuts extends StatelessWidget {
     final favourites = ShortcutCard(
       colors: AccentColors.favouritesGradient(Theme.of(context).primaryColor),
       icon: Icons.favorite_rounded,
-      title: AppStrings.favourites,
-      caption: AppStrings.songsCount(favouriteCount),
+      title: context.l10n.favourites,
+      caption: context.l10n.songsCount(favouriteCount),
       onTap: () => context.pushNamed(Routes.favourites),
       compact: vertical,
     );
     final recent = ShortcutCard(
       colors: AppColors.recentGradient,
       icon: Icons.history_rounded,
-      title: AppStrings.recent,
-      caption: AppStrings.lastPlayed,
+      title: context.l10n.recent,
+      caption: context.l10n.lastPlayed,
       onTap: () => context.pushNamed(Routes.recentlyPlayed),
       compact: vertical,
     );
@@ -176,8 +176,8 @@ class ShortcutCard extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: radius,
                 gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  begin: AlignmentDirectional.topStart,
+                  end: AlignmentDirectional.bottomEnd,
                   colors: colors,
                 ),
               ),
@@ -185,8 +185,8 @@ class ShortcutCard extends StatelessWidget {
                 onTap: onTap,
                 child: Stack(
                   children: [
-                    Positioned(
-                      right: -10.r,
+                    PositionedDirectional(
+                      end: -10.r,
                       bottom: -12.r,
                       child: Icon(
                         icon,

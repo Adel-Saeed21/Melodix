@@ -1,3 +1,5 @@
+import 'package:melodix/core/l10n/l10n.dart';
+
 import 'dart:developer' as developer;
 import 'dart:io';
 
@@ -27,6 +29,7 @@ Future<void> startBackgroundPlayback({
   required WatchSongFavoriteUseCase watchFavorite,
   required ToggleSongFavoriteUseCase toggleFavorite,
   MediaSessionGuest? guest,
+  AppLocalizations Function()? strings,
 }) async {
   try {
     await AudioService.init(
@@ -43,6 +46,7 @@ Future<void> startBackgroundPlayback({
           brand: renderBrandedCover,
         ),
         watchFavorite: watchFavorite,
+        strings: strings,
         toggleFavorite: toggleFavorite,
         guest: guest,
       ),

@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 
 /// The rounded search field shown in place of the Music title. The ✕ closes
@@ -43,7 +43,7 @@ class LibrarySearchField extends StatelessWidget {
       textInputAction: TextInputAction.search,
       style: TextStyle(color: onSurface, fontSize: AppTextSizes.base),
       decoration: InputDecoration(
-        hintText: AppStrings.searchHint,
+        hintText: context.l10n.searchHint,
         hintStyle: TextStyle(
           color: onSurface.withValues(alpha: 0.45),
           fontSize: AppTextSizes.base,
@@ -57,7 +57,7 @@ class LibrarySearchField extends StatelessWidget {
           color: onSurface.withValues(alpha: 0.6),
         ),
         suffixIcon: IconButton(
-          tooltip: AppStrings.closeSearch,
+          tooltip: context.l10n.closeSearch,
           onPressed: onClose,
           icon: Icon(
             Icons.close_rounded,

@@ -1,3 +1,4 @@
+import 'package:melodix/core/preferences/app_language.dart';
 import 'package:get_it/get_it.dart';
 import 'package:melodix/core/preferences/ui_preferences.dart';
 import 'package:melodix/features/video/presentation/playback/video_media_session.dart';
@@ -107,6 +108,7 @@ void registerVideo(GetIt getIt) {
       musicStarted: getIt<PlaybackCoordinator>().musicStarted,
       seekStep: () => getIt<UiPreferencesCubit>().state.videoSeekStep,
       thumbnail: (id) async => getIt<GetVideoThumbnailUseCase>()(id, size: 512),
+      strings: () => getIt<AppLanguageCubit>().strings,
     ),
     dispose: (session) => session.dispose(),
   );

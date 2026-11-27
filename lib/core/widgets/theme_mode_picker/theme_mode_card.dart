@@ -73,7 +73,8 @@ class ThemeModeCard extends StatelessWidget {
                                   Expanded(
                                     child: ClipRect(
                                       child: OverflowBox(
-                                        alignment: Alignment.centerLeft,
+                                        alignment:
+                                            AlignmentDirectional.centerStart,
                                         maxWidth: 82.r,
                                         child: ThemeMiniPhone(
                                           dark: true,
@@ -85,7 +86,8 @@ class ThemeModeCard extends StatelessWidget {
                                   Expanded(
                                     child: ClipRect(
                                       child: OverflowBox(
-                                        alignment: Alignment.centerRight,
+                                        alignment:
+                                            AlignmentDirectional.centerEnd,
                                         maxWidth: 82.r,
                                         child: ThemeMiniPhone(
                                           dark: false,
@@ -100,8 +102,8 @@ class ThemeModeCard extends StatelessWidget {
                       ),
                     ),
                     if (selected)
-                      Positioned(
-                        right: -8.r,
+                      PositionedDirectional(
+                        end: -8.r,
                         top: -8.r,
                         child: Container(
                           padding: EdgeInsets.all(3.r),

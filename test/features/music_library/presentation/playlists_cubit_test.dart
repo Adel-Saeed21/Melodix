@@ -11,6 +11,7 @@ import 'package:melodix/features/music_library/domain/usecases/toggle_playlist_f
 import 'package:melodix/features/music_library/domain/usecases/watch_playlists_usecase.dart';
 import 'package:melodix/features/music_library/presentation/logic/playlists_cubit.dart';
 import 'package:mocktail/mocktail.dart';
+import '../../../support/l10n_support.dart';
 
 class MockWatch extends Mock implements WatchPlaylistsUseCase {}
 
@@ -86,7 +87,7 @@ void main() {
         verify(() => create(captureAny())).captured.single
             as CreatePlaylistParams;
     expect(params.name, 'Focus');
-    expect(cubit.state.feedback?.message, 'Created "Focus"');
+    expect(cubit.state.feedback?.message(english), 'Created "Focus"');
     expect(cubit.state.feedback?.isError, isFalse);
   });
 
@@ -96,14 +97,14 @@ void main() {
     when(() => delete(1)).thenAnswer((_) async => const Right(unit));
 
     await cubit.rename(_playlist, 'Leg day');
-    expect(cubit.state.feedback?.message, 'Playlist renamed');
+    expect(cubit.state.feedback?.message(english), 'Playlist renamed');
 
     await cubit.toggleFavorite(_playlist);
-    expect(cubit.state.feedback?.message, 'Playlist added to favourites');
+    expect(cubit.state.feedback?.message(english), 'Playlist added to favourites');
 
     final sequence = cubit.state.feedback!.sequence;
     await cubit.delete(_playlist);
-    expect(cubit.state.feedback?.message, 'Playlist deleted');
+    expect(cubit.state.feedback?.message(english), 'Playlist deleted');
     expect(cubit.state.feedback!.sequence, sequence + 1);
   });
 
@@ -113,7 +114,7 @@ void main() {
 
     await cubit.delete(_playlist);
 
-    expect(cubit.state.feedback?.message, 'Nope');
+    expect(cubit.state.feedback?.message(english), 'Nope');
     expect(cubit.state.feedback?.isError, isTrue);
   });
 }

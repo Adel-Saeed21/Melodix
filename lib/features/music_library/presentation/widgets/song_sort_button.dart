@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
@@ -18,14 +18,14 @@ class SongSortButton extends StatelessWidget {
   final SongSortOrder order;
   final ValueChanged<SongSortOrder> onSelected;
 
-  static String label(SongSortOrder order) {
+  static String label(SongSortOrder order, AppLocalizations l10n) {
     switch (order) {
       case SongSortOrder.recentlyAdded:
-        return AppStrings.recentlyAdded;
+        return l10n.recentlyAdded;
       case SongSortOrder.title:
-        return AppStrings.aToZ;
+        return l10n.aToZ;
       case SongSortOrder.mostPlayed:
-        return AppStrings.mostPlayed;
+        return l10n.mostPlayed;
     }
   }
 
@@ -47,7 +47,7 @@ class SongSortButton extends StatelessWidget {
     final primary = theme.primaryColor;
 
     return PopupMenuButton<SongSortOrder>(
-      tooltip: AppStrings.sortBy,
+      tooltip: context.l10n.sortBy,
       initialValue: order,
       position: PopupMenuPosition.under,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.r)),
@@ -67,7 +67,7 @@ class SongSortButton extends StatelessWidget {
                 horizontalSpace(12),
                 Expanded(
                   child: Text(
-                    label(option),
+                    label(option, context.l10n),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -99,7 +99,7 @@ class SongSortButton extends StatelessWidget {
             // Shrinks with "…" instead of overflowing at large text sizes.
             Flexible(
               child: Text(
-                label(order),
+                label(order, context.l10n),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(

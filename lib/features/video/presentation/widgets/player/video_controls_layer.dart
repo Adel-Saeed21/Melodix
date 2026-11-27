@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/features/video/presentation/logic/video_player_cubit.dart';
 import 'package:melodix/features/video/presentation/widgets/player/video_controls_shade.dart';
 import 'package:melodix/features/video/presentation/widgets/player/video_seek_bar.dart';
@@ -65,7 +65,7 @@ class VideoControlsLayer extends StatelessWidget {
               Row(
                 children: [
                   IconButton(
-                    tooltip: AppStrings.lockControls,
+                    tooltip: context.l10n.lockControls,
                     color: Colors.white,
                     onPressed: onLock,
                     icon: const Icon(Icons.lock_outline_rounded),
@@ -78,7 +78,7 @@ class VideoControlsLayer extends StatelessWidget {
                     ),
                   ),
                   IconButton(
-                    tooltip: AppStrings.rotateScreen,
+                    tooltip: context.l10n.rotateScreen,
                     color: Colors.white,
                     onPressed: () {
                       onTouched();

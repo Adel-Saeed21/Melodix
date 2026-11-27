@@ -39,7 +39,7 @@ class SettingsSection extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: EdgeInsets.fromLTRB(6.w, 0, 6.w, 8.h),
+            padding: EdgeInsetsDirectional.fromSTEB(6.w, 0, 6.w, 8.h),
             child: Row(
               children: [
                 Icon(icon, size: 16.r, color: muted),
@@ -158,7 +158,7 @@ class SettingRow extends StatelessWidget {
       ],
     );
     final content = Padding(
-      padding: EdgeInsets.fromLTRB(
+      padding: EdgeInsetsDirectional.fromSTEB(
         16.w,
         14.h,
         14.w,

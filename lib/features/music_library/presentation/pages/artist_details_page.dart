@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/features/music_library/domain/entities/artist.dart';
 import 'package:melodix/features/music_library/domain/entities/catalog_grouping.dart';
 import 'package:melodix/features/music_library/presentation/logic/music_library_bloc.dart';
@@ -36,10 +36,10 @@ class ArtistDetailsPage extends StatelessWidget {
             return CollectionHeader(
               artworkSongId: live.artworkSongId,
               title: live.name,
-              subtitle: AppStrings.artist,
+              subtitle: context.l10n.artist,
               details:
-                  '${AppStrings.albumsCount(live.albumCount)} · '
-                  '${AppStrings.songsCount(live.songCount)}',
+                  '${context.l10n.albumsCount(live.albumCount)} · '
+                  '${context.l10n.songsCount(live.songCount)}',
               circle: true,
               placeholderIcon: Icons.person_rounded,
             );

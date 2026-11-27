@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/features/music_library/domain/entities/album.dart';
 import 'package:melodix/features/music_library/domain/entities/catalog_grouping.dart';
 import 'package:melodix/features/music_library/presentation/logic/music_library_bloc.dart';
@@ -40,7 +40,7 @@ class AlbumDetailsPage extends StatelessWidget {
               title: live.title,
               subtitle: live.artist,
               details:
-                  '${AppStrings.songsCount(live.songCount)} · '
+                  '${context.l10n.songsCount(live.songCount)} · '
                   '${formatDuration(live.duration)}',
             );
           },

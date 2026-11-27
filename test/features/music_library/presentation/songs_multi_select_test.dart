@@ -1,3 +1,4 @@
+import 'package:melodix/core/service/system_delete_confirmation.dart';
 import 'package:melodix/core/widgets/app_screen_util_init.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -176,6 +177,23 @@ void main() {
 
     verifyNever(() => actions.deleteMany(any()));
     expect(find.text('1 selected'), findsOneWidget); // still selecting
+  });
+
+  testWidgets('delete on Android 11+: straight to the system dialog', (
+    tester,
+  ) async {
+    SystemDeleteConfirmation.debugOverride(true);
+    addTearDown(() => SystemDeleteConfirmation.debugOverride(null));
+    when(() => actions.deleteMany(any())).thenAnswer((_) async => true);
+    await pumpTab(tester);
+
+    await tester.longPress(find.text('Track 1'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Delete 1 song?'), findsNothing);
+    verify(() => actions.deleteMany(any())).called(1);
   });
 
   testWidgets('delete is not offered where the platform cannot delete', (

@@ -1,3 +1,5 @@
+import 'package:melodix/core/service/system_delete_confirmation.dart';
+
 import '../../player/player_fixtures.dart';
 
 import 'package:melodix/core/widgets/app_screen_util_init.dart';
@@ -24,6 +26,7 @@ import 'package:melodix/features/music_library/presentation/widgets/song_options
 import 'package:melodix/features/music_library/presentation/widgets/song_tile.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:melodix/features/music_library/domain/usecases/watch_song_favorite_usecase.dart';
+import '../../../support/l10n_support.dart';
 
 class MockToggleFavorite extends Mock implements ToggleSongFavoriteUseCase {}
 
@@ -115,7 +118,7 @@ void main() {
 
       await cubit.toggleFavorite(_song());
 
-      expect(cubit.state?.message, 'Added to favourites');
+      expect(cubit.state?.message(english), 'Added to favourites');
       await cubit.close();
     });
 
@@ -123,11 +126,11 @@ void main() {
       when(() => addToPlaylist(any())).thenAnswer((_) async => const Right(1));
       final cubit = buildCubit();
       await cubit.addToPlaylist(_song(), _playlist);
-      expect(cubit.state?.message, 'Added to "Road trip"');
+      expect(cubit.state?.message(english), 'Added to "Road trip"');
 
       when(() => addToPlaylist(any())).thenAnswer((_) async => const Right(0));
       await cubit.addToPlaylist(_song(), _playlist);
-      expect(cubit.state?.message, 'Already in "Road trip"');
+      expect(cubit.state?.message(english), 'Already in "Road trip"');
       await cubit.close();
     });
 
@@ -142,7 +145,7 @@ void main() {
               as CreatePlaylistParams;
       expect(params.name, 'Chill');
       expect(params.songIds, [7]);
-      expect(cubit.state?.message, 'Added to "Chill"');
+      expect(cubit.state?.message(english), 'Added to "Chill"');
       await cubit.close();
     });
 
@@ -153,7 +156,7 @@ void main() {
 
       await cubit.toggleFavorite(_song());
 
-      expect(cubit.state?.message, 'Nope');
+      expect(cubit.state?.message(english), 'Nope');
       await cubit.close();
     });
 
@@ -169,7 +172,7 @@ void main() {
               as RemoveSongFromPlaylistParams;
       expect(params.playlistId, 3);
       expect(params.songId, 7);
-      expect(cubit.state?.message, 'Removed from "Road trip"');
+      expect(cubit.state?.message(english), 'Removed from "Road trip"');
       await cubit.close();
     });
 
@@ -186,7 +189,7 @@ void main() {
             verify(() => setSongsFavorite(captureAny())).captured.single
                 as SetSongsFavoriteParams;
         expect(params.favorite, isTrue);
-        expect(cubit.state?.message, 'Added 2 songs to favourites');
+        expect(cubit.state?.message(english), 'Added 2 songs to favourites');
 
         await cubit.favoriteMany([
           _song(favorite: true),
@@ -206,7 +209,7 @@ void main() {
 
         expect(await cubit.addManyToPlaylist(songs, _playlist), isTrue);
 
-        expect(cubit.state?.message, 'Added 2 songs to "Road trip"');
+        expect(cubit.state?.message(english), 'Added 2 songs to "Road trip"');
         await cubit.close();
       });
 
@@ -217,12 +220,12 @@ void main() {
           when(() => deleteSongs(any()))
               .thenAnswer((_) async => const Right(2));
           expect(await cubit.deleteMany(songs), isTrue);
-          expect(cubit.state?.message, 'Deleted 2 songs');
+          expect(cubit.state?.message(english), 'Deleted 2 songs');
 
           when(() => deleteSongs(any()))
               .thenAnswer((_) async => const Right(0));
           expect(await cubit.deleteMany(songs), isFalse);
-          expect(cubit.state?.message, 'No songs were deleted');
+          expect(cubit.state?.message(english), 'No songs were deleted');
           expect(cubit.canDeleteSongs, isTrue);
           await cubit.close();
         },
@@ -243,9 +246,15 @@ void main() {
       final cubit = buildCubit();
 
       expect(cubit.albumFor(_song(), const []), isNull);
-      expect(cubit.state?.message, 'This album is no longer in your library');
+      expect(
+        cubit.state?.message(english),
+        'This album is no longer in your library',
+      );
       expect(cubit.artistFor(_song(), const []), isNull);
-      expect(cubit.state?.message, 'This artist is no longer in your library');
+      expect(
+        cubit.state?.message(english),
+        'This artist is no longer in your library',
+      );
       await cubit.close();
     });
   });
@@ -352,6 +361,20 @@ void main() {
       verifyNever(() => deleteSongs(any()));
       await tester.tap(find.widgetWithText(TextButton, 'Delete'));
       await tester.pumpAndSettle();
+      verify(() => deleteSongs([7])).called(1);
+    });
+
+    testWidgets('delete from phone on Android 11+: only the system asks', (
+      tester,
+    ) async {
+      SystemDeleteConfirmation.debugOverride(true);
+      addTearDown(() => SystemDeleteConfirmation.debugOverride(null));
+      when(() => deleteSongs(any())).thenAnswer((_) async => const Right(1));
+      await pumpTile(tester, _song());
+      await tester.tap(find.text('Delete from phone'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Delete 1 song?'), findsNothing, reason: 'no 2nd ask');
       verify(() => deleteSongs([7])).called(1);
     });
 

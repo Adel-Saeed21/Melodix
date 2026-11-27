@@ -1,3 +1,4 @@
+import 'package:melodix/core/service/system_delete_confirmation.dart';
 import 'package:melodix/features/video/presentation/widgets/player/video_transport_buttons.dart';
 import 'package:melodix/core/utils/debug_counters.dart';
 import 'package:melodix/core/widgets/selection/selection_widgets.dart';
@@ -491,6 +492,26 @@ void main() {
         verify(() => deleteVideos(['b'])).called(1);
         expect(find.text('Deleted 1 video'), findsOneWidget);
       });
+
+      testWidgets('delete from phone on Android 11+: only the system asks', (
+        tester,
+      ) async {
+        SystemDeleteConfirmation.debugOverride(true);
+        addTearDown(() => SystemDeleteConfirmation.debugOverride(null));
+        when(() => deleteVideos(any()))
+            .thenAnswer((_) async => const Right(['b']));
+        await pumpApp(tester, router(), session);
+        videos.add([testVideo('a'), testVideo('b')]);
+        await tester.pumpAndSettle();
+
+        await openMenu(tester, 'Video b');
+        await tester.tap(find.text('Delete from phone'));
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Delete this video?'), findsNothing);
+        verify(() => deleteVideos(['b'])).called(1);
+        expect(find.text('Deleted 1 video'), findsOneWidget);
+      });
     });
 
     group('multi-select', () {
@@ -623,6 +644,26 @@ void main() {
         await tester.tap(find.widgetWithText(TextButton, 'Delete'));
         await tester.pump();
         await tester.pump();
+        verify(() => deleteVideos(['a', 'b'])).called(1);
+        expect(find.text('Deleted 2 videos'), findsOneWidget);
+      });
+
+      testWidgets('delete on Android 11+: straight to the system dialog', (
+        tester,
+      ) async {
+        SystemDeleteConfirmation.debugOverride(true);
+        addTearDown(() => SystemDeleteConfirmation.debugOverride(null));
+        when(() => deleteVideos(any()))
+            .thenAnswer((_) async => const Right(['a', 'b']));
+        await showVideos(tester);
+        await tester.longPress(find.text('Video a'));
+        await tester.tap(find.text('Video b'));
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.text('Delete'));
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Delete 2 videos?'), findsNothing);
         verify(() => deleteVideos(['a', 'b'])).called(1);
         expect(find.text('Deleted 2 videos'), findsOneWidget);
       });

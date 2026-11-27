@@ -1,18 +1,19 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 
 class FavouritesTabs extends StatelessWidget {
   const FavouritesTabs({super.key});
 
-  static const List<Widget> _tabs = [
-    Tab(icon: Icon(Icons.music_note_rounded), text: AppStrings.songs),
-    Tab(icon: Icon(Icons.movie_rounded), text: AppStrings.videos),
+  static List<Widget> _tabs(AppLocalizations l10n) => [
+    Tab(icon: const Icon(Icons.music_note_rounded), text: l10n.songs),
+    Tab(icon: const Icon(Icons.movie_rounded), text: l10n.videos),
   ];
 
-  /// The tabs' height (fixed by Material: it doesn't grow with text size).
-  static double get height => const TabBar(tabs: _tabs).preferredSize.height;
+  /// The tabs' height (fixed by Material: it doesn't grow with text size,
+  /// nor change with the language).
+  static double get height => TabBar(tabs: _tabs(const AppLocalizations())).preferredSize.height;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +35,7 @@ class FavouritesTabs extends StatelessWidget {
           fontSize: AppTextSizes.lg,
           fontWeight: FontWeightHelper.medium,
         ),
-        tabs: _tabs,
+        tabs: _tabs(context.l10n),
       ),
     );
   }

@@ -4,7 +4,6 @@ import 'package:dartz/dartz.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
 import 'package:melodix/core/config/theme/app_theme.dart';
 import 'package:melodix/core/entities/library_permission.dart';
@@ -23,6 +22,7 @@ import 'package:melodix/features/video/domain/usecases/watch_videos_usecase.dart
 import 'package:melodix/features/video/presentation/logic/video_library_cubit.dart';
 import 'package:melodix/features/video/presentation/pages/video_page.dart';
 import 'package:mocktail/mocktail.dart';
+import '../../support/l10n_support.dart';
 
 class _MockPlayer extends Mock implements PlayerCubit {}
 
@@ -139,19 +139,19 @@ void main() {
   ) async {
     await pumpShell(tester);
 
-    await tester.tap(find.text(AppStrings.video));
+    await tester.tap(find.text(english.video));
     await tester.pumpAndSettle();
 
     expect(find.byType(VideoPage), findsOneWidget);
-    expect(find.text(AppStrings.videos), findsOneWidget); // its header
+    expect(find.text(english.videos), findsOneWidget); // its header
     expect(cubitsCreated, 1);
     verify(() => check()).called(1);
     verify(() => sync(const VideoSyncParams())).called(1); // a cheap check
 
     // Back to Music and again to Video: the tab (and its cubit) is kept.
-    await tester.tap(find.text(AppStrings.music));
+    await tester.tap(find.text(english.music));
     await tester.pumpAndSettle();
-    await tester.tap(find.text(AppStrings.video));
+    await tester.tap(find.text(english.video));
     await tester.pumpAndSettle();
     expect(cubitsCreated, 1);
     verifyNever(() => check());

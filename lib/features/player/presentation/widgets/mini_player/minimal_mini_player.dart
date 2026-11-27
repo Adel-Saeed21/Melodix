@@ -3,7 +3,7 @@ import 'package:melodix/features/player/domain/entities/playback_progress.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
@@ -36,7 +36,7 @@ class MinimalMiniPlayer extends StatelessWidget {
     final radius = BorderRadius.circular(14.r);
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(10.w, 0, 10.w, 6.h),
+      padding: EdgeInsetsDirectional.fromSTEB(10.w, 0, 10.w, 6.h),
       child: Material(
         color: isDark
             ? theme.colorScheme.surfaceContainer
@@ -61,7 +61,7 @@ class MinimalMiniPlayer extends StatelessWidget {
             ),
             Semantics(
               button: true,
-              label: AppStrings.openPlayer,
+              label: context.l10n.openPlayer,
               child: InkWell(
                 onTap: onExpand,
                 child: IconButtonTheme(
@@ -71,7 +71,12 @@ class MinimalMiniPlayer extends StatelessWidget {
                     ),
                   ),
                   child: Padding(
-                    padding: EdgeInsets.fromLTRB(10.w, 6.h, 4.w, 6.h),
+                    padding: EdgeInsetsDirectional.fromSTEB(
+                      10.w,
+                      6.h,
+                      4.w,
+                      6.h,
+                    ),
                     child: Row(
                       children: [
                         SongArtwork(songId: song.id, size: 40.r),
@@ -112,7 +117,7 @@ class MinimalMiniPlayer extends StatelessWidget {
                           onPressed: cubit.togglePlayPause,
                         ),
                         IconButton(
-                          tooltip: AppStrings.next,
+                          tooltip: context.l10n.next,
                           onPressed: state.hasNext ? cubit.next : null,
                           icon: Icon(Icons.skip_next_rounded, size: 24.r),
                         ),

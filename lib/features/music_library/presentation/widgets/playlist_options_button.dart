@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/features/music_library/domain/entities/playlist.dart';
 import 'package:melodix/features/music_library/presentation/logic/playlists_cubit.dart';
 import 'package:melodix/core/widgets/options_menu.dart';
@@ -29,8 +29,8 @@ class PlaylistOptionsButton extends StatelessWidget {
       case _PlaylistOption.rename:
         final name = await showPlaylistNameDialog(
           context,
-          title: AppStrings.renamePlaylist,
-          actionLabel: AppStrings.save,
+          title: context.l10n.renamePlaylist,
+          actionLabel: context.l10n.save,
           initialName: playlist.name,
         );
         if (name != null && name != playlist.name) {
@@ -50,14 +50,14 @@ class PlaylistOptionsButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return OptionsMenuButton<_PlaylistOption>(
-      tooltip: AppStrings.playlistOptions,
+      tooltip: context.l10n.playlistOptions,
       onSelected: (option) => _onSelected(context, option),
       itemBuilder: (context) => [
         optionsMenuItem(
           context,
           value: _PlaylistOption.rename,
           icon: Icons.edit_rounded,
-          label: AppStrings.rename,
+          label: context.l10n.rename,
         ),
         optionsMenuItem(
           context,
@@ -66,8 +66,8 @@ class PlaylistOptionsButton extends StatelessWidget {
               ? Icons.favorite_rounded
               : Icons.favorite_border_rounded,
           label: playlist.isFavorite
-              ? AppStrings.removeFromFavourites
-              : AppStrings.addToFavourites,
+              ? context.l10n.removeFromFavourites
+              : context.l10n.addToFavourites,
           color: playlist.isFavorite ? theme.primaryColor : null,
         ),
         const PopupMenuDivider(),
@@ -75,7 +75,7 @@ class PlaylistOptionsButton extends StatelessWidget {
           context,
           value: _PlaylistOption.delete,
           icon: Icons.delete_outline_rounded,
-          label: AppStrings.deletePlaylist,
+          label: context.l10n.deletePlaylist,
           color: theme.colorScheme.error,
         ),
       ],

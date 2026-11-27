@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
@@ -16,7 +16,7 @@ class VideoLibraryHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final onSurface = Theme.of(context).colorScheme.onSurface;
     return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 12.h, 8.w, 4.h),
+      padding: EdgeInsetsDirectional.fromSTEB(20.w, 12.h, 8.w, 4.h),
       child: Row(
         children: [
           Expanded(
@@ -24,7 +24,7 @@ class VideoLibraryHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  AppStrings.videos,
+                  context.l10n.videos,
                   style: TextStyle(
                     color: onSurface,
                     fontSize: AppTextSizes.xxl,
@@ -35,7 +35,7 @@ class VideoLibraryHeader extends StatelessWidget {
                 BlocSelector<VideoLibraryCubit, VideoLibraryState, int>(
                   selector: (s) => s.videos.length,
                   builder: (context, count) => Text(
-                    AppStrings.videosCount(count),
+                    context.l10n.videosCount(count),
                     style: TextStyle(
                       color: onSurface.withValues(alpha: 0.6),
                       fontSize: AppTextSizes.sm,
@@ -51,7 +51,7 @@ class VideoLibraryHeader extends StatelessWidget {
             builder: (context, scan) {
               final (scanning, ready) = scan;
               return IconButton(
-                tooltip: AppStrings.scanVideos,
+                tooltip: context.l10n.scanVideos,
                 onPressed: scanning || !ready
                     ? null
                     : () => scanVideos(context),

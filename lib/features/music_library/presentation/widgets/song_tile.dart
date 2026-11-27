@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
@@ -54,7 +54,7 @@ class SongTile extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
+        padding: EdgeInsetsDirectional.fromSTEB(
           leading == null ? 20.w : 4.w,
           8.h,
           trailing == null ? 20.w : 4.w,
@@ -78,7 +78,7 @@ class SongTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     semanticsLabel: isCurrent
-                        ? '${song.title}, ${AppStrings.nowPlaying}'
+                        ? '${song.title}, ${context.l10n.nowPlaying}'
                         : null,
                     style: TextStyle(
                       color: isCurrent ? primary : onSurface,

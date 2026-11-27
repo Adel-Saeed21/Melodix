@@ -111,8 +111,8 @@ class IconPreview extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: selected
             ? LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+                begin: AlignmentDirectional.topStart,
+                end: AlignmentDirectional.bottomEnd,
                 colors: [
                   accent.withValues(alpha: 0.28),
                   accent.withValues(alpha: 0.06),

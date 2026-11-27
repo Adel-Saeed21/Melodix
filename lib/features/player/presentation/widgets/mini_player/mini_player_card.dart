@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
@@ -35,7 +35,7 @@ class MiniPlayerCard extends StatelessWidget {
     final song = state.currentSong!;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 6.h),
+      padding: EdgeInsetsDirectional.fromSTEB(12.w, 0, 12.w, 6.h),
       child: Material(
         color: isDark
             ? theme.colorScheme.surfaceContainerHigh
@@ -54,7 +54,7 @@ class MiniPlayerCard extends StatelessWidget {
             ),
           ),
           child: Padding(
-            padding: EdgeInsets.fromLTRB(10.w, 8.h, 4.w, 2.h),
+            padding: EdgeInsetsDirectional.fromSTEB(10.w, 8.h, 4.w, 2.h),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -108,7 +108,7 @@ class MiniPlayerCard extends StatelessWidget {
                       onPressed: cubit.togglePlayPause,
                     ),
                     IconButton(
-                      tooltip: AppStrings.next,
+                      tooltip: context.l10n.next,
                       onPressed: state.hasNext ? cubit.next : null,
                       icon: Icon(Icons.skip_next_rounded, size: 26.r),
                     ),
@@ -132,7 +132,7 @@ class MiniPlayerCard extends StatelessWidget {
                     ),
                     // Opens the list the song is playing from.
                     IconButton(
-                      tooltip: AppStrings.openQueue,
+                      tooltip: context.l10n.openQueue,
                       onPressed: () => showPlayerQueue(context),
                       icon: Icon(
                         Icons.queue_music_rounded,
@@ -141,7 +141,7 @@ class MiniPlayerCard extends StatelessWidget {
                       ),
                     ),
                     IconButton(
-                      tooltip: AppStrings.openPlayer,
+                      tooltip: context.l10n.openPlayer,
                       onPressed: onExpand,
                       icon: Icon(
                         Icons.keyboard_arrow_up_rounded,
