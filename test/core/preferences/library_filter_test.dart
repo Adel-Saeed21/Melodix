@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:isar_community/isar.dart';
-import 'package:melodix/core/database/favorites_local_storage.dart';
-import 'package:melodix/core/database/music_local_storage.dart';
-import 'package:melodix/core/database/song_library_update.dart';
-import 'package:melodix/core/models/local_song.dart';
+import 'package:melodix/features/music_library/data/datasources/favorites_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/music_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/song_library_update.dart';
+import 'package:melodix/features/music_library/data/models/local_song.dart';
 import 'package:melodix/core/preferences/library_filter.dart';
 
 import '../../features/player/player_fixtures.dart';

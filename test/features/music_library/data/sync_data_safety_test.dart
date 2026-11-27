@@ -4,10 +4,10 @@ import 'package:melodix/core/database/collections/library_metadata_collection.da
 import 'package:melodix/core/database/collections/playlist_collection.dart';
 import 'package:melodix/core/database/collections/recent_music_collection.dart';
 import 'package:melodix/core/database/collections/song_collection.dart';
-import 'package:melodix/core/database/music_local_storage.dart';
-import 'package:melodix/core/database/playlist_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/music_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/playlist_local_storage.dart';
 import 'package:melodix/core/errors/failures.dart';
-import 'package:melodix/core/service/audio_library_delta_source.dart';
+import 'package:melodix/features/music_library/data/datasources/audio_library_delta_source.dart';
 import 'package:melodix/core/service/permission_handling_service.dart';
 import 'package:melodix/features/music_library/data/repositories/library_sync_repository_impl.dart';
 import 'package:melodix/features/music_library/domain/entities/library_sync_result.dart';

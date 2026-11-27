@@ -1,5 +1,5 @@
 import 'package:dartz/dartz.dart';
-import 'package:melodix/core/database/recent_music_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/recent_music_local_storage.dart';
 import 'package:melodix/core/errors/failures.dart';
 import 'package:melodix/features/music_library/data/mappers/song_mapper.dart';
 import 'package:melodix/features/music_library/data/repositories/repository_guard.dart';

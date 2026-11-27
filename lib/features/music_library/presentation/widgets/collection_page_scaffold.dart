@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
-import 'package:melodix/features/player/presentation/widgets/mini_player_bar.dart';
+import 'package:melodix/features/music_library/presentation/logic/song_playback.dart';
 
 /// The frame of an album, artist or playlist page: a see-through app bar
 /// and the mini player at the bottom, so playback stays at hand.
@@ -32,7 +32,8 @@ class CollectionPageScaffold extends StatelessWidget {
         foregroundColor: extendBehindAppBar ? Colors.white : null,
         actions: actions,
       ),
-      bottomNavigationBar: const MiniPlayerBar(),
+      // The player's bar (none where no player is around, e.g. a test).
+      bottomNavigationBar: SongPlayback.maybeOf(context)?.miniPlayer(),
       body: SafeArea(top: false, child: body),
     );
   }

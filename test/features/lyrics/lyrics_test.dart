@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:melodix/core/service/local_song_builder.dart';
 import 'package:melodix/features/lyrics/data/embedded_lyrics_reader.dart';
 import 'package:melodix/features/lyrics/data/lrc_parser.dart';
 import 'package:melodix/features/lyrics/data/lrclib_client.dart';

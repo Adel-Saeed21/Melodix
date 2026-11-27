@@ -1,4 +1,4 @@
-import 'package:melodix/core/database/listening_history_local_storage.dart';
+import 'package:melodix/features/stats/data/datasources/listening_history_local_storage.dart';
 import 'package:melodix/features/stats/domain/entities/song_listening.dart';
 import 'package:melodix/features/stats/domain/repositories/listening_history_repository.dart';
 

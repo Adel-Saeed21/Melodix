@@ -53,3 +53,7 @@ class Song extends Equatable {
     dateAdded,
   ];
 }
+
+/// Saved in place of a missing artist / album tag.
+const String unknownArtist = 'Unknown artist';
+const String unknownAlbum = 'Unknown album';

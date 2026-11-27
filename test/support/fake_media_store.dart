@@ -1,8 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:melodix/core/errors/exceptions.dart';
-import 'package:melodix/core/models/local_song.dart';
-import 'package:melodix/core/service/audio_library_delta_source.dart';
-import 'package:melodix/core/service/music_service.dart';
+import 'package:melodix/features/music_library/data/models/local_song.dart';
+import 'package:melodix/features/music_library/data/datasources/audio_library_delta_source.dart';
+import 'package:melodix/features/music_library/data/datasources/music_service.dart';
 import 'package:melodix/core/service/permission_handling_service.dart';
 
 /// How a simulated native MediaStore query fails.

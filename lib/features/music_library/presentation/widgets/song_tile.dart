@@ -7,7 +7,7 @@ import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/core/utils/duration_format.dart';
-import 'package:melodix/features/player/presentation/widgets/current_song_builder.dart';
+import 'package:melodix/features/music_library/presentation/widgets/current_song_builder.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_tile/song_tile_cover.dart';
 
 class SongTile extends StatelessWidget {

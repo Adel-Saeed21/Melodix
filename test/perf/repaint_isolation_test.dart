@@ -7,7 +7,7 @@ import 'package:melodix/core/config/theme/app_theme.dart';
 import 'package:melodix/features/music_library/domain/usecases/get_song_artwork_usecase.dart';
 import 'package:melodix/features/navigation/presentation/widgets/glass_nav_bar.dart';
 import 'package:melodix/features/player/domain/entities/now_playing.dart';
-import 'package:melodix/features/player/presentation/widgets/equalizer_bars.dart';
+import 'package:melodix/core/widgets/equalizer_bars.dart';
 import 'package:melodix/features/player/presentation/widgets/marquee_text.dart';
 import 'package:melodix/features/player/presentation/widgets/mini_player.dart';
 import 'package:melodix/features/player/presentation/widgets/player_progress.dart';

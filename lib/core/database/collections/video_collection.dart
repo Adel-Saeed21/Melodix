@@ -1,6 +1,5 @@
 import 'package:isar_community/isar.dart';
 import 'package:melodix/core/database/fast_hash.dart';
-import 'package:melodix/core/models/local_video.dart';
 
 part 'video_collection.g.dart';
 
@@ -35,39 +34,6 @@ class VideoCollection {
 
   VideoCollection();
 
-  /// Builds a row from a scanned video, keeping user data from [previous].
-  factory VideoCollection.fromLocalVideo(
-    LocalVideo video, {
-    VideoCollection? previous,
-  }) {
-    return VideoCollection()
-      ..videoId = video.id
-      ..title = video.title
-      ..durationMs = video.duration.inMilliseconds
-      ..width = video.width
-      ..height = video.height
-      ..createdAt = video.createdAt
-      ..isFavorite = previous?.isFavorite ?? false;
-  }
-
-  /// Whether [video] (a fresh scan of this row) has the same details, so
-  /// the row needn't be rewritten.
-  bool hasSameScanAs(LocalVideo video) =>
-      title == video.title &&
-      durationMs == video.duration.inMilliseconds &&
-      width == video.width &&
-      height == video.height &&
-      createdAt == video.createdAt;
-
   @ignore
   Duration get duration => Duration(milliseconds: durationMs);
-
-  LocalVideo toLocalVideo() => LocalVideo(
-    id: videoId,
-    title: title,
-    duration: duration,
-    width: width,
-    height: height,
-    createdAt: createdAt,
-  );
 }

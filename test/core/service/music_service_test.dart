@@ -1,7 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:melodix/core/errors/exceptions.dart';
-import 'package:melodix/core/service/music_service.dart';
+import 'package:melodix/features/music_library/data/datasources/music_service.dart';
 import 'package:melodix/core/service/permission_handling_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:on_audio_query/on_audio_query.dart';

@@ -16,6 +16,7 @@ import 'package:mocktail/mocktail.dart';
 import '../player_fixtures.dart';
 
 import 'package:melodix/features/player/domain/entities/playback_progress.dart';
+import 'package:melodix/features/player/data/background/session_states.dart';
 
 class MockPlayer extends Mock implements PlayerRepository {}
 
@@ -287,11 +288,10 @@ void main() {
       playCount: 0,
     );
 
-    MediaItem item(String artist, String album) =>
-        MelodixAudioHandler.mediaItemFor(
-          tagged(artist, album),
-          duration: const Duration(minutes: 3),
-        );
+    MediaItem item(String artist, String album) => songMediaItem(
+      tagged(artist, album),
+      duration: const Duration(minutes: 3),
+    );
 
     test('title, then "Artist · Album"', () {
       final shown = item('Billie Eilish', 'When We All Fall Asleep');

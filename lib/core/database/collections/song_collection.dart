@@ -1,5 +1,4 @@
 import 'package:isar_community/isar.dart';
-import 'package:melodix/core/models/local_song.dart';
 
 part 'song_collection.g.dart';
 
@@ -67,28 +66,6 @@ class SongCollection {
 
   SongCollection();
 
-  /// Builds a row from a scanned song, keeping user data from [previous].
-  factory SongCollection.fromLocalSong(
-    LocalSong song, {
-    SongCollection? previous,
-  }) {
-    return SongCollection()
-      ..id = song.id
-      ..title = song.title
-      ..artist = song.artist
-      ..album = song.album
-      ..albumId = song.albumId
-      ..durationMs = song.duration.inMilliseconds
-      ..path = song.path
-      ..uri = song.uri
-      ..sizeBytes = song.size
-      ..dateAdded = song.dateAdded
-      ..isFavorite = previous?.isFavorite ?? false
-      ..playCount = previous?.playCount ?? 0
-      ..listenedMs = previous?.listenedMs
-      ..addedAt = previous?.addedAt ?? DateTime.now();
-  }
-
   /// True when every field read from the device matches [other], i.e. a
   /// re-scan found no changes to the file's metadata.
   bool hasSameScanData(SongCollection other) =>
@@ -104,17 +81,4 @@ class SongCollection {
 
   @ignore
   Duration get duration => Duration(milliseconds: durationMs);
-
-  LocalSong toLocalSong() => LocalSong(
-    id: id,
-    title: title,
-    artist: artist,
-    album: album,
-    albumId: albumId,
-    duration: duration,
-    path: path,
-    uri: uri,
-    size: sizeBytes,
-    dateAdded: dateAdded,
-  );
 }

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:melodix/core/service/local_song_builder.dart';
+import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/stats/domain/entities/song_listening.dart';
 import 'package:melodix/features/stats/domain/listening_stats.dart';
 

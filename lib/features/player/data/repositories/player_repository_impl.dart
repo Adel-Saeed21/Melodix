@@ -2,15 +2,17 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:just_audio/just_audio.dart';
-import 'package:melodix/core/database/playback_state_local_storage.dart';
+import 'package:melodix/features/player/data/datasources/playback_state_local_storage.dart';
 import 'package:melodix/features/music_library/data/mappers/song_mapper.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/core/utils/latest_value.dart';
 import 'package:melodix/core/utils/serial_runner.dart';
 import 'package:melodix/features/player/data/queue/loaded_window.dart';
+import 'package:melodix/features/player/data/queue/pending_queue.dart';
 import 'package:melodix/features/player/data/queue/pause_requests.dart';
 import 'package:melodix/features/player/data/queue/playback_queue.dart';
 import 'package:melodix/features/player/data/session/audio_focus.dart';
+import 'package:melodix/features/player/data/session/broken_song_streak.dart';
 import 'package:melodix/features/player/data/session/listening_tracker.dart';
 import 'package:melodix/features/player/data/session/playback_session_saver.dart';
 import 'package:melodix/features/player/domain/entities/now_playing.dart';
@@ -28,6 +30,8 @@ import 'package:melodix/features/player/domain/repositories/player_repository.da
 ///   kept in step with the whole queue (10,000 songs cost like an album);
 /// * [PauseRequests]: a pause always wins over a load that's finishing;
 /// * [AudioFocus]: the audio session (focus, ducking, headphones unplugged);
+/// * [PendingQueue]: what shows while a chosen queue loads;
+/// * [BrokenSongStreak]: when to stop skipping broken songs;
 /// * [ListeningTracker]: plays and listening time, from what is really
 ///   heard ("Most played", listening stats);
 /// * [PlaybackSessionSaver]: the session saved for a restart.
@@ -99,17 +103,15 @@ class PlayerRepositoryImpl implements PlayerRepository {
 
   /// What to show while a new queue (tap or restore) is being loaded: the
   /// chosen song right away, never the previous song's index.
-  _Pending? _pending;
+  PendingQueue? _pending;
   int _queueRequests = 0;
   bool _windowUpdateQueued = false;
 
   PlaybackError? _error;
   int _errorSequence = 0;
 
-  /// Broken songs skipped in a row (reset once a song really plays), so a
-  /// queue of broken files stops instead of skipping forever.
-  int _consecutiveErrors = 0;
-  static const int _maxSkipsOnError = 3;
+  /// Broken songs skipped in a row (see [BrokenSongStreak]).
+  final _brokenSongs = BrokenSongStreak();
 
   /// "Previous" restarts the song when it's further in than this.
   static const Duration _restartThreshold = Duration(seconds: 3);
@@ -147,7 +149,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
       _session.saveShuffle(shuffle);
     }
     // Show the tapped song immediately (before anything loads).
-    _pending = _Pending(request, queueSongs, title, index, Duration.zero);
+    _pending = PendingQueue(request, queueSongs, title, index, Duration.zero);
     _error = null;
     _publish();
 
@@ -342,7 +344,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
     _repeat = PlaybackSessionSaver.fromStored(saved.repeatMode);
     _shuffle = saved.shuffle;
     // Show the saved song and position right away while it loads.
-    _pending = _Pending(request, songs, null, index, saved.position);
+    _pending = PendingQueue(request, songs, null, index, saved.position);
     _publish();
 
     await _serial.run(() async {
@@ -388,10 +390,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
   // Player events
 
   void _onPosition(Duration position) {
-    // A song is really playing: broken songs are no longer "in a row".
-    if (_consecutiveErrors > 0 && position > const Duration(seconds: 2)) {
-      _consecutiveErrors = 0;
-    }
+    _brokenSongs.reached(position);
     _trackListening();
     _publishProgress();
   }
@@ -409,9 +408,8 @@ class PlayerRepositoryImpl implements PlayerRepository {
   }
 
   /// A song failed while playing (e.g. its file was deleted or is damaged):
-  /// say so and go on with the next song, like other players. After
-  /// [_maxSkipsOnError] broken songs in a row, or at the end of the queue,
-  /// it stops instead.
+  /// say so and go on with the next song, like other players (or stop: see
+  /// [BrokenSongStreak]).
   void _onPlaybackError(PlayerException error) {
     // During our own loads the load reports it; a load that already failed
     // and said so isn't reported twice.
@@ -421,12 +419,11 @@ class PlayerRepositoryImpl implements PlayerRepository {
 
     _reportError(PlaybackError.cannotPlay);
     final next = _window.nextAfter(failed.position);
-    if (next == null || _consecutiveErrors >= _maxSkipsOnError) {
-      _consecutiveErrors = 0;
+    // (Always asked, so the streak also resets at the end of the queue.)
+    if (!_brokenSongs.skipAnother(hasNext: next != null) || next == null) {
       unawaited(_player.pause());
       return;
     }
-    _consecutiveErrors++;
     final pauses = _pauses.mark();
     unawaited(
       _serial.run(() async {
@@ -518,21 +515,10 @@ class PlayerRepositoryImpl implements PlayerRepository {
   NowPlaying _buildState() {
     final pending = _pending;
     if (pending != null) {
-      final song = pending.songs[pending.index];
-      // The tapped song starts the order when shuffling.
-      final position = _shuffle ? 0 : pending.index;
-      final n = pending.songs.length;
-      return NowPlaying(
-        queue: pending.songs,
-        queueTitle: pending.title,
-        currentIndex: pending.index,
+      return pending.toNowPlaying(
         isPlaying: _player.playing,
-        isLoading: true,
-        duration: song.duration,
-        repeatMode: _repeat,
+        repeat: _repeat,
         shuffle: _shuffle,
-        hasNext: _repeat != PlaybackRepeat.off || position < n - 1,
-        hasPrevious: _repeat != PlaybackRepeat.off || position > 0,
         error: _error,
         errorSequence: _errorSequence,
       );
@@ -565,7 +551,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
   /// player's.
   Duration _currentDuration() {
     final pending = _pending;
-    if (pending != null) return pending.songs[pending.index].duration;
+    if (pending != null) return pending.song.duration;
     final queue = _window.queue;
     final slot = queue == null ? null : _window.current;
     if (_window.loadingFrom != null && slot != null) {
@@ -582,21 +568,4 @@ class PlayerRepositoryImpl implements PlayerRepository {
       duration: _currentDuration(),
     ),
   );
-}
-
-/// A queue chosen (tap or restore) but not loaded yet.
-class _Pending {
-  const _Pending(
-    this.request,
-    this.songs,
-    this.title,
-    this.index,
-    this.position,
-  );
-
-  final int request;
-  final List<Song> songs;
-  final String? title;
-  final int index;
-  final Duration position;
 }

@@ -1,5 +1,5 @@
 import 'package:melodix/core/database/collections/song_collection.dart';
-import 'package:melodix/core/models/local_song.dart';
+import 'package:melodix/features/music_library/data/models/local_song.dart';
 
 SongCollection songRow(
   int id, {

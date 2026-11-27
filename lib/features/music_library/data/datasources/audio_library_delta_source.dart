@@ -5,8 +5,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:melodix/core/errors/exceptions.dart';
-import 'package:melodix/core/models/local_song.dart';
-import 'package:melodix/core/service/local_song_builder.dart';
+import 'package:melodix/features/music_library/data/models/local_song.dart';
+import 'package:melodix/features/music_library/data/datasources/local_song_builder.dart';
 
 /// Where MediaStore's audio library stood at one moment: its database
 /// version, the latest generation of each storage volume and the number of

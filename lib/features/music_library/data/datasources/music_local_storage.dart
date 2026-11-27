@@ -1,16 +1,17 @@
+import 'package:melodix/features/music_library/data/datasources/song_changes.dart';
+import 'package:melodix/features/music_library/data/datasources/removed_songs.dart';
+import 'package:melodix/features/music_library/data/mappers/local_song_row.dart';
 import 'package:melodix/core/preferences/library_filter.dart';
 
 import 'dart:async';
 
 import 'package:isar_community/isar.dart';
 import 'package:melodix/core/database/collections/library_metadata_collection.dart';
-import 'package:melodix/core/database/collections/playlist_collection.dart';
 import 'package:melodix/core/database/collections/recent_music_collection.dart';
 import 'package:melodix/core/database/collections/song_collection.dart';
-import 'package:melodix/core/database/collections/song_history_collection.dart';
-import 'package:melodix/core/database/recent_music_local_storage.dart';
-import 'package:melodix/core/database/song_library_update.dart';
-import 'package:melodix/core/models/local_song.dart';
+import 'package:melodix/features/music_library/data/datasources/recent_music_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/song_library_update.dart';
+import 'package:melodix/features/music_library/data/models/local_song.dart';
 
 /// What a library sync changed.
 class SongSyncResult {
@@ -32,7 +33,8 @@ class SongSyncResult {
 }
 
 /// Persists the device's music library and the user's data for each song.
-abstract interface class MusicLocalStorage {
+/// Keeping the saved songs in line with the device (the library scans).
+abstract interface class SongSyncStorage {
   /// Saves a fresh device scan:
   /// * adds new songs and rewrites only songs whose metadata changed;
   /// * removes songs that are gone, including from recents and playlists;
@@ -66,12 +68,14 @@ abstract interface class MusicLocalStorage {
   /// last-synced time without scanning).
   Future<void> markCheckedUnchanged();
 
-  /// How many visible songs the library has.
-  Future<int> countSongs();
-
   /// When the library was last synced, or null if it never was.
   Future<DateTime?> getLastSyncedAt();
+}
 
+/// The library as the app shows it (filtered by Settings › Music filters).
+abstract interface class SongLibraryStorage {
+  /// How many visible songs the library has.
+  Future<int> countSongs();
   Future<List<SongCollection>> getAllSongs();
 
   /// Sends the whole library again to [watchLibrary] listeners (the
@@ -84,7 +88,11 @@ abstract interface class MusicLocalStorage {
   /// (favourite, play count, hiding, deleting). Updates follow committed
   /// writes in order; a failed write sends nothing.
   Stream<SongLibraryUpdate> watchLibrary();
+}
 
+/// What the user does with songs: favourites, plays, listening time, and
+/// deleting.
+abstract interface class SongUserDataStorage {
   /// Flips the favorite flag and returns the new value.
   Future<bool> toggleFavorite(int songId);
 
@@ -108,9 +116,16 @@ abstract interface class MusicLocalStorage {
   Future<void> addListening(int songId, Duration listened);
 }
 
+/// All of the saved songs: each part of the app depends on the narrower
+/// role it needs ([SongSyncStorage], [SongLibraryStorage],
+/// [SongUserDataStorage]).
+abstract interface class MusicLocalStorage
+    implements SongSyncStorage, SongLibraryStorage, SongUserDataStorage {}
+
 class MusicLocalStorageImpl implements MusicLocalStorage {
   MusicLocalStorageImpl(this._isar, {LibraryFilter Function()? filter})
-    : _filter = filter ?? _showAll;
+    : _filter = filter ?? _showAll,
+      _removed = RemovedSongs(_isar);
 
   final Isar _isar;
 
@@ -122,22 +137,16 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
   bool _keeps(SongCollection s) =>
       _filter().keeps(path: s.path, durationMs: s.durationMs);
 
-  /// What each committed write changed, for [watchLibrary]. Every write to
-  /// the songs collection goes through this class, so this is complete.
-  final StreamController<_LibraryChange> _changes = StreamController.broadcast(
-    sync: true,
-  );
+  /// What each committed write changed, for [watchLibrary].
+  final SongChanges _changes = SongChanges();
+
+  /// Removed songs' history (kept, and given back if they return).
+  final RemovedSongs _removed;
 
   IsarCollection<SongCollection> get _songs => _isar.songCollections;
 
-  IsarCollection<SongHistoryCollection> get _history =>
-      _isar.songHistoryCollections;
-
   IsarCollection<RecentMusicCollection> get _recent =>
       _isar.recentMusicCollections;
-
-  IsarCollection<PlaylistCollection> get _playlists =>
-      _isar.playlistCollections;
 
   IsarCollection<LibraryMetadataCollection> get _metadata =>
       _isar.libraryMetadataCollections;
@@ -158,7 +167,7 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
       for (final song in scanned) {
         if (!scannedIds.add(song.id)) continue; // duplicate in scan
         final previous = previousById[song.id];
-        final row = SongCollection.fromLocalSong(song, previous: previous);
+        final row = song.toRow(previous: previous);
         if (previous == null) {
           added++;
           toWrite.add(row);
@@ -167,7 +176,7 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
           toWrite.add(row);
         }
       }
-      await _restoreHistory([
+      await _removed.restoreInto([
         for (final row in toWrite)
           if (!previousById.containsKey(row.id)) row,
       ]);
@@ -177,7 +186,7 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
         for (final s in existing)
           if (!scannedIds.contains(s.id)) s.id,
       ];
-      if (removedIds.isNotEmpty) await _forget(removedIds);
+      if (removedIds.isNotEmpty) await _removed.forget(removedIds);
 
       await _saveSync(checkpoint);
 
@@ -188,54 +197,8 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
         total: scannedIds.length,
       );
     });
-    if (result.hasChanges) _changes.add(const _Reload());
+    if (result.hasChanges) _changes.reload();
     return result;
-  }
-
-  /// Removes songs from the library, recents and playlists, keeping their
-  /// listening history for the stats. Call inside a write transaction.
-  Future<void> _forget(List<int> songIds) async {
-    final now = DateTime.now();
-    final kept = [
-      for (final song in await _songs.getAll(songIds))
-        if (song != null) ?SongHistoryCollection.of(song, now),
-    ];
-    if (kept.isNotEmpty) await _history.putAll(kept);
-    await _songs.deleteAll(songIds);
-    await _recent.deleteAll(songIds);
-    await _removeFromPlaylists(songIds.toSet());
-  }
-
-  /// Songs back in the library (new rows, not yet saved) get the history
-  /// they had when they left. Call inside a write transaction.
-  Future<void> _restoreHistory(List<SongCollection> added) async {
-    if (added.isEmpty) return;
-    final ids = [for (final row in added) row.id];
-    final history = await _history.getAll(ids);
-    final restored = <int>[];
-    for (var i = 0; i < added.length; i++) {
-      final saved = history[i];
-      if (saved == null) continue;
-      saved.restoreInto(added[i]);
-      restored.add(saved.id);
-    }
-    if (restored.isNotEmpty) await _history.deleteAll(restored);
-  }
-
-  /// Drops deleted songs from every playlist that contains them. Call inside
-  /// a write transaction.
-  Future<void> _removeFromPlaylists(Set<int> removedIds) async {
-    final playlists = await _playlists.where().findAll();
-    final changed = <PlaylistCollection>[];
-    for (final playlist in playlists) {
-      if (!playlist.songIds.any(removedIds.contains)) continue;
-      playlist.songIds = [
-        for (final id in playlist.songIds)
-          if (!removedIds.contains(id)) id,
-      ];
-      changed.add(playlist);
-    }
-    if (changed.isNotEmpty) await _playlists.putAll(changed);
   }
 
   @override
@@ -262,7 +225,7 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
       final returning = <SongCollection>[];
       for (var i = 0; i < upserts.length; i++) {
         final before = previous[i];
-        final row = SongCollection.fromLocalSong(upserts[i], previous: before);
+        final row = upserts[i].toRow(previous: before);
         if (before == null) {
           added++;
           toWrite.add(row);
@@ -272,7 +235,7 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
           toWrite.add(row);
         }
       }
-      await _restoreHistory(returning);
+      await _removed.restoreInto(returning);
       if (toWrite.isNotEmpty) await _songs.putAll(toWrite);
 
       final removed = deletedIds.toSet()..removeAll(ids);
@@ -280,7 +243,7 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
           .whereType<SongCollection>()
           .map((s) => s.id)
           .toList();
-      if (existingRemoved.isNotEmpty) await _forget(existingRemoved);
+      if (existingRemoved.isNotEmpty) await _removed.forget(existingRemoved);
 
       await _saveSync(checkpoint);
       return SongSyncResult(
@@ -290,7 +253,7 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
         total: await _songs.count(),
       );
     });
-    if (result.hasChanges) _changes.add(const _Reload());
+    if (result.hasChanges) _changes.reload();
     return result;
   }
 
@@ -332,57 +295,10 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
   }
 
   @override
-  void reloadLibrary() => _changes.add(const _Reload());
+  void reloadLibrary() => _changes.reload();
 
   @override
-  Stream<SongLibraryUpdate> watchLibrary() {
-    late final StreamController<SongLibraryUpdate> out;
-    StreamSubscription<_LibraryChange>? changes;
-    // Steps run one after another, so updates keep the order of the writes
-    // (a full reload is never overtaken by a later single-song change).
-    var queue = Future<void>.value();
-    var reloadsQueued = 0;
-
-    void enqueue(Future<SongLibraryUpdate?> Function() step) {
-      queue = queue.then((_) async {
-        if (out.isClosed) return;
-        try {
-          final update = await step();
-          if (update != null && !out.isClosed) out.add(update);
-        } catch (e, stack) {
-          if (!out.isClosed) out.addError(e, stack);
-        }
-      });
-    }
-
-    void reload() {
-      reloadsQueued++;
-      enqueue(() async {
-        // A later reload is queued: it reads newer data, skip this one.
-        if (--reloadsQueued > 0) return null;
-        return SongLibraryLoaded(await getAllSongs());
-      });
-    }
-
-    out = StreamController<SongLibraryUpdate>(
-      onListen: () {
-        reload(); // the current library first
-        changes = _changes.stream.listen(
-          (change) => switch (change) {
-            _Reload() => reload(),
-            _Changed(:final songs) => enqueue(
-              () async => SongLibrarySongsChanged(songs),
-            ),
-            _Removed(:final ids) => enqueue(
-              () async => SongLibrarySongsRemoved(ids),
-            ),
-          },
-        );
-      },
-      onCancel: () => changes?.cancel(),
-    );
-    return out.stream;
-  }
+  Stream<SongLibraryUpdate> watchLibrary() => _changes.watch(getAllSongs);
 
   @override
   Future<bool> toggleFavorite(int songId) async {
@@ -394,7 +310,7 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
       return song;
     });
     if (song == null) return false;
-    _changes.add(_Changed([song]));
+    _changes.changed([song]);
     return song.isFavorite;
   }
 
@@ -408,14 +324,14 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
       song.isFavorite = favorite;
       return true;
     });
-    if (changed.isNotEmpty) _changes.add(_Changed(changed));
+    if (changed.isNotEmpty) _changes.changed(changed);
   }
 
   @override
   Future<void> removeSongs(List<int> songIds) async {
     if (songIds.isEmpty) return;
-    await _isar.writeTxn(() => _forget(songIds));
-    _changes.add(_Removed(songIds.toSet()));
+    await _isar.writeTxn(() => _removed.forget(songIds));
+    _changes.removed(songIds.toSet());
   }
 
   /// Applies [change] to the existing songs among [songIds] and saves those
@@ -469,7 +385,7 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
       await _trimRecent();
       return song;
     });
-    if (song != null) _changes.add(_Changed([song]));
+    if (song != null) _changes.changed([song]);
   }
 
   /// Drops the oldest recent entries beyond the cap. Call inside a write
@@ -486,25 +402,3 @@ class MusicLocalStorageImpl implements MusicLocalStorage {
 }
 
 /// What a committed write changed (see [MusicLocalStorageImpl.watchLibrary]).
-sealed class _LibraryChange {
-  const _LibraryChange();
-}
-
-/// Songs were added, removed or changed in bulk: re-read the library.
-final class _Reload extends _LibraryChange {
-  const _Reload();
-}
-
-/// These rows changed in place.
-final class _Changed extends _LibraryChange {
-  const _Changed(this.songs);
-
-  final List<SongCollection> songs;
-}
-
-/// These songs left the visible library.
-final class _Removed extends _LibraryChange {
-  const _Removed(this.ids);
-
-  final Set<int> ids;
-}

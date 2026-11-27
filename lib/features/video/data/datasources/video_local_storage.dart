@@ -1,9 +1,10 @@
+import 'package:melodix/features/video/data/mappers/local_video_row.dart';
 import 'package:isar_community/isar.dart';
 import 'package:melodix/core/database/collections/library_metadata_collection.dart';
 import 'package:melodix/core/database/collections/video_collection.dart';
 import 'package:melodix/core/database/collections/video_progress_collection.dart';
 import 'package:melodix/core/errors/exceptions.dart';
-import 'package:melodix/core/models/local_video.dart';
+import 'package:melodix/features/video/data/models/local_video.dart';
 
 /// What a video sync changed.
 class VideoSyncResult {
@@ -120,10 +121,10 @@ class VideoLocalStorageImpl implements VideoLocalStorage {
         final previous = previousById[video.id];
         if (previous == null) {
           added++;
-        } else if (previous.hasSameScanAs(video)) {
+        } else if (video.sameScanAs(previous)) {
           continue; // unchanged: not rewritten
         }
-        changed.add(VideoCollection.fromLocalVideo(video, previous: previous));
+        changed.add(video.toRow(previous: previous));
       }
       if (changed.isNotEmpty) await _videos.putAll(changed);
 

@@ -1,6 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:isar_community/isar.dart';
-import 'package:melodix/core/database/listening_history_local_storage.dart';
+import 'package:melodix/features/stats/data/datasources/listening_history_local_storage.dart';
 import 'package:melodix/features/stats/data/repositories/listening_history_repository_impl.dart';
 import 'package:melodix/features/stats/domain/repositories/listening_history_repository.dart';
 import 'package:melodix/features/stats/domain/usecases/watch_listening_stats_usecase.dart';

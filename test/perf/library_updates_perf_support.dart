@@ -1,8 +1,8 @@
 import 'dart:typed_data';
 
-import 'package:melodix/core/models/local_song.dart';
+import 'package:melodix/features/music_library/data/models/local_song.dart';
 import 'package:melodix/core/service/app_lifecycle_service.dart';
-import 'package:melodix/core/service/music_service.dart';
+import 'package:melodix/features/music_library/data/datasources/music_service.dart';
 import 'package:melodix/features/music_library/data/repositories/song_repository_impl.dart';
 import 'package:melodix/features/music_library/domain/usecases/check_library_permission_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/build_library_catalog_usecase.dart';

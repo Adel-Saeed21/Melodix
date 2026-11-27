@@ -40,6 +40,8 @@ import '../../player/player_fixtures.dart';
 
 import 'package:melodix/features/music_library/domain/entities/library_sync_stage.dart';
 import 'package:melodix/features/player/presentation/logic/playback_progress_cubit.dart';
+import 'package:melodix/features/music_library/presentation/logic/song_playback.dart';
+import 'package:melodix/features/player/presentation/logic/player_song_playback.dart';
 
 class MockLibrary extends Mock implements MusicLibraryBloc {}
 
@@ -138,6 +140,9 @@ void main() {
           providers: [
             BlocProvider<MusicLibraryBloc>.value(value: library),
             BlocProvider.value(value: harness.cubit),
+            RepositoryProvider<SongPlayback>.value(
+              value: PlayerSongPlayback(harness.cubit),
+            ),
             BlocProvider<PlaybackProgressCubit>.value(
               value: harness.progressCubit,
             ),

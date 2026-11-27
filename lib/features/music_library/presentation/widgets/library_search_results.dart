@@ -16,7 +16,7 @@ import 'package:melodix/core/widgets/library_status_view.dart';
 import 'package:melodix/features/music_library/presentation/widgets/playlist_tile.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_options_button.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_tile.dart';
-import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
+import 'package:melodix/features/music_library/presentation/logic/song_playback.dart';
 import 'package:melodix/features/music_library/presentation/widgets/library_search_results/search_section_header.dart';
 import 'package:melodix/features/music_library/presentation/widgets/library_search_results/search_show_all_button.dart';
 import 'package:melodix/features/music_library/presentation/widgets/library_search_results/search_album_row.dart';
@@ -172,7 +172,7 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
         // Play the matching songs, starting with this one.
         onTap: () {
           history.opened(OpenedFromSearch.song(song.id), query: query);
-          context.read<PlayerCubit>().playSongs(
+          context.read<SongPlayback>().playSongs(
             results.songs,
             index,
             title: context.l10n.searchResults,

@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_artwork.dart';
-import 'package:melodix/features/player/presentation/widgets/equalizer_bars.dart';
+import 'package:melodix/core/widgets/equalizer_bars.dart';
 
 /// The cover, with a dark overlay and equalizer bars when it's the current
 /// song (bouncing while playing, still when paused).

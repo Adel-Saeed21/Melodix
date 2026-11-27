@@ -4,9 +4,9 @@ import 'package:melodix/core/database/collections/library_metadata_collection.da
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
 import 'package:melodix/core/database/collections/video_collection.dart';
-import 'package:melodix/core/database/video_local_storage.dart';
+import 'package:melodix/features/video/data/datasources/video_local_storage.dart';
 import 'package:melodix/core/errors/exceptions.dart';
-import 'package:melodix/core/models/local_video.dart';
+import 'package:melodix/features/video/data/models/local_video.dart';
 
 import '../../support/isar_test_db.dart';
 

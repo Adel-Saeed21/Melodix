@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:melodix/core/errors/exceptions.dart';
-import 'package:melodix/core/models/local_video.dart';
+import 'package:melodix/features/video/data/models/local_video.dart';
 import 'package:melodix/core/service/permission_handling_service.dart';
 import 'package:photo_manager/photo_manager.dart';
 

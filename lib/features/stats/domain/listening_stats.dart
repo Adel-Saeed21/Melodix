@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:melodix/core/service/local_song_builder.dart';
+import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/stats/domain/entities/song_listening.dart';
 
 /// An artist and how often their songs were played.

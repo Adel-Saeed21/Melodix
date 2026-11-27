@@ -13,7 +13,8 @@ class FavouritesTabs extends StatelessWidget {
 
   /// The tabs' height (fixed by Material: it doesn't grow with text size,
   /// nor change with the language).
-  static double get height => TabBar(tabs: _tabs(const AppLocalizations())).preferredSize.height;
+  static double get height =>
+      TabBar(tabs: _tabs(const AppLocalizations())).preferredSize.height;
 
   @override
   Widget build(BuildContext context) {

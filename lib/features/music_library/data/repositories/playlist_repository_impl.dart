@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:dartz/dartz.dart';
 import 'package:melodix/core/database/collections/playlist_collection.dart';
-import 'package:melodix/core/database/playlist_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/playlist_local_storage.dart';
 import 'package:melodix/core/errors/failures.dart';
 import 'package:melodix/features/music_library/data/mappers/playlist_mapper.dart';
 import 'package:melodix/features/music_library/data/mappers/song_mapper.dart';

@@ -3,12 +3,12 @@ import 'dart:typed_data';
 
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:melodix/core/database/video_local_storage.dart';
+import 'package:melodix/features/video/data/datasources/video_local_storage.dart';
 import 'package:melodix/core/errors/exceptions.dart';
 import 'package:melodix/core/errors/failures.dart';
-import 'package:melodix/core/models/local_video.dart';
+import 'package:melodix/features/video/data/models/local_video.dart';
 import 'package:melodix/core/service/permission_handling_service.dart';
-import 'package:melodix/core/service/video_service.dart';
+import 'package:melodix/features/video/data/datasources/video_service.dart';
 import 'package:melodix/core/entities/library_permission.dart';
 import 'package:melodix/features/video/data/repositories/video_errors.dart';
 import 'package:melodix/features/video/data/repositories/video_media_repository_impl.dart';

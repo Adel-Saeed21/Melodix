@@ -1,3 +1,5 @@
+import 'package:melodix/features/player/presentation/logic/player_song_playback.dart';
+import 'package:melodix/features/music_library/presentation/logic/song_playback.dart';
 import 'package:melodix/core/l10n/language_switcher.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:melodix/core/l10n/l10n.dart';
@@ -44,6 +46,11 @@ class MelodixApp extends StatelessWidget {
         ),
         // App-wide player state (mini player, full player, song taps).
         BlocProvider<PlayerCubit>.value(value: getIt<PlayerCubit>()),
+        // The player as the music library sees it (the library doesn't
+        // depend on the player).
+        RepositoryProvider<SongPlayback>(
+          create: (context) => PlayerSongPlayback(context.read<PlayerCubit>()),
+        ),
         // Music filters (Settings) and the home-screen icon.
         BlocProvider<LibraryFilterCubit>.value(
           value: getIt<LibraryFilterCubit>(),

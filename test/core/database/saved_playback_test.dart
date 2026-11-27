@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:melodix/core/database/collections/playback_state_collection.dart';
 import 'package:melodix/core/database/collections/song_collection.dart';
-import 'package:melodix/core/database/playback_state_local_storage.dart';
+import 'package:melodix/features/player/data/datasources/playback_state_local_storage.dart';
 
 SongCollection _song(int id) => SongCollection()
   ..id = id

@@ -1,3 +1,5 @@
+import 'package:melodix/features/player/presentation/logic/player_song_playback.dart';
+import 'package:melodix/features/music_library/presentation/logic/song_playback.dart';
 import 'package:melodix/features/player/domain/usecases/edit_queue_usecase.dart';
 
 import 'dart:async';
@@ -149,6 +151,8 @@ class PlayerHarness {
   Widget provide(Widget child) => MultiBlocProvider(
     providers: [
       BlocProvider<PlayerCubit>.value(value: cubit),
+      // The player as the music library sees it (as the app provides it).
+      RepositoryProvider<SongPlayback>.value(value: PlayerSongPlayback(cubit)),
       BlocProvider<PlaybackProgressCubit>.value(value: progressCubit),
       BlocProvider<AudioSettingsCubit>.value(value: audioSettings),
       BlocProvider<SleepTimerCubit>.value(value: sleepTimer),

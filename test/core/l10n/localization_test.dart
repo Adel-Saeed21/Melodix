@@ -4,10 +4,11 @@ import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:melodix/core/errors/error_messages.dart';
 import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/preferences/app_language.dart';
-import 'package:melodix/features/player/data/background/melodix_audio_handler.dart';
 
 import '../../features/player/player_fixtures.dart';
 import '../../support/l10n_support.dart';
+
+import 'package:melodix/features/player/data/background/session_states.dart';
 
 /// The `{name}` placeholders of a text (and `{}`, the plural's count).
 Set<String> _placeholders(Object text) => {
@@ -65,7 +66,7 @@ void main() {
     });
 
     test('the notification speaks the app language', () {
-      final item = MelodixAudioHandler.mediaItemFor(
+      final item = songMediaItem(
         playerSong(1, title: ' '),
         duration: const Duration(minutes: 3),
       );

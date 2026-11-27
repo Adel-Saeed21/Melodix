@@ -1,5 +1,5 @@
-import 'package:melodix/core/database/music_local_storage.dart';
-import 'package:melodix/core/service/audio_library_delta_source.dart';
+import 'package:melodix/features/music_library/data/datasources/music_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/audio_library_delta_source.dart';
 import 'package:melodix/features/music_library/data/repositories/library_sync_repository_impl.dart';
 import 'package:melodix/features/music_library/data/sync/full_library_scan.dart';
 import 'package:melodix/features/music_library/data/sync/incremental_library_scan.dart';

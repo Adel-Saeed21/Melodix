@@ -1,9 +1,9 @@
 import 'package:dartz/dartz.dart';
 import 'package:melodix/core/database/collections/song_collection.dart';
-import 'package:melodix/core/database/music_local_storage.dart';
-import 'package:melodix/core/database/song_library_update.dart';
+import 'package:melodix/features/music_library/data/datasources/music_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/song_library_update.dart';
 import 'package:melodix/core/errors/failures.dart';
-import 'package:melodix/core/service/music_service.dart';
+import 'package:melodix/features/music_library/data/datasources/music_service.dart';
 import 'package:melodix/features/music_library/data/mappers/song_mapper.dart';
 import 'package:melodix/features/music_library/data/repositories/repository_guard.dart';
 import 'package:melodix/features/music_library/domain/entities/library_update.dart';

@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
-import 'package:melodix/core/database/video_local_storage.dart';
+import 'package:melodix/features/video/data/datasources/video_local_storage.dart';
 import 'package:melodix/core/errors/failures.dart';
-import 'package:melodix/core/service/video_service.dart';
+import 'package:melodix/features/video/data/datasources/video_service.dart';
 import 'package:melodix/features/video/data/mappers/video_mapper.dart';
 import 'package:melodix/features/video/data/repositories/video_errors.dart';
 import 'package:melodix/features/video/domain/entities/video.dart';

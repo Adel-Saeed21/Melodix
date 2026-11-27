@@ -12,7 +12,7 @@ import 'package:melodix/features/music_library/presentation/widgets/add_to_playl
 import 'package:melodix/core/widgets/options_menu.dart';
 import 'package:melodix/core/widgets/app_snack_bar.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_selection_widgets.dart';
-import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
+import 'package:melodix/features/music_library/presentation/logic/song_playback.dart';
 
 enum _SongOption {
   playNext,
@@ -51,12 +51,12 @@ class SongOptionsButton extends StatelessWidget {
     final cubit = context.read<SongActionsCubit>();
     switch (option) {
       case _SongOption.playNext:
-        await context.read<PlayerCubit>().playNext([song]);
+        await context.read<SongPlayback>().playNext([song]);
         if (context.mounted) {
           AppSnackBar.show(context, context.l10n.playsNext(1));
         }
       case _SongOption.addToQueue:
-        await context.read<PlayerCubit>().addToQueue([song]);
+        await context.read<SongPlayback>().addToQueue([song]);
         if (context.mounted) {
           AppSnackBar.show(context, context.l10n.addedToQueue(1));
         }

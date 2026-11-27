@@ -2,8 +2,8 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:melodix/core/errors/exceptions.dart';
-import 'package:melodix/core/models/local_song.dart';
-import 'package:melodix/core/service/local_song_builder.dart';
+import 'package:melodix/features/music_library/data/models/local_song.dart';
+import 'package:melodix/features/music_library/data/datasources/local_song_builder.dart';
 import 'package:melodix/core/service/permission_handling_service.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:photo_manager/photo_manager.dart';

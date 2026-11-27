@@ -14,7 +14,7 @@ import 'package:melodix/core/widgets/library_status_view.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_actions_scope.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_options_button.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_tile.dart';
-import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
+import 'package:melodix/features/music_library/presentation/logic/song_playback.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_list_body/song_drag_handle.dart';
 
 /// A header followed by the songs from the nearest [SongListCubit], each
@@ -157,7 +157,7 @@ class SongListBody extends StatelessWidget {
       child: SongTile(
         song: song,
         // Play this list (album / artist / playlist) from the tapped song.
-        onTap: () => context.read<PlayerCubit>().playSongs(
+        onTap: () => context.read<SongPlayback>().playSongs(
           songs,
           index,
           title: queueTitle,

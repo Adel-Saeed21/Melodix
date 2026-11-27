@@ -6,7 +6,7 @@ import 'package:melodix/core/config/theme/app_theme.dart';
 import 'package:melodix/features/music_library/domain/usecases/get_song_artwork_usecase.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_tile.dart';
 import 'package:melodix/features/player/domain/entities/now_playing.dart';
-import 'package:melodix/features/player/presentation/widgets/equalizer_bars.dart';
+import 'package:melodix/core/widgets/equalizer_bars.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'player_fixtures.dart';

@@ -1,4 +1,4 @@
-import 'package:melodix/core/service/audio_library_delta_source.dart';
+import 'package:melodix/features/music_library/data/datasources/audio_library_delta_source.dart';
 
 /// Why a full scan is needed.
 enum FullScanReason {

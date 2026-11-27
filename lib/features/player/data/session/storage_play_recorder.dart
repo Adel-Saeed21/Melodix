@@ -1,4 +1,4 @@
-import 'package:melodix/core/database/music_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/music_local_storage.dart';
 import 'package:melodix/features/player/domain/repositories/play_recorder.dart';
 
 /// Records plays in the music library's storage (play count and the
@@ -6,7 +6,7 @@ import 'package:melodix/features/player/domain/repositories/play_recorder.dart';
 class StoragePlayRecorder implements PlayRecorder {
   const StoragePlayRecorder(this._storage);
 
-  final MusicLocalStorage _storage;
+  final SongUserDataStorage _storage;
 
   @override
   Future<void> recordPlay(int songId) => _storage.recordPlay(songId);

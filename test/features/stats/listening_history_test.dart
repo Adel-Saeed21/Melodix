@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar_community/isar.dart';
 import 'package:melodix/core/database/collections/song_collection.dart';
-import 'package:melodix/core/database/listening_history_local_storage.dart';
-import 'package:melodix/core/database/music_local_storage.dart';
-import 'package:melodix/core/models/local_song.dart';
+import 'package:melodix/features/stats/data/datasources/listening_history_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/music_local_storage.dart';
+import 'package:melodix/features/music_library/data/models/local_song.dart';
 import 'package:melodix/core/preferences/library_filter.dart';
 import 'package:melodix/features/stats/data/repositories/listening_history_repository_impl.dart';
 import 'package:melodix/features/stats/domain/listening_stats.dart';

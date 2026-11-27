@@ -2,12 +2,12 @@ import 'dart:io';
 
 import 'package:get_it/get_it.dart';
 import 'package:melodix/features/music_library/data/mappers/song_mapper.dart';
-import 'package:melodix/core/database/music_local_storage.dart';
-import 'package:melodix/core/database/playlist_local_storage.dart';
-import 'package:melodix/core/database/recent_music_local_storage.dart';
-import 'package:melodix/core/service/music_service.dart';
+import 'package:melodix/features/music_library/data/datasources/music_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/playlist_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/recent_music_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/music_service.dart';
 import 'package:melodix/core/service/permission_handling_service.dart';
-import 'package:melodix/core/service/audio_library_delta_source.dart';
+import 'package:melodix/features/music_library/data/datasources/audio_library_delta_source.dart';
 import 'package:melodix/features/music_library/data/repositories/artwork_repository_impl.dart';
 import 'package:melodix/features/music_library/data/repositories/library_permission_repository_impl.dart';
 import 'package:melodix/features/music_library/data/repositories/library_sync_repository_impl.dart';

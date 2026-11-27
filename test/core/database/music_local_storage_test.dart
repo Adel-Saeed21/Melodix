@@ -4,8 +4,8 @@ import 'package:melodix/core/database/collections/playlist_collection.dart';
 import 'package:melodix/core/database/collections/recent_music_collection.dart';
 import 'package:melodix/core/database/collections/song_collection.dart';
 import 'package:melodix/core/database/collections/song_history_collection.dart';
-import 'package:melodix/core/database/music_local_storage.dart';
-import 'package:melodix/core/models/local_song.dart';
+import 'package:melodix/features/music_library/data/datasources/music_local_storage.dart';
+import 'package:melodix/features/music_library/data/models/local_song.dart';
 
 import '../../support/isar_test_db.dart';
 

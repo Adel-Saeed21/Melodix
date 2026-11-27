@@ -33,7 +33,7 @@ import 'package:melodix/features/music_library/presentation/widgets/music_home_v
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:melodix/core/utils/debug_counters.dart';
 import 'package:melodix/features/player/domain/entities/now_playing.dart';
-import 'package:melodix/features/player/presentation/widgets/equalizer_bars.dart';
+import 'package:melodix/core/widgets/equalizer_bars.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../player/player_fixtures.dart';

@@ -4,7 +4,7 @@ import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_colors.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/music_library/presentation/widgets/gradient_hero.dart';
-import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
+import 'package:melodix/features/music_library/presentation/logic/song_playback.dart';
 
 class RecentlyPlayedHero extends StatelessWidget {
   const RecentlyPlayedHero({super.key, required this.songs});
@@ -13,7 +13,7 @@ class RecentlyPlayedHero extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final player = context.read<PlayerCubit>();
+    final player = context.read<SongPlayback>();
     final hasSongs = songs.isNotEmpty;
     return GradientHero(
       colors: AppColors.recentGradient,

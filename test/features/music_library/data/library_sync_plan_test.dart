@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:melodix/core/service/audio_library_delta_source.dart';
+import 'package:melodix/features/music_library/data/datasources/audio_library_delta_source.dart';
 import 'package:melodix/features/music_library/data/sync/library_sync_plan.dart';
 
 MediaStoreCheckpoint cp(

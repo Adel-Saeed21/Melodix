@@ -1,6 +1,6 @@
 import 'package:melodix/core/entities/library_permission.dart';
 import 'package:melodix/core/service/permission_handling_service.dart';
-import 'package:melodix/core/service/video_service.dart';
+import 'package:melodix/features/video/data/datasources/video_service.dart';
 import 'package:melodix/features/video/domain/repositories/video_permission_repository.dart';
 
 class VideoPermissionRepositoryImpl implements VideoPermissionRepository {

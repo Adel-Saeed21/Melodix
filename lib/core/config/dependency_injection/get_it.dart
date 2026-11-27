@@ -1,6 +1,6 @@
 import 'package:get_it/get_it.dart';
 import 'package:melodix/core/config/dependency_injection/core_injection.dart';
-import 'package:melodix/core/database/music_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/music_local_storage.dart';
 import 'package:melodix/core/preferences/library_filter.dart';
 import 'package:melodix/features/lyrics/lyrics_injection.dart';
 import 'package:melodix/features/music_library/music_library_injection.dart';

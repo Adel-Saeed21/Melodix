@@ -3,11 +3,11 @@ import 'dart:developer' as developer;
 import 'dart:async';
 
 import 'package:dartz/dartz.dart';
-import 'package:melodix/core/database/music_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/music_local_storage.dart';
 import 'package:melodix/core/errors/exceptions.dart';
 import 'package:melodix/core/errors/failures.dart';
-import 'package:melodix/core/service/audio_library_delta_source.dart';
-import 'package:melodix/core/service/music_file_filter.dart';
+import 'package:melodix/features/music_library/data/datasources/audio_library_delta_source.dart';
+import 'package:melodix/features/music_library/data/datasources/music_file_filter.dart';
 import 'package:melodix/core/service/permission_handling_service.dart';
 import 'package:melodix/core/utils/single_flight.dart';
 import 'package:melodix/features/music_library/data/repositories/repository_guard.dart';

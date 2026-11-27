@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:melodix/core/service/video_service.dart';
+import 'package:melodix/features/video/data/datasources/video_service.dart';
 import 'package:melodix/core/utils/lru_cache.dart';
 import 'package:melodix/features/video/data/repositories/video_errors.dart';
 import 'package:melodix/features/video/domain/repositories/video_media_repository.dart';

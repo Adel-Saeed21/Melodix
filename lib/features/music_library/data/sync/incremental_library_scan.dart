@@ -1,8 +1,8 @@
-import 'package:melodix/core/database/music_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/music_local_storage.dart';
 import 'package:melodix/core/errors/exceptions.dart';
-import 'package:melodix/core/models/local_song.dart';
-import 'package:melodix/core/service/audio_library_delta_source.dart';
-import 'package:melodix/core/service/music_file_filter.dart';
+import 'package:melodix/features/music_library/data/models/local_song.dart';
+import 'package:melodix/features/music_library/data/datasources/audio_library_delta_source.dart';
+import 'package:melodix/features/music_library/data/datasources/music_file_filter.dart';
 import 'package:melodix/core/utils/debug_counters.dart';
 
 /// Sync strategy: apply only what changed in MediaStore since the saved
@@ -15,7 +15,7 @@ class IncrementalLibraryScan {
   IncrementalLibraryScan({required this._deltaSource, required this._storage});
 
   final AudioLibraryDeltaSource _deltaSource;
-  final MusicLocalStorage _storage;
+  final SongSyncStorage _storage;
 
   /// Applies the changes since [since] (generation per volume) on MediaStore
   /// database [version].

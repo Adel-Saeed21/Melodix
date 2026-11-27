@@ -7,7 +7,7 @@ import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/core/utils/duration_format.dart';
-import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
+import 'package:melodix/features/music_library/presentation/logic/song_playback.dart';
 
 /// "12 songs · 48 min" with Shuffle and Play, above the favourite songs.
 class FavouriteSongsActions extends StatelessWidget {
@@ -17,7 +17,7 @@ class FavouriteSongsActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final player = context.read<PlayerCubit>();
+    final player = context.read<SongPlayback>();
     final theme = Theme.of(context);
     final total = songs.fold(Duration.zero, (sum, s) => sum + s.duration);
     return Padding(

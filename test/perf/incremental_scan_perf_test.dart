@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:melodix/core/database/music_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/music_local_storage.dart';
 
 import '../support/fake_media_store.dart';
 import '../support/sync_repository_factory.dart';

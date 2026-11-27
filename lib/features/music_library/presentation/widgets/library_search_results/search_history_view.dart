@@ -11,7 +11,7 @@ import 'package:melodix/features/music_library/presentation/widgets/library_sear
 import 'package:melodix/features/music_library/presentation/widgets/library_search_results/search_history_header.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_options_button.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_tile.dart';
-import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
+import 'package:melodix/features/music_library/presentation/logic/song_playback.dart';
 
 /// What the search shows before anything is typed: the last searches
 /// (tap to search again) and what was opened from search (songs here,
@@ -114,7 +114,7 @@ class SearchHistoryView extends StatelessWidget {
           context.read<SearchHistoryCubit>().opened(
             OpenedFromSearch.song(song.id),
           );
-          context.read<PlayerCubit>().playSongs(
+          context.read<SongPlayback>().playSongs(
             songs,
             songs.indexOf(song),
             title: context.l10n.openedFromSearch,

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:melodix/core/service/music_service.dart';
+import 'package:melodix/features/music_library/data/datasources/music_service.dart';
 import 'package:melodix/core/utils/lru_cache.dart';
 import 'package:melodix/features/music_library/domain/repositories/artwork_repository.dart';
 

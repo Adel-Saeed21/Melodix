@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:melodix/core/database/collections/recent_music_collection.dart';
-import 'package:melodix/core/database/collections/song_collection.dart';
-import 'package:melodix/core/database/collections/video_collection.dart';
 import 'package:melodix/core/database/fast_hash.dart';
-import 'package:melodix/core/models/local_song.dart';
-import 'package:melodix/core/models/local_video.dart';
+import 'package:melodix/features/music_library/data/models/local_song.dart';
+import 'package:melodix/features/video/data/models/local_video.dart';
+import 'package:melodix/features/music_library/data/mappers/local_song_row.dart';
+import 'package:melodix/features/video/data/mappers/local_video_row.dart';
 
 const _song = LocalSong(
   id: 42,
@@ -36,23 +36,26 @@ void main() {
   });
 
   group('SongCollection', () {
-    test('uses the MediaStore id and round-trips to LocalSong', () {
-      final row = SongCollection.fromLocalSong(_song);
+    test('a scanned song becomes a row with its MediaStore id', () {
+      final row = _song.toRow();
 
       expect(row.id, 42);
       expect(row.durationMs, 180000);
+      expect(
+        (row.title, row.path, row.sizeBytes),
+        ('Track', '/music/track.mp3', 2048),
+      );
       expect(row.isFavorite, isFalse);
       expect(row.playCount, 0);
-      expect(row.toLocalSong(), _song);
     });
 
     test('keeps user data from the previous row on re-scan', () {
-      final previous = SongCollection.fromLocalSong(_song)
+      final previous = _song.toRow()
         ..isFavorite = true
         ..playCount = 5
         ..addedAt = DateTime(2026, 1, 1);
 
-      final updated = SongCollection.fromLocalSong(_song, previous: previous);
+      final updated = _song.toRow(previous: previous);
 
       expect(updated.isFavorite, isTrue);
       expect(updated.playCount, 5);
@@ -62,20 +65,17 @@ void main() {
 
   group('VideoCollection', () {
     test('derives a stable Isar id from the asset id', () {
-      final row = VideoCollection.fromLocalVideo(_video);
+      final row = _video.toRow();
 
       expect(row.id, fastHash('abc-123'));
-      expect(row.toLocalVideo(), _video);
+      expect(row.videoId, 'abc-123');
+      expect(_video.sameScanAs(row), isTrue);
     });
 
     test('keeps the favourite flag on re-scan', () {
-      final previous = VideoCollection.fromLocalVideo(_video)
-        ..isFavorite = true;
+      final previous = _video.toRow()..isFavorite = true;
 
-      final updated = VideoCollection.fromLocalVideo(
-        _video,
-        previous: previous,
-      );
+      final updated = _video.toRow(previous: previous);
 
       expect(updated.isFavorite, isTrue);
     });

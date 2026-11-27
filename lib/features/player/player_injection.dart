@@ -9,7 +9,7 @@ import 'package:melodix/features/player/domain/repositories/equalizer_engine.dar
 import 'package:melodix/features/player/presentation/logic/audio_settings_cubit.dart';
 import 'package:melodix/features/player/presentation/logic/sleep_timer_cubit.dart';
 import 'package:melodix/features/player/presentation/logic/cover_accent_cubit.dart';
-import 'package:melodix/core/database/playback_state_local_storage.dart';
+import 'package:melodix/features/player/data/datasources/playback_state_local_storage.dart';
 import 'package:melodix/features/music_library/data/mappers/song_mapper.dart';
 import 'package:melodix/features/player/data/repositories/player_repository_impl.dart';
 import 'package:melodix/features/player/domain/repositories/player_repository.dart';
@@ -22,7 +22,7 @@ import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
 import 'package:melodix/features/player/data/session/storage_play_recorder.dart';
 import 'package:melodix/features/player/presentation/logic/playback_progress_cubit.dart';
 import 'package:melodix/features/player/domain/usecases/watch_playback_progress_usecase.dart';
-import 'package:melodix/core/database/music_local_storage.dart';
+import 'package:melodix/features/music_library/data/datasources/music_local_storage.dart';
 import 'package:melodix/features/music_library/domain/usecases/get_song_artwork_usecase.dart';
 
 /// Music playback: the audio player, equalizer and audio settings, sleep

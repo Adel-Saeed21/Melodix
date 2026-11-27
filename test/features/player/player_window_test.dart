@@ -8,7 +8,7 @@ import 'package:just_audio_platform_interface/just_audio_platform_interface.dart
     show LoopModeMessage;
 import 'package:melodix/core/database/collections/playback_state_collection.dart';
 import 'package:melodix/core/database/collections/song_collection.dart';
-import 'package:melodix/core/database/playback_state_local_storage.dart';
+import 'package:melodix/features/player/data/datasources/playback_state_local_storage.dart';
 import 'package:melodix/features/music_library/data/mappers/song_mapper.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/player/data/repositories/player_repository_impl.dart';

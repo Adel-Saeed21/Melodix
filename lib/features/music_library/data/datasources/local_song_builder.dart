@@ -1,5 +1,6 @@
-import 'package:melodix/core/models/local_song.dart';
-import 'package:melodix/core/service/music_file_filter.dart';
+import 'package:melodix/features/music_library/data/models/local_song.dart';
+import 'package:melodix/features/music_library/domain/entities/song.dart';
+import 'package:melodix/features/music_library/data/datasources/music_file_filter.dart';
 
 /// Turns one audio file's MediaStore fields into a [LocalSong], applying the
 /// music-only rules ([MusicFileFilter]). Returns null for files that aren't
@@ -52,10 +53,6 @@ LocalSong? buildMusicLocalSong({
         : DateTime.fromMillisecondsSinceEpoch(dateAddedSeconds * 1000),
   );
 }
-
-/// Saved in place of a missing artist / album tag.
-const String unknownArtist = 'Unknown artist';
-const String unknownAlbum = 'Unknown album';
 
 const String _unknown = '<unknown>';
 

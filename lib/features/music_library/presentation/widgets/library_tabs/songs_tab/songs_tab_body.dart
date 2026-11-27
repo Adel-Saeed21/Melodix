@@ -19,7 +19,7 @@ import 'package:melodix/core/widgets/selection/selection_widgets.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_selection_widgets.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_sort_button.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_tile.dart';
-import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
+import 'package:melodix/features/music_library/presentation/logic/song_playback.dart';
 
 /// The songs list with sorting and multi-select: hold a song (or tap the
 /// ☑ icon) to select songs, then act on them from the floating bar.
@@ -220,7 +220,7 @@ class _SongsTabBodyState extends State<SongsTabBody> {
       // Selecting: toggle. Otherwise play this list from the tapped song.
       onTap: selection.active
           ? () => selectionCubit.toggle(song.id)
-          : () => context.read<PlayerCubit>().playSongs(
+          : () => context.read<SongPlayback>().playSongs(
               sorted,
               index,
               title: context.l10n.songs,
@@ -260,7 +260,7 @@ class _SongsTabBodyState extends State<SongsTabBody> {
         onTap: () async {
           final messages = AppSnackBarTarget.of(context);
           final l10n = context.l10n;
-          await context.read<PlayerCubit>().addToQueue(selected);
+          await context.read<SongPlayback>().addToQueue(selected);
           selection.exit();
           messages.show(l10n.addedToQueue(selected.length));
         },
