@@ -1,5 +1,4 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
@@ -9,13 +8,13 @@ import 'package:melodix/features/subtitles/presentation/widgets/subtitles_sheet.
 import 'package:melodix/features/video/presentation/logic/video_player_cubit.dart';
 import 'package:melodix/features/video/presentation/widgets/library/video_favourite_button.dart';
 import 'package:melodix/features/video/presentation/widgets/player/video_minimize_button.dart';
-import 'package:melodix/features/video/presentation/widgets/player/video_player_controls.dart';
+import 'package:melodix/features/video/presentation/widgets/player/video_speed_button.dart';
 import 'package:melodix/features/video/presentation/widgets/player/video_up_next_sheet.dart';
 import 'package:melodix/features/video/presentation/widgets/video_tile.dart';
 
 /// Minimize; the title, and where it is in the list with its quality
-/// ("2 of 5 · 1080p"); Up next, subtitles, fill / fit, playback speed
-/// and ♥.
+/// ("2 of 5 · 1080p"); Up next, subtitles, fill / fit, playback speed and
+/// ♥.
 class VideoTopBar extends StatelessWidget {
   const VideoTopBar({
     super.key,
@@ -32,11 +31,9 @@ class VideoTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cubit = context.read<VideoPlayerCubit>();
     return BlocBuilder<VideoPlayerCubit, VideoPlayerState>(
       buildWhen: (p, c) =>
           p.video != c.video ||
-          p.speed != c.speed ||
           p.queue.length != c.queue.length ||
           p.index != c.index,
       builder: (context, state) {
@@ -112,39 +109,12 @@ class VideoTopBar extends StatelessWidget {
                 fill ? Icons.fit_screen_rounded : Icons.crop_free_rounded,
               ),
             ),
-            PopupMenuButton<double>(
-              tooltip: context.l10n.playbackSpeed,
-              initialValue: state.speed,
-              onOpened: onTouched,
-              onSelected: cubit.setSpeed,
-              itemBuilder: (_) => [
-                for (final speed in VideoPlayerControls.speeds)
-                  PopupMenuItem(value: speed, child: Text(_speedLabel(speed))),
-              ],
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
-                child: Text(
-                  _speedLabel(state.speed),
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: AppTextSizes.sm,
-                    fontWeight: FontWeightHelper.bold,
-                  ),
-                ),
-              ),
-            ),
+            VideoSpeedButton(onTouched: onTouched),
             // Live: right even if changed elsewhere while this plays.
             VideoFavouriteButton(video: video, color: Colors.white),
           ],
         );
       },
     );
-  }
-
-  static String _speedLabel(double speed) {
-    final text = speed == speed.roundToDouble()
-        ? speed.toStringAsFixed(0)
-        : speed.toString();
-    return '${text}x';
   }
 }

@@ -360,4 +360,127 @@ void main() {
       await cubit.close();
     });
   });
+
+  group('listen as audio', () {
+    test('switching keeps the same playback: no reload, no jump', () async {
+      final cubit = h.cubit();
+      await cubit.open([a, b], 0);
+      final engine = h.engines['a']!..advanceTo(const Duration(minutes: 2));
+
+      cubit.toggleAudioOnly();
+      expect(cubit.state.audioOnly, isTrue);
+      expect(cubit.state.engine, same(engine));
+      expect(engine.value.isPlaying, isTrue);
+      expect(engine.value.position, const Duration(minutes: 2));
+      expect(engine.seeks, isEmpty);
+
+      cubit.toggleAudioOnly();
+      expect(cubit.state.audioOnly, isFalse);
+      expect(cubit.state.engine, same(engine));
+      expect(engine.value.isPlaying, isTrue);
+      await cubit.close();
+    });
+
+    test('stays on for the next videos; stop turns it off', () async {
+      final cubit = h.cubit();
+      await cubit.open([a, b, c], 0);
+      cubit.setAudioOnly(true);
+
+      await cubit.next();
+      expect(cubit.state.video, b);
+      expect(cubit.state.audioOnly, isTrue);
+      await cubit.playAt(2);
+      expect(cubit.state.audioOnly, isTrue);
+
+      await cubit.stop();
+      expect(cubit.state.audioOnly, isFalse);
+      await cubit.close();
+    });
+
+    test(
+      'can open straight as audio; nothing to switch with no video',
+      () async {
+        final cubit = h.cubit();
+        cubit.setAudioOnly(true);
+        expect(cubit.state.audioOnly, isFalse); // nothing open
+
+        await cubit.open([a], 0, audioOnly: true);
+        expect(cubit.state.audioOnly, isTrue);
+        expect(cubit.state.engine!.value.isPlaying, isTrue);
+
+        await cubit.open([b], 0); // a fresh choice: watched
+        expect(cubit.state.audioOnly, isFalse);
+        await cubit.close();
+      },
+    );
+  });
+
+  group('app hidden', () {
+    test('a watched video pauses, and plays on when back', () async {
+      final cubit = h.cubit();
+      await cubit.open([a], 0);
+      final engine = cubit.state.engine!;
+
+      await cubit.appHidden();
+      expect(engine.value.isPlaying, isFalse);
+      await cubit.appShown();
+      expect(engine.value.isPlaying, isTrue);
+      await cubit.close();
+    });
+
+    test('listened to as audio, it carries on', () async {
+      final cubit = h.cubit();
+      await cubit.open([a], 0, audioOnly: true);
+      final engine = cubit.state.engine!;
+
+      await cubit.appHidden();
+      expect(engine.value.isPlaying, isTrue);
+      await cubit.appShown();
+      expect(engine.value.isPlaying, isTrue);
+      await cubit.close();
+    });
+
+    test('paused before hiding: stays paused when back', () async {
+      final cubit = h.cubit();
+      await cubit.open([a], 0);
+      await cubit.pause();
+
+      await cubit.appHidden();
+      await cubit.appShown();
+      expect(cubit.state.engine!.value.isPlaying, isFalse);
+      await cubit.close();
+    });
+
+    test('paused meanwhile (lock screen, music): stays paused', () async {
+      final cubit = h.cubit();
+      await cubit.open([a], 0);
+      await cubit.appHidden();
+      await cubit.togglePlayPause(); // played from the lock screen…
+      await cubit.pause(); // …then paused there
+      await cubit.appShown();
+      expect(cubit.state.engine!.value.isPlaying, isFalse);
+
+      // Music started while hidden: the video doesn't take over again.
+      await cubit.togglePlayPause();
+      await cubit.appHidden();
+      h.musicPlaying.add(true);
+      await pumpEventQueue();
+      await cubit.appShown();
+      expect(cubit.state.engine!.value.isPlaying, isFalse);
+      await cubit.close();
+    });
+
+    test('another video opened meanwhile: not touched', () async {
+      final cubit = h.cubit();
+      await cubit.open([a, b], 0);
+      await cubit.appHidden();
+      await cubit.next();
+      final engine = cubit.state.engine!;
+      await engine.pause();
+
+      await cubit.appShown();
+      expect(engine.value.isPlaying, isFalse);
+      await cubit.close();
+    });
+  });
 }

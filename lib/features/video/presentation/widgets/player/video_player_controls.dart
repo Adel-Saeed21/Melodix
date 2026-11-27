@@ -40,8 +40,8 @@ class _VideoPlayerControlsState extends State<VideoPlayerControls> {
   bool _visible = true;
   bool _dragging = false;
 
-  /// Locked: touches do nothing but show Unlock (no accidental pauses or
-  /// seeks, e.g. holding the phone or in a pocket).
+  /// Locked: touches do nothing but show Unlock (no accidental pauses,
+  /// seeks or pulls down, e.g. holding the phone or in a pocket).
   bool _locked = false;
   Timer? _hideTimer;
 
@@ -210,7 +210,12 @@ class _VideoPlayerControlsState extends State<VideoPlayerControls> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        GestureDetector(behavior: HitTestBehavior.opaque, onTap: _show),
+        // Takes vertical drags too, so pulling down doesn't minimize.
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: _show,
+          onVerticalDragUpdate: (_) {},
+        ),
         Positioned(
           left: 0,
           right: 0,

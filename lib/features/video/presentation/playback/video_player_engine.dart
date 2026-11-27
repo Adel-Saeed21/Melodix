@@ -7,12 +7,25 @@ import 'package:video_player/video_player.dart';
 
 /// [VideoEngine] on the `video_player` package: the media library's
 /// `content://` URI on Android (nothing is copied), a file on iOS.
-VideoEngine videoPlayerEngine(Uri uri) =>
-    VideoPlayerEngine(switch (uri.scheme) {
-      'content' => VideoPlayerController.contentUri(uri),
-      'file' => VideoPlayerController.file(File.fromUri(uri)),
-      _ => VideoPlayerController.networkUrl(uri),
-    });
+///
+/// Background playback is always allowed (the plugin never pauses on its
+/// own when the app is hidden), so a video listened to as audio keeps
+/// going with the screen off. Pausing a *watched* video when the app is
+/// hidden is the app's job (see `VideoBackgroundPolicy`).
+VideoEngine videoPlayerEngine(Uri uri) {
+  final options = VideoPlayerOptions(allowBackgroundPlayback: true);
+  return VideoPlayerEngine(switch (uri.scheme) {
+    'content' => VideoPlayerController.contentUri(
+      uri,
+      videoPlayerOptions: options,
+    ),
+    'file' => VideoPlayerController.file(
+      File.fromUri(uri),
+      videoPlayerOptions: options,
+    ),
+    _ => VideoPlayerController.networkUrl(uri, videoPlayerOptions: options),
+  });
+}
 
 class VideoPlayerEngine implements VideoEngine {
   VideoPlayerEngine(this._controller) {

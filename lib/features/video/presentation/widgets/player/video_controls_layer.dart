@@ -3,6 +3,7 @@ import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/features/video/presentation/logic/video_player_cubit.dart';
+import 'package:melodix/features/video/presentation/widgets/player/audio_mode/audio_mode_button.dart';
 import 'package:melodix/features/video/presentation/widgets/player/video_controls_shade.dart';
 import 'package:melodix/features/video/presentation/widgets/player/video_seek_bar.dart';
 import 'package:melodix/features/video/presentation/widgets/player/video_top_bar.dart';
@@ -10,7 +11,7 @@ import 'package:melodix/features/video/presentation/widgets/player/video_transpo
 import 'package:melodix/features/video/presentation/playback/video_engine.dart';
 
 /// The buttons over the video: the top bar, the transport buttons, and
-/// the seek bar between lock and rotate.
+/// the seek bar between lock and listen-as-audio / rotate.
 class VideoControlsLayer extends StatelessWidget {
   const VideoControlsLayer({
     super.key,
@@ -77,6 +78,7 @@ class VideoControlsLayer extends StatelessWidget {
                       onDragging: onDragging,
                     ),
                   ),
+                  AudioModeButton(onTouched: onTouched),
                   IconButton(
                     tooltip: context.l10n.rotateScreen,
                     color: Colors.white,

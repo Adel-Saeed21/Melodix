@@ -1,10 +1,14 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/features/video/presentation/logic/video_player_cubit.dart';
+import 'package:melodix/features/video/presentation/widgets/mini/mini_video_audio_card.dart';
 import 'package:melodix/features/video/presentation/widgets/mini/mini_video_card.dart';
 
 /// The video in a small window floating over the app, so it keeps playing
 /// while you browse. Drag it to any corner (it snaps there); throw it off
 /// the side to close it; tap it to go back to full screen.
+///
+/// Listened to as audio, the same window is a slim card with the audio
+/// controls ([MiniVideoAudioCard]); switching reshapes it in its corner.
 class MiniVideoWindow extends StatefulWidget {
   const MiniVideoWindow({
     super.key,
@@ -77,7 +81,9 @@ class _MiniVideoWindowState extends State<MiniVideoWindow> {
         onPanStart: (_) => setState(() => _dragAt = at),
         onPanUpdate: (d) => setState(() => _dragAt = _dragAt! + d.delta),
         onPanEnd: (d) => _release(d.velocity, size, screen),
-        child: MiniVideoCard(state: widget.state, onClose: widget.onClose),
+        child: widget.state.audioOnly
+            ? MiniVideoAudioCard(state: widget.state, onClose: widget.onClose)
+            : MiniVideoCard(state: widget.state, onClose: widget.onClose),
       ),
     );
   }
@@ -108,7 +114,15 @@ class _MiniVideoWindowState extends State<MiniVideoWindow> {
 
   /// About 45% of the screen's width (at most 240), in the video's shape
   /// (between 16:9 wide and 9:16 tall).
+  ///
+  /// As audio: a slim card, about 70% of the width (at most 320).
   Size _windowSize(Size screen) {
+    if (widget.state.audioOnly) {
+      return Size(
+        (screen.shortestSide * 0.72).clamp(240.0, 320.0),
+        MiniVideoAudioCard.height,
+      );
+    }
     final width = (screen.shortestSide * 0.46).clamp(140.0, 240.0);
     final engine = widget.state.engine;
     final video = widget.state.video;

@@ -98,7 +98,9 @@ class VideoMediaSession implements MediaSessionGuest {
     return GuestMedia(
       id: '$idPrefix${video.id}',
       title: video.title,
-      subtitle: _strings().mediaVideoSubtitle,
+      subtitle: state.audioOnly
+          ? _strings().mediaVideoAudioSubtitle
+          : _strings().mediaVideoSubtitle,
       duration: ready && value.duration > Duration.zero
           ? value.duration
           : video.duration,

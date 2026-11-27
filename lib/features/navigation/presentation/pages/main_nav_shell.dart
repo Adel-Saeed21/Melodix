@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'package:melodix/core/l10n/l10n.dart';
@@ -5,15 +6,17 @@ import 'package:melodix/core/config/routing/routes.dart';
 import 'package:melodix/core/service/navigation_extension.dart';
 import 'package:melodix/features/player/presentation/widgets/mini_player.dart';
 import 'package:melodix/features/home_screen/presentation/pages/home_screen_page.dart';
+import 'package:melodix/features/navigation/presentation/widgets/fade_through_tabs.dart';
 import 'package:melodix/features/navigation/presentation/widgets/glass_nav_bar.dart';
 import 'package:melodix/features/settings/presentation/pages/settings_page.dart';
 import 'package:melodix/features/video/presentation/pages/video_page.dart';
 
 /// Root screen after sign-in: hosts the Music, Video and Settings tabs.
 ///
-/// Pages live in an [IndexedStack] so each tab keeps its state (scroll
-/// position, loaded data) when the user switches between them. Each is
-/// built on its first visit.
+/// Pages live in [FadeThroughTabs] so each tab keeps its state (scroll
+/// position, loaded data) when the user switches between them, and the
+/// switch fades through instead of cutting. Each is built on its first
+/// visit.
 class MainNavShell extends StatefulWidget {
   const MainNavShell({super.key, this.pages = defaultPages});
 
@@ -68,6 +71,7 @@ class _MainNavShellState extends State<MainNavShell> {
 
   void _onTap(int index) {
     if (index == _currentIndex) return;
+    HapticFeedback.selectionClick();
     setState(() {
       _currentIndex = index;
       _opened.add(index);
@@ -78,7 +82,7 @@ class _MainNavShellState extends State<MainNavShell> {
   Widget build(BuildContext context) {
     final landscape =
         MediaQuery.orientationOf(context) == Orientation.landscape;
-    final pages = IndexedStack(
+    final pages = FadeThroughTabs(
       index: _currentIndex,
       children: [
         for (var i = 0; i < _pages.length; i++)
@@ -98,7 +102,7 @@ class _MainNavShellState extends State<MainNavShell> {
       extendBody: true,
       // Phone on its side: the nav moves to a rail on the left, so the
       // page keeps the little height there is. (Pages keep their state:
-      // the same IndexedStack, under a key, just moves.)
+      // the same tabs, under a key, just move.)
       body: landscape
           ? Row(
               children: [
@@ -124,8 +128,29 @@ class _MainNavShellState extends State<MainNavShell> {
       bottomNavigationBar: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          if (_currentIndex == _musicTab)
-            MiniPlayer(onExpand: () => context.pushNamed(Routes.nowPlaying)),
+          // Slides away when leaving Music, and back (not a jump).
+          AnimatedSwitcher(
+            duration: GlassNavBar.animationDuration,
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            transitionBuilder: (child, animation) => FadeTransition(
+              opacity: animation,
+              child: SizeTransition(
+                sizeFactor: animation,
+                alignment: Alignment.bottomCenter,
+                child: child,
+              ),
+            ),
+            child: _currentIndex == _musicTab
+                ? MiniPlayer(
+                    key: const ValueKey('mini-player'),
+                    onExpand: () => context.pushNamed(Routes.nowPlaying),
+                  )
+                : const SizedBox(
+                    key: ValueKey('no-mini-player'),
+                    width: double.infinity,
+                  ),
+          ),
           if (!landscape) nav,
         ],
       ),

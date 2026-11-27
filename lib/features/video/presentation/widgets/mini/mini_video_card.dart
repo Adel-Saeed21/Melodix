@@ -8,7 +8,7 @@ import 'package:melodix/features/video/presentation/playback/video_engine.dart';
 import 'package:melodix/features/video/presentation/widgets/mini/mini_video_card/mini_video_button.dart';
 
 /// What the small window shows: the video (or its thumbnail while it
-/// loads), play / pause, close, and how far it got.
+/// loads), play / pause, listen as audio, close, and how far it got.
 class MiniVideoCard extends StatelessWidget {
   const MiniVideoCard({super.key, required this.state, required this.onClose});
 
@@ -70,6 +70,16 @@ class MiniVideoCard extends StatelessWidget {
             ),
           ),
           if (engine != null) ...[
+            Positioned(
+              top: 0,
+              left: 0,
+              child: MiniVideoButton(
+                icon: Icons.headphones_rounded,
+                label: context.l10n.listenAsAudio,
+                onPressed: () =>
+                    context.read<VideoPlayerCubit>().setAudioOnly(true),
+              ),
+            ),
             Positioned(
               left: 0,
               bottom: 4,

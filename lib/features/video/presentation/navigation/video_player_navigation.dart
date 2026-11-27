@@ -8,10 +8,16 @@ import 'package:melodix/features/video/domain/entities/video.dart';
 import 'package:melodix/features/video/presentation/logic/video_player_cubit.dart';
 
 /// Plays [videos] from [index] in the app's video session and shows the
-/// full-screen player (next / previous move through [videos]).
-void openVideoPlayer(BuildContext context, List<Video> videos, int index) {
+/// full-screen player (next / previous move through [videos]). With
+/// [audioOnly], it's listened to as audio (the player shows that).
+void openVideoPlayer(
+  BuildContext context,
+  List<Video> videos,
+  int index, {
+  bool audioOnly = false,
+}) {
   final session = context.read<VideoPlayerCubit>();
-  unawaited(session.open(videos, index));
+  unawaited(session.open(videos, index, audioOnly: audioOnly));
   showVideoPlayer(context);
 }
 

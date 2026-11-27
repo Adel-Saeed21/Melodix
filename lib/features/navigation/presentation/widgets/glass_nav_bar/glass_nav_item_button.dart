@@ -4,6 +4,8 @@ import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/features/navigation/presentation/widgets/glass_nav_bar.dart';
 
+/// One destination: its icon (in the spot the bar's sliding pill moves
+/// to) and label. The icon swaps to its filled form with a little pop.
 class GlassNavItemButton extends StatelessWidget {
   const GlassNavItemButton({
     super.key,
@@ -15,6 +17,10 @@ class GlassNavItemButton extends StatelessWidget {
   final GlassNavItem item;
   final bool isActive;
   final VoidCallback onTap;
+
+  /// The icon's spot, which the bar's pill ([GlassNavPill]) fills.
+  static EdgeInsets iconPadding() =>
+      EdgeInsets.symmetric(horizontal: 18.w, vertical: 3.h);
 
   @override
   Widget build(BuildContext context) {
@@ -36,28 +42,22 @@ class GlassNavItemButton extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedContainer(
-              duration: duration,
-              curve: Curves.easeOutCubic,
-              padding: EdgeInsets.symmetric(
-                horizontal: isActive ? 18.w : 12.w,
-                vertical: 3.h,
-              ),
-              decoration: BoxDecoration(
-                color: isActive
-                    ? activeColor.withValues(alpha: 0.16)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(16.r),
-              ),
-              child: AnimatedSwitcher(
+            Padding(
+              padding: iconPadding(),
+              child: AnimatedScale(
+                scale: isActive ? 1.1 : 1,
                 duration: duration,
-                transitionBuilder: (child, animation) =>
-                    ScaleTransition(scale: animation, child: child),
-                child: Icon(
-                  isActive ? item.activeIcon : item.icon,
-                  key: ValueKey(isActive),
-                  color: color,
-                  size: 22.sp,
+                curve: isActive ? Curves.easeOutBack : Curves.easeOut,
+                child: AnimatedSwitcher(
+                  duration: duration,
+                  transitionBuilder: (child, animation) =>
+                      ScaleTransition(scale: animation, child: child),
+                  child: Icon(
+                    isActive ? item.activeIcon : item.icon,
+                    key: ValueKey(isActive),
+                    color: color,
+                    size: 22.sp,
+                  ),
                 ),
               ),
             ),
@@ -75,6 +75,25 @@ class GlassNavItemButton extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The tinted pill behind the active icon. The bar draws one and slides
+/// it from tab to tab.
+class GlassNavPill extends StatelessWidget {
+  const GlassNavPill({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final padding = GlassNavItemButton.iconPadding();
+    return Container(
+      width: 22.sp + padding.horizontal,
+      height: 22.sp + padding.vertical,
+      decoration: BoxDecoration(
+        color: Theme.of(context).primaryColor.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(16.r),
       ),
     );
   }
