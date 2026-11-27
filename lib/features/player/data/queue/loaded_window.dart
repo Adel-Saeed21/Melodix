@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+
 import 'package:just_audio/just_audio.dart';
 import 'package:melodix/features/player/data/queue/pause_requests.dart';
 import 'package:melodix/features/player/data/queue/playback_queue.dart';
@@ -149,6 +151,7 @@ class LoadedWindow {
     _current = current;
     _loadingFrom = start;
     _onChanged();
+    final uri = queue!.songs[current.logical].playbackUri;
     try {
       await applyLoopMode();
       await _player.setAudioSources(
@@ -157,7 +160,10 @@ class LoadedWindow {
         initialPosition: start,
       );
       return true;
-    } catch (_) {
+    } catch (error) {
+      // Said in the log (logcat: "melodix.player"): the app only shows
+      // "Can't play this song", which doesn't say why.
+      debugPrint('melodix.player: could not load $uri: $error');
       _failedGeneration = _generation;
       _onLoadFailed();
       return false;

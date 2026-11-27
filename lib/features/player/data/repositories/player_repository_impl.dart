@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:melodix/features/player/data/datasources/playback_state_local_storage.dart';
 import 'package:melodix/features/music_library/data/mappers/song_mapper.dart';
@@ -413,6 +414,10 @@ class PlayerRepositoryImpl implements PlayerRepository {
   void _onPlaybackError(PlayerException error) {
     // During our own loads the load reports it; a load that already failed
     // and said so isn't reported twice.
+    debugPrint(
+      'melodix.player: playback error at ${error.index}: '
+      '${error.code} ${error.message}',
+    );
     if (_serial.isBusy || _pending != null || _window.lastLoadFailed) return;
     final failed = _window.slotAt(error.index);
     if (_window.queue == null || failed == null) return;

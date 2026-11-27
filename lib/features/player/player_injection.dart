@@ -28,20 +28,21 @@ import 'package:melodix/features/music_library/domain/usecases/get_song_artwork_
 /// Music playback: the audio player, equalizer and audio settings, sleep
 /// timer, and the app-wide player state (mini and full player).
 void registerPlayer(GetIt getIt) {
-  // The phone's equalizer (Android), in the player's audio pipeline.
-  final androidEqualizer = defaultTargetPlatform == TargetPlatform.android
-      ? AndroidEqualizer()
-      : null;
+  // The app's only audio player instance. No audio effects in it: an
+  // effect is switched on inside every song load, so one failing on a
+  // phone would stop every song from playing.
+  getIt.registerLazySingleton<AudioPlayer>(AudioPlayer.new);
+  // The phone's equalizer (Android), on the player's audio session but
+  // outside the player (see AndroidEqualizerEngine).
   getIt.registerLazySingleton<EqualizerEngine>(
-    () => androidEqualizer == null
-        ? const UnsupportedEqualizerEngine()
-        : AndroidEqualizerEngine(androidEqualizer),
-  );
-  // The app's only audio player instance.
-  getIt.registerLazySingleton<AudioPlayer>(
-    () => AudioPlayer(
-      audioPipeline: AudioPipeline(androidAudioEffects: [?androidEqualizer]),
-    ),
+    () => defaultTargetPlatform == TargetPlatform.android
+        ? AndroidEqualizerEngine(
+            audioSessionIds: getIt<AudioPlayer>().androidAudioSessionIdStream,
+          )
+        : const UnsupportedEqualizerEngine(),
+    dispose: (engine) async {
+      if (engine is AndroidEqualizerEngine) await engine.dispose();
+    },
   );
   // Speed, skip silence and the equalizer, saved; applied by the binder
   // (started by [startAudioSettings]).
