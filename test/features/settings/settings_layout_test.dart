@@ -271,6 +271,28 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('language: one row each, the one in use ticked', (tester) async {
+    addTearDown(() => useLanguage('en'));
+    await pump(tester);
+    // The phone's row (the default) says which language that is now.
+    expect(find.text("Phone's language"), findsOneWidget);
+    expect(find.text('Currently English'), findsOneWidget);
+    expect(isSelected(tester, find.text("Phone's language")), isTrue);
+    expect(isSelected(tester, find.text('English')), isFalse);
+    // Each language in itself, and in the app's language below.
+    expect(find.text('العربية'), findsOneWidget);
+    expect(find.text('Arabic'), findsOneWidget);
+
+    await tester.tap(find.text('العربية'));
+    await settle(tester);
+    expect(isSelected(tester, find.text('العربية')), isTrue);
+    expect(isSelected(tester, find.text('لغة الهاتف')), isFalse);
+    // In Arabic, Arabic's row doesn't say its name twice.
+    expect(find.text('العربية'), findsOneWidget);
+    expect(find.text('الإنجليزية'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('language: a smooth switch to Arabic (right to left), and back', (
     tester,
   ) async {

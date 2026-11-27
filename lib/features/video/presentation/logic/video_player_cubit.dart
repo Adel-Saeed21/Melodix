@@ -23,6 +23,7 @@ class VideoPlayerState extends Equatable {
     this.error,
     this.speed = 1,
     this.expanded = false,
+    this.audioOnly = false,
   });
 
   /// The list the video was opened from (next / previous move in it).
@@ -40,6 +41,12 @@ class VideoPlayerState extends Equatable {
   /// window is).
   final bool expanded;
 
+  /// Listened to as audio: no picture anywhere (no small window, no
+  /// picture-in-picture, the screen may sleep) and it keeps playing with
+  /// the app hidden. Stays on for the next videos in the list; [stop]
+  /// turns it off.
+  final bool audioOnly;
+
   /// A video is open: playing, paused, loading or failed.
   bool get isActive => status != VideoPlayerStatus.idle;
 
@@ -56,6 +63,7 @@ class VideoPlayerState extends Equatable {
     VideoPlayerError? Function()? error,
     double? speed,
     bool? expanded,
+    bool? audioOnly,
   }) => VideoPlayerState(
     queue: queue ?? this.queue,
     index: index ?? this.index,
@@ -64,6 +72,7 @@ class VideoPlayerState extends Equatable {
     error: error == null ? this.error : error(),
     speed: speed ?? this.speed,
     expanded: expanded ?? this.expanded,
+    audioOnly: audioOnly ?? this.audioOnly,
   );
 
   @override
@@ -75,6 +84,7 @@ class VideoPlayerState extends Equatable {
     error,
     speed,
     expanded,
+    audioOnly,
   ];
 }
 
@@ -111,11 +121,16 @@ class VideoPlayerCubit extends Cubit<VideoPlayerState> {
   int _ticket = 0;
   late final StreamSubscription<void> _musicStarted;
 
+  /// The video paused because the app was hidden while it was watched:
+  /// it plays on when the app comes back (if nothing changed meanwhile).
+  VideoEngine? _resumeWhenShown;
+
   /// Plays [queue] from [index] (replacing whatever was open; its place is
-  /// saved first).
-  Future<void> open(List<Video> queue, int index) {
+  /// saved first). It's watched, or with [audioOnly] listened to as audio
+  /// (see [VideoPlayerState.audioOnly]): a fresh choice each time.
+  Future<void> open(List<Video> queue, int index, {bool audioOnly = false}) {
     assert(index >= 0 && index < queue.length);
-    return _open(index, queue: List.unmodifiable(queue));
+    return _open(index, queue: List.unmodifiable(queue), audioOnly: audioOnly);
   }
 
   /// Puts [videos] right after the current one: they play next. With no
@@ -152,6 +167,7 @@ class VideoPlayerCubit extends Cubit<VideoPlayerState> {
   Future<void> stop() async {
     if (!state.isActive) return;
     _ticket++;
+    _resumeWhenShown = null;
     await _release(state.engine);
     // The last video stays in the state (widgets still on their way out
     // may read it); only the status says it's over.
@@ -162,6 +178,7 @@ class VideoPlayerCubit extends Cubit<VideoPlayerState> {
           engine: () => null,
           error: () => null,
           expanded: false,
+          audioOnly: false,
         ),
       );
     }
@@ -173,6 +190,16 @@ class VideoPlayerCubit extends Cubit<VideoPlayerState> {
       emit(state.copyWith(expanded: expanded));
     }
   }
+
+  /// Listens to the video as audio ([audioOnly] true) or watches it again.
+  /// The same player carries on: no reload, no jump, no gap in the sound.
+  void setAudioOnly(bool audioOnly) {
+    if (!isClosed && state.isActive && state.audioOnly != audioOnly) {
+      emit(state.copyWith(audioOnly: audioOnly));
+    }
+  }
+
+  void toggleAudioOnly() => setAudioOnly(!state.audioOnly);
 
   Future<void> next() async {
     if (state.hasNext) await _open(state.index + 1);
@@ -215,7 +242,34 @@ class VideoPlayerCubit extends Cubit<VideoPlayerState> {
   }
 
   /// Pauses (its place is saved by the tracker, as for any pause).
-  Future<void> pause() async => state.engine?.pause();
+  Future<void> pause() async {
+    // Paused on purpose (or by the music): don't play on when shown.
+    _resumeWhenShown = null;
+    await state.engine?.pause();
+  }
+
+  /// The app went out of sight (screen off, another app; picture-in-
+  /// picture doesn't count). A watched video pauses, as nobody sees it,
+  /// and plays on when the app is back ([appShown]). Listened to as audio,
+  /// it just carries on.
+  Future<void> appHidden() async {
+    final engine = state.engine;
+    if (state.audioOnly || engine == null || !engine.value.isPlaying) return;
+    _resumeWhenShown = engine;
+    await engine.pause();
+  }
+
+  /// The app is back in sight: plays on what [appHidden] paused, if it's
+  /// still the same video, still watched and still paused.
+  Future<void> appShown() async {
+    final engine = _resumeWhenShown;
+    _resumeWhenShown = null;
+    if (engine == null || isClosed) return;
+    if (!identical(engine, state.engine) || state.audioOnly) return;
+    if (engine.value.isPlaying) return;
+    await _coordinator.videoStarting();
+    if (identical(engine, state.engine)) await engine.play();
+  }
 
   Future<void> seek(Duration position) async {
     final engine = state.engine;
@@ -242,8 +296,9 @@ class VideoPlayerCubit extends Cubit<VideoPlayerState> {
     await state.engine?.setSpeed(speed);
   }
 
-  Future<void> _open(int index, {List<Video>? queue}) async {
+  Future<void> _open(int index, {List<Video>? queue, bool? audioOnly}) async {
     final ticket = ++_ticket;
+    _resumeWhenShown = null;
     final previous = state.engine;
     // Loading is emitted before the first await, so the session is active
     // as soon as open() returns: the player route (which redirects away
@@ -255,6 +310,7 @@ class VideoPlayerCubit extends Cubit<VideoPlayerState> {
         status: VideoPlayerStatus.loading,
         engine: () => null,
         error: () => null,
+        audioOnly: audioOnly,
       ),
     );
     // Saves the old video's place and releases it (once off screen).

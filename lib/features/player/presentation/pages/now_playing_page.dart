@@ -6,7 +6,7 @@ import 'package:melodix/features/player/domain/entities/now_playing.dart';
 import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
 import 'package:melodix/features/player/presentation/logic/playback_progress_cubit.dart';
 import 'package:melodix/features/player/presentation/logic/player_lyrics_clock.dart';
-import 'package:melodix/features/player/presentation/widgets/drag_to_dismiss.dart';
+import 'package:melodix/core/widgets/drag_to_dismiss.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
 import 'package:melodix/features/lyrics/presentation/logic/lyrics_clock.dart';
 import 'package:melodix/features/lyrics/presentation/logic/lyrics_cubit.dart';

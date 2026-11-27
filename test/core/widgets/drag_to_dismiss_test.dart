@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/features/player/presentation/widgets/drag_to_dismiss.dart';
+import 'package:melodix/core/widgets/drag_to_dismiss.dart';
 
 void main() {
   late int dismissed;

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/service/media_session_guest.dart';
 import 'package:melodix/features/video/presentation/logic/video_player_cubit.dart';
 import 'package:melodix/features/video/presentation/playback/video_media_session.dart';
@@ -98,5 +99,16 @@ void main() {
     expect(h.engines['a']!.value.isPlaying, isTrue);
     await media.play(); // already playing: stays playing
     expect(h.engines['a']!.value.isPlaying, isTrue);
+  });
+
+  test('listened to as audio, the controls say so', () async {
+    const strings = AppLocalizations();
+    await cubit.open([testVideo('a')], 0);
+    expect(media.current!.subtitle, strings.mediaVideoSubtitle);
+
+    cubit.setAudioOnly(true);
+    await pumpEventQueue();
+    expect(media.current!.subtitle, strings.mediaVideoAudioSubtitle);
+    expect(media.current!.playing, isTrue);
   });
 }

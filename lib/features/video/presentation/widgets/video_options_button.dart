@@ -8,10 +8,10 @@ import 'package:melodix/features/video/presentation/logic/video_player_cubit.dar
 import 'package:melodix/features/video/presentation/navigation/video_player_navigation.dart';
 import 'package:melodix/features/video/presentation/widgets/video_delete_action.dart';
 
-enum _VideoOption { playNext, addToQueue, delete }
+enum _VideoOption { playAsAudio, playNext, addToQueue, delete }
 
-/// The ⋮ button on a video row: play next, add to the list playing, or
-/// delete from the phone (same menu style as songs).
+/// The ⋮ button on a video row: play it as audio, play next, add to the
+/// list playing, or delete from the phone (same menu style as songs).
 class VideoOptionsButton extends StatelessWidget {
   const VideoOptionsButton({super.key, required this.video});
 
@@ -20,6 +20,9 @@ class VideoOptionsButton extends StatelessWidget {
   Future<void> _onSelected(BuildContext context, _VideoOption option) async {
     final session = context.read<VideoPlayerCubit>();
     switch (option) {
+      case _VideoOption.playAsAudio:
+        // Just this one (the menu doesn't know the list it's in).
+        openVideoPlayer(context, [video], 0, audioOnly: true);
       case _VideoOption.playNext:
       case _VideoOption.addToQueue:
         final next = option == _VideoOption.playNext;
@@ -47,6 +50,12 @@ class VideoOptionsButton extends StatelessWidget {
       padding: EdgeInsets.zero,
       onSelected: (option) => _onSelected(context, option),
       itemBuilder: (context) => [
+        optionsMenuItem(
+          context,
+          value: _VideoOption.playAsAudio,
+          icon: Icons.headphones_rounded,
+          label: context.l10n.playAsAudio,
+        ),
         optionsMenuItem(
           context,
           value: _VideoOption.playNext,

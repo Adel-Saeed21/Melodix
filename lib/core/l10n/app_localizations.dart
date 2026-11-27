@@ -104,6 +104,11 @@ class AppLocalizations {
     'subtitlesImported',
     'subtitlesDownloaded',
     'mediaVideoSubtitle',
+    'listenAsAudio',
+    'playAsAudio',
+    'watchVideo',
+    'audioOnlyMode',
+    'mediaVideoAudioSubtitle',
     'mediaRewind',
     'mediaForward',
     'videoSkip',
@@ -318,7 +323,10 @@ class AppLocalizations {
     'playingFrom',
     'searchResults',
     'language',
-    'languageHint',
+    'languageSystem',
+    'languageSystemNow',
+    'languageEnglish',
+    'languageArabic',
     'anyLength',
     'playlistSuggestionChill',
     'playlistSuggestionWorkout',
@@ -466,6 +474,11 @@ class AppLocalizations {
   String get subtitlesImported => tr('subtitlesImported');
   String get subtitlesDownloaded => tr('subtitlesDownloaded');
   String get mediaVideoSubtitle => tr('mediaVideoSubtitle');
+  String get listenAsAudio => tr('listenAsAudio');
+  String get playAsAudio => tr('playAsAudio');
+  String get watchVideo => tr('watchVideo');
+  String get audioOnlyMode => tr('audioOnlyMode');
+  String get mediaVideoAudioSubtitle => tr('mediaVideoAudioSubtitle');
   String get mediaRewind => tr('mediaRewind');
   String get mediaForward => tr('mediaForward');
   String get videoSkip => tr('videoSkip');
@@ -681,7 +694,11 @@ class AppLocalizations {
   String get playingFrom => tr('playingFrom');
   String get searchResults => tr('searchResults');
   String get language => tr('language');
-  String get languageHint => tr('languageHint');
+  String get languageSystem => tr('languageSystem');
+  String languageSystemNow(String language) =>
+      tr('languageSystemNow', namedArgs: {'language': language});
+  String get languageEnglish => tr('languageEnglish');
+  String get languageArabic => tr('languageArabic');
   String get anyLength => tr('anyLength');
   String get playlistSuggestionChill => tr('playlistSuggestionChill');
   String get playlistSuggestionWorkout => tr('playlistSuggestionWorkout');

@@ -44,7 +44,10 @@ import 'package:melodix/features/video/presentation/pages/video_page.dart';
 import 'package:melodix/features/video/presentation/navigation/video_player_navigation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:melodix/features/video/presentation/logic/video_player_cubit.dart';
+import 'package:melodix/features/video/presentation/widgets/mini/mini_video_audio_card.dart';
 import 'package:melodix/features/video/presentation/widgets/mini/mini_video_card.dart';
+import 'package:melodix/features/video/presentation/widgets/player/video_playing_view.dart';
+import 'package:melodix/features/video/presentation/widgets/player/audio_mode/video_audio_view.dart';
 import 'package:melodix/features/video/presentation/widgets/mini/mini_video_window.dart';
 import 'package:melodix/features/video/presentation/widgets/mini/video_session_host.dart';
 import 'package:melodix/features/video/presentation/widgets/mini/picture_in_picture_video.dart';
@@ -439,6 +442,25 @@ void main() {
         );
         await tester.pumpAndSettle();
       }
+
+      testWidgets('play as audio: just that video, listened to', (
+        tester,
+      ) async {
+        await pumpApp(tester, router(), session);
+        videos.add([testVideo('a'), testVideo('b')]);
+        await tester.pumpAndSettle();
+
+        await openMenu(tester, 'Video b');
+        await tester.tap(find.text('Play as audio'));
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        expect(find.text('full player'), findsOneWidget);
+        expect(session.state.video.id, 'b');
+        expect(session.state.queue, hasLength(1));
+        expect(session.state.audioOnly, isTrue);
+        await finish(tester, session);
+      });
 
       testWidgets('play next with nothing playing: plays it now', (
         tester,
@@ -1163,6 +1185,209 @@ void main() {
       await tester.pumpAndSettle();
       expect(session.state.isActive, isFalse);
       expect(find.byType(MiniVideoWindow), findsNothing);
+      await finish(tester, session);
+    });
+
+    testWidgets('listen as audio: same video, no picture; and back', (
+      tester,
+    ) async {
+      await open(tester, [testVideo('a')]);
+      final player = h.engines['a']!..advanceTo(const Duration(minutes: 1));
+      expect(pip.calls.last.$1, isTrue);
+
+      await tester.tap(find.byTooltip('Listen as audio'));
+      await tester.pump();
+      expect(find.byType(VideoAudioView), findsOneWidget);
+      expect(find.byType(VideoPlayingView), findsNothing);
+      expect(find.byKey(const ValueKey('fake-video')), findsNothing);
+      // Still playing, from where it was: the same player.
+      expect(player.value.isPlaying, isTrue);
+      expect(player.value.position, const Duration(minutes: 1));
+      expect(h.engines, hasLength(1));
+      // Leaving the app doesn't make a picture-in-picture window.
+      expect(pip.calls.last.$1, isFalse);
+
+      await tester.tap(find.text('Watch video'));
+      await tester.pump();
+      expect(find.byType(VideoPlayingView), findsOneWidget);
+      expect(find.byType(VideoAudioView), findsNothing);
+      expect(player.value.isPlaying, isTrue);
+      expect(h.engines, hasLength(1));
+      expect(pip.calls.last.$1, isTrue);
+      await finish(tester, session);
+    });
+
+    testWidgets('as audio, the small window holds the audio controls', (
+      tester,
+    ) async {
+      await open(tester, [testVideo('a')]);
+      await tester.tap(find.byTooltip('Listen as audio'));
+      await tester.pump();
+      await tester.tap(find.byTooltip('Minimize'));
+      await tester.pumpAndSettle();
+      expect(find.byType(MiniVideoAudioCard), findsOneWidget);
+      expect(find.byType(MiniVideoCard), findsNothing);
+      expect(find.byKey(const ValueKey('fake-video')), findsNothing);
+
+      // Back to the video: the same window, with the picture.
+      await tester.tap(find.bySemanticsLabel('Watch video'));
+      await tester.pumpAndSettle();
+      expect(find.byType(MiniVideoAudioCard), findsNothing);
+      expect(find.byType(MiniVideoCard), findsOneWidget);
+      expect(find.byKey(const ValueKey('fake-video')), findsOneWidget);
+
+      // And from the window to audio again.
+      await tester.tap(find.bySemanticsLabel('Listen as audio'));
+      await tester.pumpAndSettle();
+      expect(find.byType(MiniVideoAudioCard), findsOneWidget);
+      expect(h.engines['a']!.value.isPlaying, isTrue);
+
+      await tester.tap(find.bySemanticsLabel('Pause'));
+      await tester.pump();
+      expect(h.engines['a']!.value.isPlaying, isFalse);
+
+      // A tap opens the full player, as audio.
+      await tester.tap(find.text('Audio only'));
+      await tester.pumpAndSettle();
+      expect(find.byType(VideoAudioView), findsOneWidget);
+      await tester.tap(find.byTooltip('Minimize'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.bySemanticsLabel('Close video'));
+      await tester.pump();
+      await tester.pump();
+      expect(session.state.isActive, isFalse);
+      expect(find.byType(MiniVideoAudioCard), findsNothing);
+      await finish(tester, session);
+    });
+
+    testWidgets('as audio, the window moves too: corners, and off the side', (
+      tester,
+    ) async {
+      await open(tester, [testVideo('a')]);
+      await tester.tap(find.byTooltip('Listen as audio'));
+      await tester.pump();
+      await tester.tap(find.byTooltip('Minimize'));
+      await tester.pumpAndSettle();
+      final card = find.byType(MiniVideoAudioCard);
+      final before = tester.getTopLeft(card);
+      expect(before.dx, greaterThan(60)); // starts on the right
+
+      await tester.timedDrag(
+        card,
+        const Offset(-150, -300),
+        const Duration(milliseconds: 600),
+      );
+      await tester.pumpAndSettle();
+      final after = tester.getTopLeft(card);
+      expect(after.dx, closeTo(MiniVideoWindow.margin, 1));
+      expect(after.dy, lessThan(before.dy));
+      expect(session.state.isActive, isTrue);
+
+      // Back to the video: it stays in its corner.
+      await tester.tap(find.bySemanticsLabel('Watch video'));
+      await tester.pumpAndSettle();
+      final video = tester.getTopLeft(find.byType(MiniVideoCard));
+      expect(video.dx, closeTo(MiniVideoWindow.margin, 1));
+      expect(video.dy, closeTo(after.dy, 1));
+
+      // Thrown off the side: closed.
+      await tester.tap(find.bySemanticsLabel('Listen as audio'));
+      await tester.pumpAndSettle();
+      await tester.fling(card, const Offset(-300, 0), 2500);
+      await tester.pumpAndSettle();
+      expect(session.state.isActive, isFalse);
+      await finish(tester, session);
+    });
+
+    testWidgets('pulled down, the player minimizes (watched or as audio)', (
+      tester,
+    ) async {
+      await open(tester, [testVideo('a')]);
+      await tester.fling(
+        find.byType(VideoPlayerPage),
+        const Offset(0, 400),
+        1500,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(VideoPlayerPage), findsNothing);
+      expect(find.byType(MiniVideoCard), findsOneWidget);
+      expect(h.engines['a']!.value.isPlaying, isTrue);
+
+      await tester.tap(find.byType(MiniVideoCard));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Listen as audio'));
+      await tester.pump();
+      await tester.fling(
+        find.byType(VideoAudioView),
+        const Offset(0, 400),
+        1500,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(VideoPlayerPage), findsNothing);
+      expect(find.byType(MiniVideoAudioCard), findsOneWidget);
+      await finish(tester, session);
+    });
+
+    testWidgets('a short pull springs back; locked, pulling does nothing', (
+      tester,
+    ) async {
+      await open(tester, [testVideo('a')]);
+      await tester.timedDrag(
+        find.byType(VideoPlayerPage),
+        const Offset(0, 80),
+        const Duration(milliseconds: 800),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(VideoPlayerPage), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Lock'));
+      await tester.pump();
+      await tester.fling(
+        find.byType(VideoPlayerPage),
+        const Offset(0, 400),
+        1500,
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(VideoPlayerPage), findsOneWidget);
+      expect(find.byType(MiniVideoWindow), findsNothing);
+      await finish(tester, session);
+    });
+
+    testWidgets('app hidden: watched pauses (and plays on); audio goes on', (
+      tester,
+    ) async {
+      Future<void> lifecycle(List<AppLifecycleState> states) async {
+        for (final state in states) {
+          tester.binding.handleAppLifecycleStateChanged(state);
+        }
+        await tester.pump();
+      }
+
+      const hide = [
+        AppLifecycleState.inactive,
+        AppLifecycleState.hidden,
+        AppLifecycleState.paused,
+      ];
+      const show = [
+        AppLifecycleState.hidden,
+        AppLifecycleState.inactive,
+        AppLifecycleState.resumed,
+      ];
+      await open(tester, [testVideo('a')]);
+      final player = h.engines['a']!;
+
+      await lifecycle(hide);
+      expect(player.value.isPlaying, isFalse);
+      await lifecycle(show);
+      expect(player.value.isPlaying, isTrue);
+
+      await tester.tap(find.byTooltip('Listen as audio'));
+      await tester.pump();
+      await lifecycle(hide);
+      expect(player.value.isPlaying, isTrue);
+      await lifecycle(show);
+      expect(player.value.isPlaying, isTrue);
       await finish(tester, session);
     });
 
