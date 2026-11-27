@@ -1,3 +1,4 @@
+import 'package:melodix/core/search/search_history.dart';
 import '../../../support/landscape.dart';
 
 import 'package:melodix/core/widgets/app_screen_util_init.dart';
@@ -111,6 +112,7 @@ void main() {
       ..registerFactory<LibrarySearchCubit>(
         () => LibrarySearchCubit(debounce: Duration.zero),
       )
+      ..registerLazySingleton<SearchHistoryCubit>(SearchHistoryCubit.new)
       ..registerFactory<PlaylistsCubit>(() {
         final watch = MockWatchPlaylists();
         when(() => watch()).thenAnswer((_) => playlists.stream);

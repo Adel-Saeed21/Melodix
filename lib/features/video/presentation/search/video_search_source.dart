@@ -2,8 +2,10 @@ import 'package:melodix/features/video/presentation/widgets/video_row_actions.da
 
 import 'dart:async';
 
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/search/search_history.dart';
 import 'package:melodix/core/search/search_sources.dart';
 import 'package:melodix/features/video/domain/entities/video.dart';
 import 'package:melodix/features/video/domain/usecases/watch_videos_usecase.dart';
@@ -26,13 +28,19 @@ class VideoSearchSource extends ChangeNotifier implements SearchSource {
   /// Lower-case titles, prepared once per library change.
   List<String> _keys = const [];
 
-  @override
-  SearchSection? search(String query) {
+  /// Starts following the video library (once): only when search or the
+  /// search history first needs it.
+  void _load() {
     _subscription ??= _watchVideos().listen((videos) {
       _videos = videos;
       _keys = [for (final v in videos) v.title.toLowerCase()];
       notifyListeners(); // open results include them now
     });
+  }
+
+  @override
+  SearchSection? search(String query) {
+    _load();
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return null;
     final hits = [
@@ -46,11 +54,38 @@ class VideoSearchSource extends ChangeNotifier implements SearchSource {
       itemBuilder: (context, index) => VideoTile(
         video: hits[index],
         // Play the matching videos, starting with this one.
-        onTap: () => openVideoPlayer(context, hits, index),
+        onTap: () {
+          _record(context, hits[index], query: query);
+          openVideoPlayer(context, hits, index);
+        },
         trailing: VideoRowActions(video: hits[index]),
       ),
     );
   }
+
+  @override
+  String get openedKind => 'video';
+
+  @override
+  Widget? openedTile(BuildContext context, String id) {
+    _load();
+    final video = _videos.where((v) => v.id == id).firstOrNull;
+    if (video == null) return null;
+    return VideoTile(
+      video: video,
+      onTap: () {
+        _record(context, video);
+        openVideoPlayer(context, [video], 0);
+      },
+      trailing: VideoRowActions(video: video),
+    );
+  }
+
+  void _record(BuildContext context, Video video, {String? query}) =>
+      context.read<SearchHistoryCubit>().opened(
+        OpenedFromSearch(kind: openedKind, id: video.id),
+        query: query,
+      );
 
   @override
   void dispose() {

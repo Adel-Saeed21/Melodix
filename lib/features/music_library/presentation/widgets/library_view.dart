@@ -1,3 +1,4 @@
+import 'package:melodix/core/search/search_history.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
@@ -99,6 +100,16 @@ class _LibraryViewState extends State<LibraryView>
   }
 
   /// Favourites in the library (counted again only when the songs change).
+  /// A recent search tapped: it goes back in the field and is searched.
+  void _searchAgain(String query) {
+    _searchController.value = TextEditingValue(
+      text: query,
+      selection: TextSelection.collapsed(offset: query.length),
+    );
+    context.read<LibrarySearchCubit>().queryChanged(query);
+    context.read<SearchHistoryCubit>().searched(query);
+  }
+
   int _favouriteCount(MusicLibraryState state) {
     if (!identical(state.songs, _countedFrom)) {
       _countedFrom = state.songs;
@@ -130,6 +141,7 @@ class _LibraryViewState extends State<LibraryView>
         focusNode: _searchFocus,
         autofocus: false,
         onChanged: context.read<LibrarySearchCubit>().queryChanged,
+        onSubmitted: context.read<SearchHistoryCubit>().searched,
         onClose: _closeSearch,
       ),
       onOpen: _openSearch,
@@ -208,8 +220,8 @@ class _LibraryViewState extends State<LibraryView>
                 ).animate(_resultsIn),
                 child: ColoredBox(
                   color: theme.scaffoldBackgroundColor,
-                  child: const SizedBox.expand(
-                    child: LibrarySearchResultsView(),
+                  child: SizedBox.expand(
+                    child: LibrarySearchResultsView(onQuery: _searchAgain),
                   ),
                 ),
               ),

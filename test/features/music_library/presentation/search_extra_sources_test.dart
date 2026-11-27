@@ -1,3 +1,5 @@
+import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:melodix/core/search/search_history.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
@@ -34,6 +36,13 @@ class FakeSource extends ChangeNotifier implements SearchSource {
       itemBuilder: (_, index) => Text('clip: ${hits[index]}'),
     );
   }
+
+  @override
+  String get openedKind => 'clip';
+
+  @override
+  Widget? openedTile(BuildContext context, String id) =>
+      items.contains(id) ? Text('opened clip: $id') : null;
 }
 
 class MockArtwork extends Mock implements GetSongArtworkUseCase {}
@@ -50,6 +59,7 @@ void main() {
     when(() => artwork(any())).thenReturn(null);
     when(() => artwork.cached(any())).thenReturn(null);
     getIt.registerSingleton<GetSongArtworkUseCase>(artwork);
+    HydratedBloc.storage = MemoryStorage();
     search = LibrarySearchCubit(debounce: Duration.zero)
       ..updateSources(songs: [playerSong(1, title: 'Sunrise')]);
     source = FakeSource();
@@ -66,8 +76,11 @@ void main() {
         child: MaterialApp(
           theme: AppTheme.darkTheme,
           home: Scaffold(
-            body: BlocProvider.value(
-              value: search,
+            body: MultiBlocProvider(
+              providers: [
+                BlocProvider.value(value: search),
+                BlocProvider(create: (_) => SearchHistoryCubit()),
+              ],
               child: SearchSources(
                 sources: [source],
                 child: const LibrarySearchResultsView(),

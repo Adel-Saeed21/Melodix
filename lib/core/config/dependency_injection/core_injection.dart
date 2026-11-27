@@ -1,3 +1,4 @@
+import 'package:melodix/core/search/search_history.dart';
 import 'package:get_it/get_it.dart';
 import 'package:melodix/core/preferences/ui_preferences.dart';
 import 'package:melodix/core/service/app_icon_service.dart';
@@ -84,6 +85,13 @@ Future<void> registerCore(GetIt getIt) async {
   // Settings' look and layout choices (and the video skip length), one
   // instance for the screens and the media controls. Created on first use,
   // after the saved state's storage is ready.
+  // The search history (recent searches, what was opened from search),
+  // saved across restarts. Created on first use, after the saved state's
+  // storage is ready.
+  getIt.registerLazySingleton<SearchHistoryCubit>(
+    SearchHistoryCubit.new,
+    dispose: (cubit) => cubit.close(),
+  );
   getIt.registerLazySingleton<UiPreferencesCubit>(
     UiPreferencesCubit.new,
     dispose: (cubit) => cubit.close(),

@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/core/config/routing/routes.dart';
+import 'package:melodix/core/search/search_history.dart';
 import 'package:melodix/core/search/search_sources.dart';
 import 'package:melodix/core/service/navigation_extension.dart';
 import 'package:melodix/features/music_library/domain/entities/library_search_results.dart';
@@ -19,14 +20,23 @@ import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
 import 'package:melodix/features/music_library/presentation/widgets/library_search_results/search_section_header.dart';
 import 'package:melodix/features/music_library/presentation/widgets/library_search_results/search_show_all_button.dart';
 import 'package:melodix/features/music_library/presentation/widgets/library_search_results/search_album_row.dart';
+import 'package:melodix/features/music_library/presentation/widgets/library_search_results/search_history_view.dart';
 
 enum _Section { songs, artists, albums, playlists }
 
 /// Search results grouped into Songs, Artists, Albums and Playlists, then
 /// any groups from [SearchSources] above (e.g. Videos). Each group shows a
-/// few items with "Show all" to expand.
+/// few items with "Show all" to expand. Before anything is typed: the
+/// search history ([SearchHistoryView]).
+///
+/// Opening a result remembers the search (and, for songs and videos, what
+/// was opened) in the [SearchHistoryCubit] above.
 class LibrarySearchResultsView extends StatefulWidget {
-  const LibrarySearchResultsView({super.key});
+  const LibrarySearchResultsView({super.key, this.onQuery});
+
+  /// A recent search was tapped. Default: it's searched (the screen with
+  /// the search field passes its own, to show the text too).
+  final ValueChanged<String>? onQuery;
 
   @override
   State<LibrarySearchResultsView> createState() =>
@@ -68,10 +78,10 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
         }
 
         if (!state.hasQuery) {
-          return const LibraryStatusView(
-            icon: Icons.manage_search_rounded,
-            title: AppStrings.searchPromptTitle,
-            message: AppStrings.searchPromptSubtitle,
+          return SearchHistoryView(
+            onQuery:
+                widget.onQuery ??
+                context.read<LibrarySearchCubit>().queryChanged,
           );
         }
         final extra = [
@@ -88,7 +98,7 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
           );
         }
 
-        final rows = _buildRows(context, state.results, extra);
+        final rows = _buildRows(context, state.query, state.results, extra);
         return Stack(
           children: [
             ListView.builder(
@@ -120,10 +130,12 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
   /// ever built.
   List<Widget Function()> _buildRows(
     BuildContext context,
+    String query,
     LibrarySearchResults results,
     List<SearchSection> extra,
   ) {
     final rows = <Widget Function()>[];
+    final history = context.read<SearchHistoryCubit>();
 
     void addSection<T>(
       Object section,
@@ -158,11 +170,14 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
         song: song,
         trailing: SongOptionsButton(song: song),
         // Play the matching songs, starting with this one.
-        onTap: () => context.read<PlayerCubit>().playSongs(
-          results.songs,
-          index,
-          title: AppStrings.searchResults,
-        ),
+        onTap: () {
+          history.opened(OpenedFromSearch.song(song.id), query: query);
+          context.read<PlayerCubit>().playSongs(
+            results.songs,
+            index,
+            title: AppStrings.searchResults,
+          );
+        },
       ),
     );
     addSection(
@@ -171,7 +186,10 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
       results.artists,
       (artist, _) => ArtistTile(
         artist: artist,
-        onTap: () => context.pushNamed(Routes.artistDetails, extra: artist),
+        onTap: () {
+          history.searched(query);
+          context.pushNamed(Routes.artistDetails, extra: artist);
+        },
       ),
     );
     addSection(
@@ -180,7 +198,10 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
       results.albums,
       (album, _) => SearchAlbumRow(
         album: album,
-        onTap: () => context.pushNamed(Routes.albumDetails, extra: album),
+        onTap: () {
+          history.searched(query);
+          context.pushNamed(Routes.albumDetails, extra: album);
+        },
       ),
     );
     addSection(
@@ -189,7 +210,10 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
       results.playlists,
       (playlist, _) => PlaylistTile(
         playlist: playlist,
-        onTap: () => context.pushNamed(Routes.playlistDetails, extra: playlist),
+        onTap: () {
+          history.searched(query);
+          context.pushNamed(Routes.playlistDetails, extra: playlist);
+        },
       ),
     );
     for (final section in extra) {

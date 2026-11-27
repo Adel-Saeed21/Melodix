@@ -1,3 +1,4 @@
+import 'package:melodix/core/search/search_history.dart';
 import 'package:melodix/core/widgets/app_screen_util_init.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -284,6 +285,7 @@ void main() {
     // the visible ones were ever built, so this count was low then too):
     // this checks that building rows on demand still shows them all.
     phone(tester);
+    HydratedBloc.storage = MemoryStorage(); // the search history's
     final search = LibrarySearchCubit(debounce: Duration.zero)
       ..updateSources(songs: _songs(5000));
     addTearDown(search.close);
@@ -300,8 +302,11 @@ void main() {
         child: MaterialApp(
           theme: AppTheme.darkTheme,
           home: Scaffold(
-            body: BlocProvider.value(
-              value: search,
+            body: MultiBlocProvider(
+              providers: [
+                BlocProvider.value(value: search),
+                BlocProvider(create: (_) => SearchHistoryCubit()),
+              ],
               child: const LibrarySearchResultsView(),
             ),
           ),
