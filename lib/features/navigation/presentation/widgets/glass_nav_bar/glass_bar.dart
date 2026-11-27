@@ -47,7 +47,7 @@ class GlassBar extends StatelessWidget {
       child: Padding(
         padding: vertical
             ? EdgeInsets.fromLTRB(12.w, 12.h, 0, 12.h)
-            : EdgeInsets.fromLTRB(20.w, 0, 20.w, 12.h),
+            : EdgeInsets.fromLTRB(20.w, 0, 20.w, 8.h),
         child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: radius,
@@ -68,9 +68,10 @@ class GlassBar extends StatelessWidget {
               child: Container(
                 // Height follows the content (icon + label) so the bar
                 // never overflows with large text scales or wide screens.
+                // Kept compact: it sits under the mini player.
                 padding: vertical
                     ? EdgeInsets.symmetric(vertical: 14.h, horizontal: 6.w)
-                    : EdgeInsets.symmetric(vertical: 10.h),
+                    : EdgeInsets.symmetric(vertical: 6.h),
                 decoration: BoxDecoration(
                   color: glassColor,
                   borderRadius: radius,

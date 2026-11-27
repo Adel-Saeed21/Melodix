@@ -13,7 +13,7 @@ import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
 import 'package:melodix/features/player/presentation/widgets/marquee_text.dart';
 import 'package:melodix/features/player/presentation/widgets/player_controls.dart';
 
-/// The capsule design: a floating pill, the cover round inside a ring that
+/// The capsule design: a flat pill (no shadow), the cover round inside a ring that
 /// fills as the song plays, then play / pause and next. Tap it to open the
 /// full player.
 class CapsuleMiniPlayer extends StatelessWidget {
@@ -41,9 +41,13 @@ class CapsuleMiniPlayer extends StatelessWidget {
         color: isDark
             ? theme.colorScheme.surfaceContainerHigh
             : theme.colorScheme.surface,
-        elevation: 10,
-        shadowColor: theme.primaryColor.withValues(alpha: 0.35),
-        shape: const StadiumBorder(),
+        // No shadow: a hairline edge (like the nav bar's) keeps the pill
+        // apart from a light background.
+        shape: StadiumBorder(
+          side: BorderSide(
+            color: onSurface.withValues(alpha: isDark ? 0.12 : 0.08),
+          ),
+        ),
         clipBehavior: Clip.antiAlias,
         child: Semantics(
           button: true,

@@ -41,7 +41,7 @@ class GlassNavItemButton extends StatelessWidget {
               curve: Curves.easeOutCubic,
               padding: EdgeInsets.symmetric(
                 horizontal: isActive ? 18.w : 12.w,
-                vertical: 4.h,
+                vertical: 3.h,
               ),
               decoration: BoxDecoration(
                 color: isActive
@@ -57,11 +57,11 @@ class GlassNavItemButton extends StatelessWidget {
                   isActive ? item.activeIcon : item.icon,
                   key: ValueKey(isActive),
                   color: color,
-                  size: 24.sp,
+                  size: 22.sp,
                 ),
               ),
             ),
-            SizedBox(height: 4.h),
+            SizedBox(height: 2.h),
             AnimatedDefaultTextStyle(
               duration: duration,
               style: (theme.textTheme.labelSmall ?? const TextStyle()).copyWith(
