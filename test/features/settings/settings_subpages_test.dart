@@ -14,6 +14,10 @@ import 'package:melodix/features/player/domain/entities/equalizer_preset.dart';
 import 'package:melodix/features/player/presentation/logic/audio_settings_cubit.dart';
 import 'package:melodix/features/player/presentation/pages/equalizer_page.dart';
 import 'package:melodix/features/settings/presentation/pages/library_filters_page.dart';
+import 'package:melodix/features/stats/domain/entities/song_listening.dart';
+import 'package:melodix/features/stats/domain/listening_stats.dart';
+import 'package:melodix/features/stats/domain/usecases/watch_listening_stats_usecase.dart';
+import 'package:melodix/features/stats/presentation/logic/listening_stats_cubit.dart';
 import 'package:melodix/features/stats/presentation/pages/listening_stats_page.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -22,6 +26,30 @@ import '../player/player_fixtures.dart';
 class _Library extends Mock implements MusicLibraryBloc {}
 
 class _Artwork extends Mock implements GetSongArtworkUseCase {}
+
+/// The listening history the stats page is shown.
+class _Stats implements WatchListeningStatsUseCase {
+  @override
+  Stream<ListeningStats> call() => Stream.value(
+    ListeningStats.of(const [
+      // 12 plays of a 3 min song, but only 30 min really heard.
+      SongListening(
+        id: 1,
+        title: 'Song 1',
+        artist: 'Ana',
+        playCount: 12,
+        listened: Duration(minutes: 30),
+      ),
+      SongListening(
+        id: 2,
+        title: 'Song 2',
+        artist: 'Ben',
+        playCount: 3,
+        listened: Duration(minutes: 5),
+      ),
+    ]),
+  );
+}
 
 Song _song(int id, String path, {int plays = 0, String artist = 'Ana'}) => Song(
   id: id,
@@ -118,8 +146,12 @@ void main() {
   });
 
   testWidgets('your Melodix: time, top song and top artist', (tester) async {
-    await pump(tester, const ListeningStatsPage());
-    expect(find.text('45 min'), findsOneWidget); // 15 plays × 3 min
+    await pump(
+      tester,
+      ListeningStatsPage(createCubit: () => ListeningStatsCubit(_Stats())),
+    );
+    // The time really heard (not 15 plays × 3 min = 45 min).
+    expect(find.text('35 min'), findsOneWidget);
     expect(find.text('Your top artist: Ana'), findsOneWidget);
     expect(find.text('12 plays'), findsWidgets);
   });

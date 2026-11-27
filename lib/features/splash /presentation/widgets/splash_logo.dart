@@ -5,6 +5,7 @@ import 'package:melodix/core/config/assets/app_vector.dart';
 import 'package:melodix/core/config/theme/app_colors.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/features/splash /presentation/services/splash_logo_animation_service.dart';
+import 'package:melodix/features/splash /presentation/widgets/splash_logo/splash_halo.dart';
 
 /// The splash logo with subtle polish: a soft green halo that fades in and
 /// gently breathes, one light sheen across the logo, and the wordmark rising
@@ -58,7 +59,7 @@ class _SplashLogoState extends State<SplashLogo> with TickerProviderStateMixin {
           // Soft halo behind the logo.
           AnimatedBuilder(
             animation: _animation.haloListenable,
-            child: const _Halo(diameter: size * 2.2),
+            child: const SplashHalo(diameter: size * 2.2),
             builder: (context, halo) => Opacity(
               opacity: _animation.haloOpacity,
               child: Transform.scale(scale: _animation.haloScale, child: halo),
@@ -111,32 +112,6 @@ class _SplashLogoState extends State<SplashLogo> with TickerProviderStateMixin {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _Halo extends StatelessWidget {
-  const _Halo({required this.diameter});
-
-  final double diameter;
-
-  @override
-  Widget build(BuildContext context) {
-    final green = AppColors.primaryColor;
-    return Container(
-      width: diameter,
-      height: diameter,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: RadialGradient(
-          colors: [
-            green.withValues(alpha: 0.38),
-            green.withValues(alpha: 0.12),
-            green.withValues(alpha: 0),
-          ],
-          stops: const [0.25, 0.55, 1],
-        ),
       ),
     );
   }

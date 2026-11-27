@@ -24,6 +24,14 @@ abstract interface class SearchSource implements Listenable {
   /// The results for [query] (trimmed, not empty), or null for none. Runs
   /// as the user types: must be quick (in memory).
   SearchSection? search(String query);
+
+  /// The `OpenedFromSearch.kind` this source records when one of its
+  /// results is opened (e.g. 'video').
+  String get openedKind;
+
+  /// A row for item [id], opened from search earlier (the search history
+  /// shows it); null if it's gone. Opening it again should record it again.
+  Widget? openedTile(BuildContext context, String id);
 }
 
 /// Makes [sources] available to the search below it. Lets a screen that

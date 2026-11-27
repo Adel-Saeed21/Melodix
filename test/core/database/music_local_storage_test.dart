@@ -3,6 +3,7 @@ import 'package:isar_community/isar.dart';
 import 'package:melodix/core/database/collections/playlist_collection.dart';
 import 'package:melodix/core/database/collections/recent_music_collection.dart';
 import 'package:melodix/core/database/collections/song_collection.dart';
+import 'package:melodix/core/database/collections/song_history_collection.dart';
 import 'package:melodix/core/database/music_local_storage.dart';
 import 'package:melodix/core/models/local_song.dart';
 
@@ -195,4 +196,161 @@ void main() {
     await storage.syncSongs([song(1)]); // e.g. Android 10: no checkpoint
     expect(await storage.getSyncCheckpoint(), isNull);
   }, skip: skip);
+
+  group('listening history', () {
+    Future<SongCollection> row(int id) async =>
+        (await isar.songCollections.get(id))!;
+
+    /// A row as saved by a version from before listening time was kept.
+    Future<void> legacy(int id, {required int plays}) async {
+      await storage.applyChanges(
+        upserts: [song(id)],
+        deletedIds: const [],
+        checkpoint: 'cp',
+      );
+      final r = await row(id);
+      await isar.writeTxn(
+        () => isar.songCollections.put(
+          r
+            ..playCount = plays
+            ..listenedMs = null,
+        ),
+      );
+    }
+
+    test('listening adds up, without touching the play count', () async {
+      await storage.applyChanges(
+        upserts: [song(1)],
+        deletedIds: const [],
+        checkpoint: 'cp',
+      );
+      await storage.addListening(1, const Duration(seconds: 25));
+      await storage.addListening(1, const Duration(seconds: 10));
+
+      final r = await row(1);
+      expect(r.listenedMs, 35000);
+      expect(r.playCount, 0);
+    }, skip: skip);
+
+    test(
+      'old rows: their estimate (plays × length) is kept, then added to',
+      () async {
+        await legacy(1, plays: 4); // 4 × 3 min = 12 min, estimated
+        expect((await row(1)).listenedOrEstimateMs, 12 * 60000);
+
+        await storage.addListening(1, const Duration(seconds: 30));
+        expect((await row(1)).listenedMs, 12 * 60000 + 30000);
+      },
+      skip: skip,
+    );
+
+    test(
+      'old rows: the estimate is fixed before a new play, not after',
+      () async {
+        await legacy(1, plays: 2);
+        await storage.recordPlay(1); // a new play: 3 plays now
+        await storage.addListening(1, const Duration(seconds: 40));
+
+        final r = await row(1);
+        expect(r.playCount, 3);
+        // 2 old plays estimated (6 min) + the 40 s really heard: the new
+        // play isn't also counted as a full song.
+        expect(r.listenedMs, 6 * 60000 + 40000);
+      },
+      skip: skip,
+    );
+
+    test('a re-scan keeps the time listened', () async {
+      await storage.applyChanges(
+        upserts: [song(1)],
+        deletedIds: const [],
+        checkpoint: 'cp-1',
+      );
+      await storage.addListening(1, const Duration(seconds: 50));
+      await storage.syncSongs([song(1, title: 'Renamed')]);
+
+      final r = await row(1);
+      expect(r.title, 'Renamed');
+      expect(r.listenedMs, 50000);
+    }, skip: skip);
+
+    test(
+      'a removed song keeps its history; never-played ones leave none',
+      () async {
+        await storage.applyChanges(
+          upserts: [song(1), song(2)],
+          deletedIds: const [],
+          checkpoint: 'cp',
+        );
+        await storage.recordPlay(1);
+        await storage.addListening(1, const Duration(seconds: 45));
+        await storage.removeSongs([1, 2]);
+
+        expect(await isar.songCollections.count(), 0);
+        final kept = await isar.songHistoryCollections.where().findAll();
+        expect(kept.map((h) => h.id), [1]);
+        expect(kept.single.playCount, 1);
+        expect(kept.single.listenedMs, 45000);
+        expect(kept.single.title, 'Song 1');
+      },
+      skip: skip,
+    );
+
+    test('a song deleted by a sync keeps its history too', () async {
+      await storage.syncSongs([song(1), song(2)]);
+      await storage.recordPlay(2);
+      await storage.syncSongs([song(1)]); // song 2's file is gone
+
+      final kept = await isar.songHistoryCollections.get(2);
+      expect(kept?.playCount, 1);
+    }, skip: skip);
+
+    test('a song that comes back gets its history back', () async {
+      await storage.applyChanges(
+        upserts: [song(1)],
+        deletedIds: const [],
+        checkpoint: 'cp-1',
+      );
+      await storage.recordPlay(1);
+      await storage.addListening(1, const Duration(seconds: 40));
+      await storage.toggleFavorite(1);
+      // The SD card is taken out…
+      await storage.applyChanges(
+        upserts: const [],
+        deletedIds: [1],
+        checkpoint: 'cp-2',
+      );
+      // …and put back.
+      await storage.applyChanges(
+        upserts: [song(1)],
+        deletedIds: const [],
+        checkpoint: 'cp-3',
+      );
+
+      final r = await row(1);
+      expect(r.playCount, 1);
+      expect(r.listenedMs, 40000);
+      expect(r.isFavorite, isTrue);
+      expect(await isar.songHistoryCollections.count(), 0);
+    }, skip: skip);
+
+    test('a history row from an old version is merged too', () async {
+      await isar.writeTxn(
+        () => isar.songHistoryCollections.put(
+          SongHistoryCollection()
+            ..id = 9
+            ..title = 'Back'
+            ..artist = 'A'
+            ..durationMs = 180000
+            ..playCount = 2
+            ..listenedMs = 360000
+            ..removedAt = DateTime(2026),
+        ),
+      );
+      await storage.syncSongs([song(9)]);
+
+      final r = await row(9);
+      expect((r.playCount, r.listenedMs), (2, 360000));
+    }, skip: skip);
+  });
 }

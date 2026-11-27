@@ -1,17 +1,16 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/core/config/routing/routes.dart';
-import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/onboarding_service.dart';
-import 'package:melodix/core/widgets/melodix_mark.dart';
 import 'package:melodix/core/widgets/glow_background.dart';
 import 'package:melodix/features/onboarding/presentation/widgets/onboarding_illustrations.dart';
 import 'package:melodix/core/widgets/theme_mode_picker.dart';
+import 'package:melodix/features/onboarding/presentation/widgets/onboarding/onboarding_top_bar.dart';
+import 'package:melodix/features/onboarding/presentation/widgets/onboarding/onboarding_slide_view.dart';
+import 'package:melodix/features/onboarding/presentation/widgets/onboarding/onboarding_bottom_bar.dart';
 
 /// First launch: what Melodix does, in a few swipes (music, video,
 /// subtitles), then the look (dark / light / the phone's). Everything is
@@ -29,14 +28,6 @@ class OnboardingPage extends StatefulWidget {
   State<OnboardingPage> createState() => _OnboardingPageState();
 }
 
-class _Slide {
-  const _Slide(this.title, this.body, this.illustration);
-
-  final String title;
-  final String body;
-  final Widget Function(Animation<double> time) illustration;
-}
-
 class _OnboardingPageState extends State<OnboardingPage>
     with SingleTickerProviderStateMixin {
   final PageController _pages = PageController();
@@ -50,23 +41,23 @@ class _OnboardingPageState extends State<OnboardingPage>
   int _index = 0;
   bool _finishing = false;
 
-  static final List<_Slide> _slides = [
-    _Slide(
+  static final List<OnboardingSlide> _slides = [
+    OnboardingSlide(
       AppStrings.onboardingMusicTitle,
       AppStrings.onboardingMusicBody,
       (t) => MusicIllustration(time: t),
     ),
-    _Slide(
+    OnboardingSlide(
       AppStrings.onboardingVideoTitle,
       AppStrings.onboardingVideoBody,
       (t) => VideoIllustration(time: t),
     ),
-    _Slide(
+    OnboardingSlide(
       AppStrings.onboardingSubtitlesTitle,
       AppStrings.onboardingSubtitlesBody,
       (t) => SubtitlesIllustration(time: t),
     ),
-    _Slide(
+    OnboardingSlide(
       AppStrings.onboardingThemeTitle,
       AppStrings.onboardingThemeBody,
       (_) => const ThemeModePicker(),
@@ -148,13 +139,16 @@ class _OnboardingPageState extends State<OnboardingPage>
             SafeArea(
               child: Column(
                 children: [
-                  _TopBar(showSkip: _index < _last, onSkip: () => _goTo(_last)),
+                  OnboardingTopBar(
+                    showSkip: _index < _last,
+                    onSkip: () => _goTo(_last),
+                  ),
                   Expanded(
                     child: PageView.builder(
                       controller: _pages,
                       itemCount: _slides.length,
                       onPageChanged: (i) => setState(() => _index = i),
-                      itemBuilder: (context, i) => _SlideView(
+                      itemBuilder: (context, i) => OnboardingSlideView(
                         slide: _slides[i],
                         index: i,
                         position: _position,
@@ -162,7 +156,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                       ),
                     ),
                   ),
-                  _BottomBar(
+                  OnboardingBottomBar(
                     count: _slides.length,
                     position: _position,
                     isLast: _index == _last,
@@ -172,266 +166,6 @@ class _OnboardingPageState extends State<OnboardingPage>
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TopBar extends StatelessWidget {
-  const _TopBar({required this.showSkip, required this.onSkip});
-
-  final bool showSkip;
-  final VoidCallback onSkip;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: EdgeInsets.fromLTRB(24.w, 12.h, 12.w, 0),
-      child: Row(
-        children: [
-          MelodixMark(size: 26.r, color: theme.primaryColor),
-          SizedBox(width: 10.w),
-          Text(
-            AppStrings.appName,
-            style: TextStyle(
-              fontSize: 20.sp,
-              fontWeight: FontWeightHelper.bold,
-              color: theme.colorScheme.onSurface,
-              letterSpacing: 0.3,
-            ),
-          ),
-          const Spacer(),
-          AnimatedOpacity(
-            opacity: showSkip ? 1 : 0,
-            duration: const Duration(milliseconds: 200),
-            child: TextButton(
-              onPressed: showSkip ? onSkip : null,
-              child: Text(
-                AppStrings.onboardingSkip,
-                style: TextStyle(
-                  fontSize: 15.sp,
-                  fontWeight: FontWeightHelper.semiBold,
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// One page: its illustration above, title and text below. While swiping,
-/// the illustration slides slower than the page and the text fades: a
-/// little depth.
-class _SlideView extends StatelessWidget {
-  const _SlideView({
-    required this.slide,
-    required this.index,
-    required this.position,
-    required this.time,
-  });
-
-  final _Slide slide;
-  final int index;
-  final ValueListenable<double> position;
-  final Animation<double> time;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final illustration = slide.illustration(time);
-    return LayoutBuilder(
-      builder: (context, constraints) => ValueListenableBuilder<double>(
-        valueListenable: position,
-        child: illustration,
-        builder: (context, page, illustration) {
-          final offset = (page - index).clamp(-1.0, 1.0);
-          final visible = 1 - offset.abs();
-          return Padding(
-            padding: EdgeInsets.symmetric(horizontal: 28.w),
-            child: Column(
-              children: [
-                Expanded(
-                  flex: 6,
-                  child: Transform.translate(
-                    offset: Offset(offset * constraints.maxWidth * 0.35, 0),
-                    child: Transform.scale(
-                      scale: 0.85 + 0.15 * visible,
-                      child: Center(
-                        child: FittedBox(
-                          fit: BoxFit.scaleDown,
-                          child: Padding(
-                            padding: EdgeInsets.all(40.r),
-                            child: illustration,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  flex: 4,
-                  child: Opacity(
-                    opacity: visible.clamp(0.0, 1.0),
-                    child: Transform.translate(
-                      offset: Offset(0, 24 * offset.abs()),
-                      child: SingleChildScrollView(
-                        child: Column(
-                          children: [
-                            Text(
-                              slide.title,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 28.sp,
-                                height: 1.15,
-                                fontWeight: FontWeightHelper.bold,
-                                color: theme.colorScheme.onSurface,
-                              ),
-                            ),
-                            SizedBox(height: 14.h),
-                            Text(
-                              slide.body,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 15.sp,
-                                height: 1.5,
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.7,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-/// The dots (the current one stretched into a pill, following the swipe)
-/// and the button: a round arrow that grows into "Start listening" on the
-/// last page.
-class _BottomBar extends StatelessWidget {
-  const _BottomBar({
-    required this.count,
-    required this.position,
-    required this.isLast,
-    required this.onNext,
-  });
-
-  final int count;
-  final ValueListenable<double> position;
-  final bool isLast;
-  final VoidCallback onNext;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final accent = theme.primaryColor;
-    final onAccent = theme.colorScheme.onPrimary;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(28.w, 8.h, 28.w, 24.h),
-      child: Row(
-        children: [
-          ValueListenableBuilder<double>(
-            valueListenable: position,
-            builder: (context, page, _) => Row(
-              children: [
-                for (var i = 0; i < count; i++)
-                  Builder(
-                    builder: (context) {
-                      final near = (1 - (page - i).abs()).clamp(0.0, 1.0);
-                      return Container(
-                        margin: EdgeInsets.only(right: 6.w),
-                        width: 8.r + 20.r * near,
-                        height: 8.r,
-                        decoration: BoxDecoration(
-                          color: Color.lerp(
-                            theme.colorScheme.onSurface.withValues(alpha: 0.25),
-                            accent,
-                            near,
-                          ),
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                      );
-                    },
-                  ),
-              ],
-            ),
-          ),
-          SizedBox(width: 12.w),
-          // Shrinks rather than overflows (large text, narrow screens).
-          Expanded(
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: _nextButton(accent, onAccent),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _nextButton(Color accent, Color onAccent) {
-    return Semantics(
-      button: true,
-      label: isLast ? AppStrings.onboardingStart : AppStrings.onboardingNext,
-      excludeSemantics: true,
-      child: Material(
-        color: accent,
-        shape: const StadiumBorder(),
-        elevation: 6,
-        shadowColor: accent.withValues(alpha: 0.5),
-        child: InkWell(
-          customBorder: const StadiumBorder(),
-          onTap: onNext,
-          child: AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOutCubic,
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: isLast ? 26.w : 18.r,
-                vertical: 18.r,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isLast) ...[
-                    Text(
-                      AppStrings.onboardingStart,
-                      style: TextStyle(
-                        color: onAccent,
-                        fontSize: 16.sp,
-                        fontWeight: FontWeightHelper.bold,
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                  ],
-                  Icon(
-                    isLast
-                        ? Icons.play_arrow_rounded
-                        : Icons.arrow_forward_rounded,
-                    color: onAccent,
-                    size: 24.r,
-                  ),
-                ],
-              ),
-            ),
-          ),
         ),
       ),
     );

@@ -5,6 +5,7 @@ import 'package:melodix/features/video/presentation/logic/video_player_cubit.dar
 import 'package:melodix/features/video/presentation/widgets/player/engine_selector.dart';
 import 'package:melodix/features/video/presentation/widgets/video_thumbnail.dart';
 import 'package:melodix/features/video/presentation/playback/video_engine.dart';
+import 'package:melodix/features/video/presentation/widgets/mini/mini_video_card/mini_video_button.dart';
 
 /// What the small window shows: the video (or its thumbnail while it
 /// loads), play / pause, close, and how far it got.
@@ -62,7 +63,7 @@ class MiniVideoCard extends StatelessWidget {
           Positioned(
             top: 0,
             right: 0,
-            child: _SmallButton(
+            child: MiniVideoButton(
               icon: Icons.close_rounded,
               label: AppStrings.closeVideo,
               onPressed: onClose,
@@ -75,7 +76,7 @@ class MiniVideoCard extends StatelessWidget {
               child: EngineSelector<bool>(
                 engine: engine,
                 select: (v) => v.isPlaying,
-                builder: (context, playing) => _SmallButton(
+                builder: (context, playing) => MiniVideoButton(
                   icon: playing
                       ? Icons.pause_rounded
                       : Icons.play_arrow_rounded,
@@ -104,47 +105,6 @@ class MiniVideoCard extends StatelessWidget {
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-/// A small round button on a dark dot, readable on any picture. (No
-/// tooltip: the window floats above the app's navigator, where tooltips
-/// have no overlay to draw in; the label is for screen readers.)
-class _SmallButton extends StatelessWidget {
-  const _SmallButton({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: label,
-      excludeSemantics: true,
-      child: InkResponse(
-        onTap: onPressed,
-        radius: 20,
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.55),
-              shape: BoxShape.circle,
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(4),
-              child: Icon(icon, color: Colors.white, size: 20),
-            ),
-          ),
-        ),
       ),
     );
   }

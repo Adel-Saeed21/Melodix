@@ -1,3 +1,4 @@
+import 'package:melodix/core/search/search_history.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
@@ -18,6 +19,7 @@ import 'package:melodix/features/music_library/presentation/widgets/library_tabs
 import 'package:melodix/features/music_library/presentation/widgets/library_tabs/artists_tab.dart';
 import 'package:melodix/features/music_library/presentation/widgets/library_tabs/playlists_tab.dart';
 import 'package:melodix/features/music_library/presentation/widgets/library_tabs/songs_tab.dart';
+import 'package:melodix/core/widgets/keep_alive_tab.dart';
 
 /// The library tabs, with a search mode. Opening, the 🔍 button grows
 /// into a full-width search field while the title slides away, the tabs fold
@@ -98,6 +100,16 @@ class _LibraryViewState extends State<LibraryView>
   }
 
   /// Favourites in the library (counted again only when the songs change).
+  /// A recent search tapped: it goes back in the field and is searched.
+  void _searchAgain(String query) {
+    _searchController.value = TextEditingValue(
+      text: query,
+      selection: TextSelection.collapsed(offset: query.length),
+    );
+    context.read<LibrarySearchCubit>().queryChanged(query);
+    context.read<SearchHistoryCubit>().searched(query);
+  }
+
   int _favouriteCount(MusicLibraryState state) {
     if (!identical(state.songs, _countedFrom)) {
       _countedFrom = state.songs;
@@ -129,6 +141,7 @@ class _LibraryViewState extends State<LibraryView>
         focusNode: _searchFocus,
         autofocus: false,
         onChanged: context.read<LibrarySearchCubit>().queryChanged,
+        onSubmitted: context.read<SearchHistoryCubit>().searched,
         onClose: _closeSearch,
       ),
       onOpen: _openSearch,
@@ -189,10 +202,10 @@ class _LibraryViewState extends State<LibraryView>
               maintainState: true,
               child: TabBarView(
                 children: [
-                  _KeepAlive(child: SongsTab(songs: state.songs)),
-                  _KeepAlive(child: const PlaylistsTab()),
-                  _KeepAlive(child: const AlbumsTab()),
-                  _KeepAlive(child: const ArtistsTab()),
+                  KeepAliveTab(child: SongsTab(songs: state.songs)),
+                  KeepAliveTab(child: const PlaylistsTab()),
+                  KeepAliveTab(child: const AlbumsTab()),
+                  KeepAliveTab(child: const ArtistsTab()),
                 ],
               ),
             ),
@@ -207,8 +220,8 @@ class _LibraryViewState extends State<LibraryView>
                 ).animate(_resultsIn),
                 child: ColoredBox(
                   color: theme.scaffoldBackgroundColor,
-                  child: const SizedBox.expand(
-                    child: LibrarySearchResultsView(),
+                  child: SizedBox.expand(
+                    child: LibrarySearchResultsView(onQuery: _searchAgain),
                   ),
                 ),
               ),
@@ -303,28 +316,4 @@ class _LibraryViewState extends State<LibraryView>
 
   /// Keeps the tabs' state when the phone turns (see [build]).
   final GlobalKey _contentKey = GlobalKey();
-}
-
-/// Keeps a tab page alive while another tab is shown, so switching back
-/// doesn't rebuild it (no re-sorting, no cover reloads) and its scroll
-/// position and state are kept. It still updates when its data changes.
-class _KeepAlive extends StatefulWidget {
-  const _KeepAlive({required this.child});
-
-  final Widget child;
-
-  @override
-  State<_KeepAlive> createState() => _KeepAliveState();
-}
-
-class _KeepAliveState extends State<_KeepAlive>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
-  @override
-  Widget build(BuildContext context) {
-    super.build(context);
-    return widget.child;
-  }
 }

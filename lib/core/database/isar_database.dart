@@ -4,6 +4,7 @@ import 'package:melodix/core/database/collections/playback_state_collection.dart
 import 'package:melodix/core/database/collections/playlist_collection.dart';
 import 'package:melodix/core/database/collections/recent_music_collection.dart';
 import 'package:melodix/core/database/collections/song_collection.dart';
+import 'package:melodix/core/database/collections/song_history_collection.dart';
 import 'package:melodix/core/database/collections/video_collection.dart';
 import 'package:melodix/core/database/collections/video_progress_collection.dart';
 import 'package:path_provider/path_provider.dart';
@@ -15,6 +16,7 @@ class IsarDatabase {
 
   static const List<CollectionSchema<dynamic>> schemas = [
     SongCollectionSchema,
+    SongHistoryCollectionSchema,
     PlaylistCollectionSchema,
     RecentMusicCollectionSchema,
     PlaybackStateCollectionSchema,

@@ -12,6 +12,7 @@ class LibrarySearchField extends StatelessWidget {
     required this.controller,
     required this.onChanged,
     required this.onClose,
+    this.onSubmitted,
     this.focusNode,
     this.autofocus = true,
   });
@@ -19,6 +20,9 @@ class LibrarySearchField extends StatelessWidget {
   final TextEditingController controller;
   final ValueChanged<String> onChanged;
   final VoidCallback onClose;
+
+  /// The keyboard's search key.
+  final ValueChanged<String>? onSubmitted;
   final FocusNode? focusNode;
   final bool autofocus;
 
@@ -34,6 +38,7 @@ class LibrarySearchField extends StatelessWidget {
       focusNode: focusNode,
       autofocus: autofocus,
       onChanged: onChanged,
+      onSubmitted: onSubmitted,
       cursorColor: primary,
       textInputAction: TextInputAction.search,
       style: TextStyle(color: onSurface, fontSize: AppTextSizes.base),

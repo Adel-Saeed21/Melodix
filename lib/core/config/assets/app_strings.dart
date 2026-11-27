@@ -396,6 +396,10 @@ class AppStrings {
       'Search your songs, artists, albums and playlists.';
   static const String noResultsSubtitle =
       'Check the spelling or try another word.';
+  static const String recentSearches = 'Recent searches';
+  static const String openedFromSearch = 'Opened from search';
+  static const String clearSearchHistory = 'Clear';
+  static const String removeRecentSearch = 'Remove';
 
   static String noResultsFor(String query) => 'No results for "$query"';
   static String showAll(int count) => 'Show all $count';

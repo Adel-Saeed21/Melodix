@@ -2,13 +2,13 @@ import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
-import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/features/player/domain/entities/now_playing.dart';
 import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
 import 'package:melodix/features/player/presentation/utils/playback_time_format.dart';
 import 'package:melodix/features/player/presentation/widgets/player_controls.dart';
 import 'package:melodix/features/player/domain/entities/playback_progress.dart';
 import 'package:melodix/features/player/presentation/logic/playback_progress_cubit.dart';
+import 'package:melodix/features/player/presentation/widgets/player_progress/player_time_text.dart';
 
 // The only player widgets that follow position ticks: they listen to
 // [PlaybackProgressCubit] (each selecting just what it shows); the rest of
@@ -67,24 +67,7 @@ class PlaybackTimesRow extends StatelessWidget {
       ),
       builder: (context, times) => Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [_TimeText(times.$1), _TimeText(times.$2)],
-      ),
-    );
-  }
-}
-
-class _TimeText extends StatelessWidget {
-  const _TimeText(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    return FixedSizeTimeText(
-      text,
-      style: TextStyle(
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-        fontSize: AppTextSizes.sm,
+        children: [PlayerTimeText(times.$1), PlayerTimeText(times.$2)],
       ),
     );
   }

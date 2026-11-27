@@ -1,3 +1,5 @@
+import 'package:melodix/core/search/search_history.dart';
+
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -39,6 +41,8 @@ class MusicHomeView extends StatelessWidget {
             ),
         ),
         BlocProvider(create: (_) => SongSortCubit()),
+        // App-wide: the search history outlives this screen.
+        BlocProvider.value(value: getIt<SearchHistoryCubit>()),
       ],
       child: MultiBlocListener(
         listeners: [

@@ -1,9 +1,7 @@
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:melodix/core/config/assets/app_strings.dart';
-import 'package:melodix/core/config/theme/app_text_sizes.dart';
-import 'package:melodix/core/config/theme/font_weight_helper.dart';
-import 'package:melodix/core/service/spacing.dart';
+import 'package:melodix/features/music_library/presentation/widgets/library_search_header/library_title_text.dart';
 
 /// "Music · N songs" with a round 🔍 button that expands leftwards into
 /// [field]. The field is the pill itself: collapsed, only its search icon
@@ -55,7 +53,7 @@ class LibrarySearchHeader extends StatelessWidget {
                         offset: Offset(-24 * titleOut.value, 0),
                         child: Padding(
                           padding: EdgeInsets.only(right: collapsedSize + 8.w),
-                          child: _TitleText(songCount: songCount),
+                          child: LibraryTitleText(songCount: songCount),
                         ),
                       ),
                     ),
@@ -103,39 +101,6 @@ class LibrarySearchHeader extends StatelessWidget {
           },
         );
       },
-    );
-  }
-}
-
-class _TitleText extends StatelessWidget {
-  const _TitleText({required this.songCount});
-
-  final int songCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final onSurface = Theme.of(context).colorScheme.onSurface;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          AppStrings.music,
-          style: TextStyle(
-            color: onSurface,
-            fontSize: AppTextSizes.xxl,
-            fontWeight: FontWeightHelper.bold,
-          ),
-        ),
-        verticalSpace(2),
-        Text(
-          AppStrings.songsCount(songCount),
-          style: TextStyle(
-            color: onSurface.withValues(alpha: 0.6),
-            fontSize: AppTextSizes.sm,
-          ),
-        ),
-      ],
     );
   }
 }

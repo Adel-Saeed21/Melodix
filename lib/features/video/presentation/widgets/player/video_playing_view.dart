@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/features/subtitles/presentation/widgets/subtitle_overlay.dart';
+import 'package:melodix/features/video/presentation/widgets/player/subtitle_overlay.dart';
 import 'package:melodix/features/video/presentation/playback/video_engine.dart';
 import 'package:melodix/features/video/presentation/widgets/player/video_player_controls.dart';
 

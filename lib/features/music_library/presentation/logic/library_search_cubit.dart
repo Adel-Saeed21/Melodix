@@ -83,6 +83,18 @@ class LibrarySearchCubit extends Cubit<LibrarySearchState> {
     return _index;
   }
 
+  /// The songs with [ids] still in the library, in that order (for what
+  /// was opened from search before).
+  List<Song> songsWithIds(List<int> ids) {
+    if (ids.isEmpty) return const [];
+    final wanted = ids.toSet();
+    final found = <int, Song>{
+      for (final song in _upToDateIndex.songs)
+        if (wanted.contains(song.id)) song.id: song,
+    };
+    return [for (final id in ids) ?found[id]];
+  }
+
   void queryChanged(String text) {
     final query = text.trim();
     _debounceTimer?.cancel();

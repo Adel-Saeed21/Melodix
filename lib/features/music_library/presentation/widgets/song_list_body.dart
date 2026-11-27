@@ -15,6 +15,7 @@ import 'package:melodix/features/music_library/presentation/widgets/song_actions
 import 'package:melodix/features/music_library/presentation/widgets/song_options_button.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_tile.dart';
 import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
+import 'package:melodix/features/music_library/presentation/widgets/song_list_body/song_drag_handle.dart';
 
 /// A header followed by the songs from the nearest [SongListCubit], each
 /// with its ⋮ options menu. The header is built from the songs shown, so
@@ -162,7 +163,7 @@ class SongListBody extends StatelessWidget {
           title: queueTitle,
         ),
         subtitle: subtitleFor?.call(song),
-        leading: dragIndex == null ? null : _DragHandle(index: dragIndex),
+        leading: dragIndex == null ? null : SongDragHandle(index: dragIndex),
         trailing: SongOptionsButton(
           song: song,
           showGoToAlbum: showGoToAlbum,
@@ -197,33 +198,6 @@ class SongListBody extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-/// Starts dragging immediately when touched (long-press works anywhere on
-/// the row too).
-class _DragHandle extends StatelessWidget {
-  const _DragHandle({required this.index});
-
-  final int index;
-
-  @override
-  Widget build(BuildContext context) {
-    return ReorderableDragStartListener(
-      index: index,
-      child: Tooltip(
-        message: AppStrings.dragToReorder,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 12.h),
-          child: Icon(
-            Icons.drag_indicator_rounded,
-            size: 20.r,
-            color: Theme.of(context).colorScheme.onSurface
-                .withValues(alpha: 0.4),
-          ),
-        ),
-      ),
     );
   }
 }

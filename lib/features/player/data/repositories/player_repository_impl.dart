@@ -11,7 +11,7 @@ import 'package:melodix/features/player/data/queue/loaded_window.dart';
 import 'package:melodix/features/player/data/queue/pause_requests.dart';
 import 'package:melodix/features/player/data/queue/playback_queue.dart';
 import 'package:melodix/features/player/data/session/audio_focus.dart';
-import 'package:melodix/features/player/data/session/play_counter.dart';
+import 'package:melodix/features/player/data/session/listening_tracker.dart';
 import 'package:melodix/features/player/data/session/playback_session_saver.dart';
 import 'package:melodix/features/player/domain/entities/now_playing.dart';
 import 'package:melodix/features/player/domain/entities/playback_error.dart';
@@ -28,7 +28,8 @@ import 'package:melodix/features/player/domain/repositories/player_repository.da
 ///   kept in step with the whole queue (10,000 songs cost like an album);
 /// * [PauseRequests]: a pause always wins over a load that's finishing;
 /// * [AudioFocus]: the audio session (focus, ducking, headphones unplugged);
-/// * [PlayCounter]: one play counted per song start ("Most played");
+/// * [ListeningTracker]: plays and listening time, from what is really
+///   heard ("Most played", listening stats);
 /// * [PlaybackSessionSaver]: the session saved for a restart.
 ///
 /// All playlist changes run one at a time ([_serial]): a tap, Next or a
@@ -45,7 +46,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
     Random? random,
   }) : assert(windowAhead >= 2 && windowBehind >= 1),
        _session = PlaybackSessionSaver(sessionStorage),
-       _plays = PlayCounter(playRecorder),
+       _listening = ListeningTracker(playRecorder),
        _audioFocus = audioFocus ?? AudioFocus(),
        _random = random ?? Random() {
     _subscriptions.addAll([
@@ -61,7 +62,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
 
   final AudioPlayer _player;
   final PlaybackSessionSaver _session;
-  final PlayCounter _plays;
+  final ListeningTracker _listening;
   final AudioFocus _audioFocus;
   final SongMapper _mapper;
   final Random _random;
@@ -83,7 +84,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
   );
   late final _serial = SerialRunner(
     onIdle: () {
-      _countPlay();
+      _trackListening();
       _publish();
     },
   );
@@ -155,7 +156,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
       await _activateAudio();
       final queue = _newQueue(queueSongs, index);
       _queueTitle = title;
-      _plays.newQueue();
+      _listening.newQueue();
       final loaded = await _window.reload(queue.positionOf(index));
       if (request != _queueRequests) return; // replaced while loading
       _clearPending(request);
@@ -229,7 +230,11 @@ class PlayerRepositoryImpl implements PlayerRepository {
     final duration = _player.duration;
     var target = position.isNegative ? Duration.zero : position;
     if (duration != null && target > duration) target = duration;
+    // Before and after: a position report from before the seek, arriving
+    // late, must not look like listening up to the new point.
+    _listening.seeked();
     await _player.seek(target);
+    _listening.seeked();
     unawaited(_saveSession());
   }
 
@@ -255,7 +260,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
     final slot = _window.current;
     if (slot == null) return;
     // Like the player's own "next" with repeat one: restart the song.
-    if (_repeat == PlaybackRepeat.one) return _player.seek(Duration.zero);
+    if (_repeat == PlaybackRepeat.one) return _restart();
     if (!_window.hasNext(slot.position)) return;
     await _window.goTo(slot.position + 1);
   });
@@ -267,7 +272,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
     if (_repeat == PlaybackRepeat.one ||
         _player.position > _restartThreshold ||
         !_window.hasPrevious(slot.position)) {
-      return _player.seek(Duration.zero);
+      return _restart();
     }
     await _window.goTo(slot.position - 1);
   });
@@ -344,10 +349,15 @@ class PlayerRepositoryImpl implements PlayerRepository {
       if (request != _queueRequests) return;
       final queue = _newQueue(songs, index);
       _queueTitle = null;
-      _plays
+      final song = songs[index];
+      _listening
         ..newQueue()
-        // Resuming the restored song isn't a new play.
-        ..alreadyCounted(index);
+        // Resuming the restored song continues its listen (counted once).
+        ..resume(
+          songId: song.id,
+          length: song.duration,
+          position: saved.position,
+        );
       try {
         await _window.reload(queue.positionOf(index), start: saved.position);
       } finally {
@@ -382,6 +392,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
     if (_consecutiveErrors > 0 && position > const Duration(seconds: 2)) {
       _consecutiveErrors = 0;
     }
+    _trackListening();
     _publishProgress();
   }
 
@@ -390,10 +401,10 @@ class PlayerRepositoryImpl implements PlayerRepository {
         _player.playing && _player.processingState != ProcessingState.completed;
     if (playing) {
       _session.whilePlaying(_saveSession);
-      _countPlay();
     } else {
       _session.stopped();
     }
+    _trackListening();
     _publish();
   }
 
@@ -439,19 +450,35 @@ class PlayerRepositoryImpl implements PlayerRepository {
   }
 
   void _onCurrentChanged() {
-    _countPlay();
+    _trackListening();
     unawaited(_saveSession());
   }
 
-  /// Counts one play when a song starts playing (once per start).
-  void _countPlay() {
+  /// Tells [_listening] where playback is. While our own operations run
+  /// (a load, a song change), positions jump: nothing is compared then.
+  void _trackListening() {
+    final queue = _window.queue;
     final slot = _window.current;
-    if (_serial.isBusy || _pending != null || slot == null) return;
-    if (!_player.playing) return;
-    _plays.playing(
-      logical: slot.logical,
-      songId: _window.queue!.songs[slot.logical].id,
+    if (_serial.isBusy || _pending != null || queue == null || slot == null) {
+      _listening.interrupted();
+      return;
+    }
+    final song = queue.songs[slot.logical];
+    _listening.update(
+      songId: song.id,
+      length: song.duration,
+      position: _player.position,
+      // Really playing: not paused, buffering, loading or finished.
+      listening:
+          _player.playing && _player.processingState == ProcessingState.ready,
     );
+  }
+
+  /// Plays the current song again from the start: a new listen.
+  Future<void> _restart() async {
+    _listening.restarted();
+    await _player.seek(Duration.zero);
+    _listening.seeked();
   }
 
   Future<void> _saveSession() async {

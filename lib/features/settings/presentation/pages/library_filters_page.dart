@@ -6,8 +6,8 @@ import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/preferences/library_filter.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
 import 'package:melodix/features/music_library/presentation/logic/music_library_bloc.dart';
-import 'package:melodix/features/settings/presentation/widgets/settings_section.dart';
-import 'package:melodix/features/settings/presentation/widgets/settings_subpage.dart';
+import 'package:melodix/core/widgets/settings/settings_section.dart';
+import 'package:melodix/core/widgets/settings/settings_subpage.dart';
 
 /// Music filters: the shortest song the library shows, and each music
 /// folder on or off. Nothing is deleted (see [LibraryFilter]).
