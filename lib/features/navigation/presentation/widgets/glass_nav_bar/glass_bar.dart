@@ -46,8 +46,8 @@ class GlassBar extends StatelessWidget {
       right: !vertical,
       child: Padding(
         padding: vertical
-            ? EdgeInsets.fromLTRB(12.w, 12.h, 0, 12.h)
-            : EdgeInsets.fromLTRB(20.w, 0, 20.w, 8.h),
+            ? EdgeInsetsDirectional.fromSTEB(12.w, 12.h, 0, 12.h)
+            : EdgeInsetsDirectional.fromSTEB(20.w, 0, 20.w, 8.h),
         child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: radius,

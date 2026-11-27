@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/features/music_library/domain/entities/playlist.dart';
@@ -59,9 +59,9 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
             padding: EdgeInsets.only(bottom: 16.h),
             children: [
               Padding(
-                padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 8.h),
+                padding: EdgeInsetsDirectional.fromSTEB(20.w, 0, 20.w, 8.h),
                 child: Text(
-                  AppStrings.addToPlaylist,
+                  context.l10n.addToPlaylist,
                   style: TextStyle(
                     color: onSurface,
                     fontSize: AppTextSizes.lg,
@@ -72,7 +72,7 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
               ListTile(
                 leading: Icon(Icons.add_rounded, color: theme.primaryColor),
                 title: Text(
-                  AppStrings.newPlaylist,
+                  context.l10n.newPlaylist,
                   style: TextStyle(
                     color: theme.primaryColor,
                     fontWeight: FontWeightHelper.semiBold,
@@ -89,7 +89,7 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
                     vertical: 12.h,
                   ),
                   child: Text(
-                    AppStrings.noPlaylistsYet,
+                    context.l10n.noPlaylistsYet,
                     style: TextStyle(color: onSurface.withValues(alpha: 0.6)),
                   ),
                 )
@@ -105,7 +105,7 @@ class _AddToPlaylistSheetState extends State<AddToPlaylistSheet> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    subtitle: Text(AppStrings.songsCount(playlist.songCount)),
+                    subtitle: Text(context.l10n.songsCount(playlist.songCount)),
                     onTap: () => _add(playlist),
                   ),
             ],

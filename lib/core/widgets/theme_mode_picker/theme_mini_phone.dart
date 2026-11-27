@@ -26,7 +26,7 @@ class ThemeMiniPhone extends StatelessWidget {
     return Container(
       width: 82.r,
       color: background,
-      padding: EdgeInsets.fromLTRB(8.r, 12.r, 8.r, 8.r),
+      padding: EdgeInsetsDirectional.fromSTEB(8.r, 12.r, 8.r, 8.r),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

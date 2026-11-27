@@ -87,7 +87,7 @@ class CollectionHeader extends StatelessWidget {
 
     if (landscape) {
       return Padding(
-        padding: EdgeInsets.fromLTRB(24.w, 4.h, 24.w, 12.h),
+        padding: EdgeInsetsDirectional.fromSTEB(24.w, 4.h, 24.w, 12.h),
         child: Row(
           children: [
             cover,
@@ -103,7 +103,7 @@ class CollectionHeader extends StatelessWidget {
       );
     }
     return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 16.h),
+      padding: EdgeInsetsDirectional.fromSTEB(20.w, 8.h, 20.w, 16.h),
       child: Column(children: [cover, verticalSpace(20), ...words]),
     );
   }

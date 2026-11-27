@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/routing/routes.dart';
 import 'package:melodix/core/service/navigation_extension.dart';
 import 'package:melodix/features/music_library/domain/entities/playlist.dart';
@@ -52,11 +52,13 @@ class SongOptionsButton extends StatelessWidget {
     switch (option) {
       case _SongOption.playNext:
         await context.read<PlayerCubit>().playNext([song]);
-        if (context.mounted) AppSnackBar.show(context, AppStrings.playsNext(1));
+        if (context.mounted) {
+          AppSnackBar.show(context, context.l10n.playsNext(1));
+        }
       case _SongOption.addToQueue:
         await context.read<PlayerCubit>().addToQueue([song]);
         if (context.mounted) {
-          AppSnackBar.show(context, AppStrings.addedToQueue(1));
+          AppSnackBar.show(context, context.l10n.addedToQueue(1));
         }
       case _SongOption.favourite:
         await cubit.toggleFavorite(song);
@@ -90,7 +92,7 @@ class SongOptionsButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final primary = Theme.of(context).primaryColor;
     return OptionsMenuButton<_SongOption>(
-      tooltip: AppStrings.songOptions,
+      tooltip: context.l10n.songOptions,
       padding: EdgeInsets.zero,
       onSelected: (option) => _onSelected(context, option),
       itemBuilder: (context) => [
@@ -98,13 +100,13 @@ class SongOptionsButton extends StatelessWidget {
           context,
           value: _SongOption.playNext,
           icon: Icons.playlist_play_rounded,
-          label: AppStrings.playNext,
+          label: context.l10n.playNext,
         ),
         optionsMenuItem(
           context,
           value: _SongOption.addToQueue,
           icon: Icons.queue_music_rounded,
-          label: AppStrings.addToQueue,
+          label: context.l10n.addToQueue,
         ),
         const PopupMenuDivider(),
         optionsMenuItem(
@@ -114,29 +116,29 @@ class SongOptionsButton extends StatelessWidget {
               ? Icons.favorite_rounded
               : Icons.favorite_border_rounded,
           label: song.isFavorite
-              ? AppStrings.removeFromFavourites
-              : AppStrings.addToFavourites,
+              ? context.l10n.removeFromFavourites
+              : context.l10n.addToFavourites,
           color: song.isFavorite ? primary : null,
         ),
         optionsMenuItem(
           context,
           value: _SongOption.addToPlaylist,
           icon: Icons.playlist_add_rounded,
-          label: AppStrings.addToPlaylist,
+          label: context.l10n.addToPlaylist,
         ),
         if (showGoToAlbum)
           optionsMenuItem(
             context,
             value: _SongOption.goToAlbum,
             icon: Icons.album_rounded,
-            label: AppStrings.goToAlbum,
+            label: context.l10n.goToAlbum,
           ),
         if (showGoToArtist)
           optionsMenuItem(
             context,
             value: _SongOption.goToArtist,
             icon: Icons.person_rounded,
-            label: AppStrings.goToArtist,
+            label: context.l10n.goToArtist,
           ),
         const PopupMenuDivider(),
         if (playlist != null)
@@ -144,14 +146,14 @@ class SongOptionsButton extends StatelessWidget {
             context,
             value: _SongOption.removeFromPlaylist,
             icon: Icons.playlist_remove_rounded,
-            label: AppStrings.removeFromPlaylist,
+            label: context.l10n.removeFromPlaylist,
           ),
         if (context.read<SongActionsCubit>().canDeleteSongs)
           optionsMenuItem(
             context,
             value: _SongOption.delete,
             icon: Icons.delete_outline_rounded,
-            label: AppStrings.deleteFromPhone,
+            label: context.l10n.deleteFromPhone,
             color: Theme.of(context).colorScheme.error,
           ),
       ],

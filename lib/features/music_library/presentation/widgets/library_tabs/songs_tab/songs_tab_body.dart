@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/widgets/whole_pixel_height.dart';
 import 'package:melodix/core/utils/debug_counters.dart';
 import 'package:melodix/features/music_library/domain/entities/library_changes.dart';
@@ -156,7 +156,7 @@ class _SongsTabBodyState extends State<SongsTabBody> {
       child: selection.active
           ? Padding(
               key: const ValueKey('selection-header'),
-              padding: EdgeInsets.fromLTRB(8.w, 0, 12.w, 0),
+              padding: EdgeInsetsDirectional.fromSTEB(8.w, 0, 12.w, 0),
               child: SelectionHeader(
                 count: selectedSongs.length,
                 allSelected:
@@ -169,7 +169,7 @@ class _SongsTabBodyState extends State<SongsTabBody> {
             )
           : Padding(
               key: const ValueKey('sort-row'),
-              padding: EdgeInsets.fromLTRB(20.w, 0, 8.w, 0),
+              padding: EdgeInsetsDirectional.fromSTEB(20.w, 0, 8.w, 0),
               child: Row(
                 children: [
                   // The chip takes the left side; the select icon stays pinned
@@ -185,7 +185,7 @@ class _SongsTabBodyState extends State<SongsTabBody> {
                   ),
                   // Tells users songs can be multi-selected.
                   IconButton(
-                    tooltip: AppStrings.selectSongs,
+                    tooltip: context.l10n.selectSongs,
                     onPressed: sorted.isEmpty ? null : selectionCubit.start,
                     icon: Icon(
                       Icons.checklist_rounded,
@@ -213,7 +213,7 @@ class _SongsTabBodyState extends State<SongsTabBody> {
       song: song,
       // With "Most played", show how often each song was played.
       subtitle: order == SongSortOrder.mostPlayed
-          ? '${song.artist} · ${AppStrings.playsCount(song.playCount)}'
+          ? '${song.artist} · ${context.l10n.playsCount(song.playCount)}'
           : null,
       leading: selection.active ? SelectionCheck(selected: selected) : null,
       trailing: selection.active ? null : SongOptionsButton(song: song),
@@ -223,7 +223,7 @@ class _SongsTabBodyState extends State<SongsTabBody> {
           : () => context.read<PlayerCubit>().playSongs(
               sorted,
               index,
-              title: AppStrings.songs,
+              title: context.l10n.songs,
             ),
       onLongPress: () {
         HapticFeedback.selectionClick();
@@ -256,17 +256,18 @@ class _SongsTabBodyState extends State<SongsTabBody> {
     return [
       BulkAction(
         icon: Icons.queue_music_rounded,
-        label: AppStrings.queueShort,
+        label: context.l10n.queueShort,
         onTap: () async {
           final messages = AppSnackBarTarget.of(context);
+          final l10n = context.l10n;
           await context.read<PlayerCubit>().addToQueue(selected);
           selection.exit();
-          messages.show(AppStrings.addedToQueue(selected.length));
+          messages.show(l10n.addedToQueue(selected.length));
         },
       ),
       BulkAction(
         icon: Icons.playlist_add_rounded,
-        label: AppStrings.playlistShort,
+        label: context.l10n.playlistShort,
         onTap: () => run(
           () =>
               showAddToPlaylistSheet(context, songs: selected, cubit: actions),
@@ -276,13 +277,13 @@ class _SongsTabBodyState extends State<SongsTabBody> {
         icon: allFavourite
             ? Icons.heart_broken_rounded
             : Icons.favorite_border_rounded,
-        label: allFavourite ? AppStrings.unfavourite : AppStrings.favourite,
+        label: allFavourite ? context.l10n.unfavourite : context.l10n.favourite,
         onTap: () => run(() => actions.favoriteMany(selected)),
       ),
       if (actions.canDeleteSongs)
         BulkAction(
           icon: Icons.delete_outline_rounded,
-          label: AppStrings.delete,
+          label: context.l10n.delete,
           destructive: true,
           onTap: () => run(() async {
             if (!await confirmDeleteSongs(context, selected.length)) {

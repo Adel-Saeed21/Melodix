@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/features/video/presentation/logic/video_player_cubit.dart';
 import 'package:melodix/features/video/presentation/widgets/player/engine_selector.dart';
 import 'package:melodix/features/video/presentation/widgets/video_thumbnail.dart';
@@ -65,7 +65,7 @@ class MiniVideoCard extends StatelessWidget {
             right: 0,
             child: MiniVideoButton(
               icon: Icons.close_rounded,
-              label: AppStrings.closeVideo,
+              label: context.l10n.closeVideo,
               onPressed: onClose,
             ),
           ),
@@ -80,7 +80,7 @@ class MiniVideoCard extends StatelessWidget {
                   icon: playing
                       ? Icons.pause_rounded
                       : Icons.play_arrow_rounded,
-                  label: playing ? AppStrings.pause : AppStrings.play,
+                  label: playing ? context.l10n.pause : context.l10n.play,
                   onPressed: context.read<VideoPlayerCubit>().togglePlayPause,
                 ),
               ),

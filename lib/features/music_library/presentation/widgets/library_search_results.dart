@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/routing/routes.dart';
 import 'package:melodix/core/search/search_history.dart';
 import 'package:melodix/core/search/search_sources.dart';
@@ -85,7 +85,7 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
           );
         }
         final extra = [
-          for (final source in sources) ?source.search(state.query),
+          for (final source in sources) ?source.search(context, state.query),
         ];
         if (state.results.isEmpty && extra.isEmpty) {
           if (state.isLoading) {
@@ -93,8 +93,8 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
           }
           return LibraryStatusView(
             icon: Icons.search_off_rounded,
-            title: AppStrings.noResultsFor(state.query),
-            message: AppStrings.noResultsSubtitle,
+            title: context.l10n.noResultsFor(state.query),
+            message: context.l10n.noResultsSubtitle,
           );
         }
 
@@ -113,10 +113,10 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
             ),
             // Thin bar while newer results load over the current ones.
             if (state.isLoading)
-              const Positioned(
+              const PositionedDirectional(
                 top: 0,
-                left: 0,
-                right: 0,
+                start: 0,
+                end: 0,
                 child: LinearProgressIndicator(minHeight: 2),
               ),
           ],
@@ -164,7 +164,7 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
 
     addSection(
       _Section.songs,
-      AppStrings.songs,
+      context.l10n.songs,
       results.songs,
       (song, index) => SongTile(
         song: song,
@@ -175,14 +175,14 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
           context.read<PlayerCubit>().playSongs(
             results.songs,
             index,
-            title: AppStrings.searchResults,
+            title: context.l10n.searchResults,
           );
         },
       ),
     );
     addSection(
       _Section.artists,
-      AppStrings.artists,
+      context.l10n.artists,
       results.artists,
       (artist, _) => ArtistTile(
         artist: artist,
@@ -194,7 +194,7 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
     );
     addSection(
       _Section.albums,
-      AppStrings.albums,
+      context.l10n.albums,
       results.albums,
       (album, _) => SearchAlbumRow(
         album: album,
@@ -206,7 +206,7 @@ class _LibrarySearchResultsViewState extends State<LibrarySearchResultsView> {
     );
     addSection(
       _Section.playlists,
-      AppStrings.playlists,
+      context.l10n.playlists,
       results.playlists,
       (playlist, _) => PlaylistTile(
         playlist: playlist,

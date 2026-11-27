@@ -3,7 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/service/spacing.dart';
 import 'package:melodix/features/subtitles/domain/entities/subtitle_failure.dart';
 import 'package:melodix/features/subtitles/domain/usecases/subtitle_usecases.dart';
@@ -41,7 +41,7 @@ class _SearchViewState extends State<SubtitleSearchView> {
   /// Made by the subtitles cubit (only shown when search is available).
   late final SubtitleSearchCubit _cubit;
 
-  static const List<(String?, String)> languages = subtitleSearchLanguages;
+  static const List<(String?, String?)> languages = subtitleSearchLanguages;
 
   static String? _deviceLanguage() {
     final code = ui.PlatformDispatcher.instance.locale.languageCode;
@@ -83,9 +83,9 @@ class _SearchViewState extends State<SubtitleSearchView> {
                   onPressed: widget.onBack,
                   icon: const Icon(Icons.arrow_back_rounded),
                 ),
-                const Expanded(
+                Expanded(
                   child: SubtitleSheetTitle(
-                    AppStrings.subtitlesSearchOnline,
+                    context.l10n.subtitlesSearchOnline,
                     padded: false,
                   ),
                 ),
@@ -98,10 +98,10 @@ class _SearchViewState extends State<SubtitleSearchView> {
                 textInputAction: TextInputAction.search,
                 onSubmitted: (_) => _search(),
                 decoration: InputDecoration(
-                  hintText: AppStrings.subtitlesSearchHint,
+                  hintText: context.l10n.subtitlesSearchHint,
                   prefixIcon: const Icon(Icons.search_rounded),
                   suffixIcon: IconButton(
-                    tooltip: AppStrings.subtitlesSearch,
+                    tooltip: context.l10n.subtitlesSearch,
                     onPressed: state.status == SubtitleSearchStatus.loading
                         ? null
                         : _search,
@@ -119,9 +119,9 @@ class _SearchViewState extends State<SubtitleSearchView> {
                 children: [
                   for (final (code, name) in languages)
                     Padding(
-                      padding: EdgeInsets.only(right: 8.w),
+                      padding: EdgeInsetsDirectional.only(end: 8.w),
                       child: ChoiceChip(
-                        label: Text(name),
+                        label: Text(name ?? context.l10n.subtitlesAnyLanguage),
                         selected: code == _language,
                         onSelected: (_) {
                           setState(() => _language = code);
@@ -134,13 +134,13 @@ class _SearchViewState extends State<SubtitleSearchView> {
             ),
             verticalSpace(8),
             if (state.downloadFailure case final failure?)
-              SubtitleNote(_failureText(failure), error: true)
+              SubtitleNote(_failureText(failure, context.l10n), error: true)
             else if (state.remainingDownloads case final left?)
               SubtitleNote(
                 [
-                  AppStrings.subtitlesDownloadsLeft(left),
+                  context.l10n.subtitlesDownloadsLeft(left),
                   if (state.resetsIn case final resets?)
-                    AppStrings.subtitlesQuotaResets(resets),
+                    context.l10n.subtitlesQuotaResets(resets),
                 ].join(' '),
               ),
             Flexible(child: _results(state)),
@@ -159,17 +159,20 @@ class _SearchViewState extends State<SubtitleSearchView> {
           child: const Center(child: CircularProgressIndicator()),
         );
       case SubtitleSearchStatus.empty:
-        return SubtitleNote(AppStrings.subtitlesNoResults);
+        return SubtitleNote(context.l10n.subtitlesNoResults);
       case SubtitleSearchStatus.failure:
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SubtitleNote(_failureText(state.failure!), error: true),
+            SubtitleNote(
+              _failureText(state.failure!, context.l10n),
+              error: true,
+            ),
             if (state.failure is! SubtitleNotConfiguredFailure &&
                 state.failure is! SubtitleAuthFailure)
               TextButton(
                 onPressed: _search,
-                child: const Text(AppStrings.subtitlesTryAgain),
+                child: Text(context.l10n.subtitlesTryAgain),
               ),
           ],
         );
@@ -189,11 +192,12 @@ class _SearchViewState extends State<SubtitleSearchView> {
     }
   }
 
-  static String _failureText(SubtitleFailure failure) => switch (failure) {
-    SubtitleRateLimitFailure(:final retryAfter?) =>
-      '${failure.message} ${AppStrings.subtitlesRetryIn(retryAfter.inSeconds)}',
-    SubtitleQuotaFailure(:final resetsIn?) =>
-      '${failure.message} ${AppStrings.subtitlesQuotaResets(resetsIn)}',
-    _ => failure.message,
-  };
+  static String _failureText(SubtitleFailure failure, AppLocalizations l10n) =>
+      switch (failure) {
+        SubtitleRateLimitFailure(:final retryAfter?) =>
+          '${failure.message} ${l10n.subtitlesRetryIn(retryAfter.inSeconds)}',
+        SubtitleQuotaFailure(:final resetsIn?) =>
+          '${failure.message} ${l10n.subtitlesQuotaResets(resetsIn)}',
+        _ => failure.message,
+      };
 }

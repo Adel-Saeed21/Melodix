@@ -1,6 +1,6 @@
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_colors.dart';
 import 'package:melodix/core/service/app_icon_service.dart';
 import 'package:melodix/core/widgets/melodix_mark.dart';
@@ -21,8 +21,8 @@ class AppIconTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final accent = Theme.of(context).primaryColor;
     final classic = icon == LauncherIcon.classic;
-    final label = AppStrings.appIconNamed(
-      icon.accent?.label ?? AppStrings.appIconClassic,
+    final label = context.l10n.appIconNamed(
+      icon.accent?.label ?? context.l10n.appIconClassic,
     );
     final size = 56.r;
     return Semantics(

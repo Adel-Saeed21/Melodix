@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:melodix/features/video/domain/entities/video.dart';
 import 'package:melodix/features/video/domain/usecases/watch_videos_usecase.dart';
 import 'package:melodix/features/video/presentation/search/video_search_source.dart';
@@ -40,30 +41,49 @@ void main() {
     await library.close();
   });
 
-  test("doesn't load the library until a search runs", () {
+  /// A screen's context (search titles its section in the app's language;
+  /// English here).
+  Future<BuildContext> screen(WidgetTester tester) async {
+    late BuildContext context;
+    await tester.pumpWidget(
+      Builder(
+        builder: (c) {
+          context = c;
+          return const SizedBox();
+        },
+      ),
+    );
+    return context;
+  }
+
+  testWidgets("doesn't load the library until a search runs", (tester) async {
+    final context = await screen(tester);
     verifyNever(() => watch());
-    source.search('a');
+    source.search(context, 'a');
     verify(() => watch()).called(1);
-    source.search('b');
+    source.search(context, 'b');
     verifyNever(() => watch()); // once
   });
 
-  test('finds videos by title, any case; tells open results', () async {
+  testWidgets('finds videos by title, any case; tells open results', (
+    tester,
+  ) async {
+    final context = await screen(tester);
     var notified = 0;
     source
       ..addListener(() => notified++)
-      ..search('x'); // starts loading
+      ..search(context, 'x'); // starts loading
     library.add([
       titled('1', 'Holiday in Rome'),
       titled('2', 'Birthday'),
       titled('3', 'ROME by night'),
     ]);
-    await pumpEventQueue();
+    await tester.pump();
     expect(notified, 1);
 
-    final rome = source.search('rome')!;
+    final rome = source.search(context, 'rome')!;
     expect(rome.title, 'Videos');
     expect(rome.count, 2);
-    expect(source.search('paris'), isNull);
+    expect(source.search(context, 'paris'), isNull);
   });
 }

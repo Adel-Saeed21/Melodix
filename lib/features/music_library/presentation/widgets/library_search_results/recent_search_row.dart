@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 
 /// A recent search: tap to search it again, ✕ to forget it.
@@ -20,7 +20,7 @@ class RecentSearchRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final onSurface = Theme.of(context).colorScheme.onSurface;
     return ListTile(
-      contentPadding: EdgeInsets.only(left: 20.w, right: 8.w),
+      contentPadding: EdgeInsetsDirectional.only(start: 20.w, end: 8.w),
       leading: Icon(
         Icons.history_rounded,
         color: onSurface.withValues(alpha: 0.55),
@@ -32,7 +32,7 @@ class RecentSearchRow extends StatelessWidget {
         style: TextStyle(color: onSurface, fontSize: AppTextSizes.base),
       ),
       trailing: IconButton(
-        tooltip: AppStrings.removeRecentSearch,
+        tooltip: context.l10n.removeRecentSearch,
         icon: Icon(
           Icons.close_rounded,
           size: 20.r,

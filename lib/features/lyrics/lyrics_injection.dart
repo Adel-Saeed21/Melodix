@@ -1,3 +1,4 @@
+import 'package:melodix/features/lyrics/presentation/logic/lyrics_cubit.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'package:get_it/get_it.dart';
@@ -13,4 +14,6 @@ void registerLyrics(GetIt getIt) {
       online: LrclibClient(),
     ),
   );
+  // Per Now Playing visit: the lyrics shown follow the song playing.
+  getIt.registerFactory(() => LyricsCubit(getIt<LyricsRepository>()));
 }

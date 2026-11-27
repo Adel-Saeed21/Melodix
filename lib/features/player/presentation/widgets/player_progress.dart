@@ -1,7 +1,7 @@
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/features/player/domain/entities/now_playing.dart';
 import 'package:melodix/features/player/presentation/logic/player_cubit.dart';
 import 'package:melodix/features/player/presentation/utils/playback_time_format.dart';
@@ -149,7 +149,7 @@ class PreviousButton extends StatelessWidget {
 
   Widget _button(BuildContext context, {required bool enabled}) {
     return IconButton(
-      tooltip: AppStrings.previous,
+      tooltip: context.l10n.previous,
       iconSize: iconSize,
       onPressed: enabled ? context.read<PlayerCubit>().previous : null,
       icon: const Icon(Icons.skip_previous_rounded),

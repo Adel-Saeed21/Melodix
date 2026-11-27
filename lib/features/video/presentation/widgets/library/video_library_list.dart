@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/widgets/selection/selection_cubit.dart';
@@ -126,7 +126,7 @@ class VideoLibraryList extends StatelessWidget {
       child: selection.active
           ? Padding(
               key: const ValueKey('selection-header'),
-              padding: EdgeInsets.fromLTRB(8.w, 8.h, 12.w, 0),
+              padding: EdgeInsetsDirectional.fromSTEB(8.w, 8.h, 12.w, 0),
               child: SelectionHeader(
                 count: selected.length,
                 allSelected:
@@ -138,12 +138,12 @@ class VideoLibraryList extends StatelessWidget {
             )
           : Padding(
               key: const ValueKey('videos-title'),
-              padding: EdgeInsets.fromLTRB(20.w, 12.h, 8.w, 0),
+              padding: EdgeInsetsDirectional.fromSTEB(20.w, 12.h, 8.w, 0),
               child: Row(
                 children: [
                   Expanded(
                     child: Text(
-                      AppStrings.allVideos,
+                      context.l10n.allVideos,
                       style: TextStyle(
                         color: onSurface,
                         fontSize: AppTextSizes.lg,
@@ -153,7 +153,7 @@ class VideoLibraryList extends StatelessWidget {
                   ),
                   // Tells users videos can be multi-selected.
                   IconButton(
-                    tooltip: AppStrings.selectVideos,
+                    tooltip: context.l10n.selectVideos,
                     onPressed: videos.isEmpty ? null : cubit.start,
                     icon: Icon(
                       Icons.checklist_rounded,

@@ -1,6 +1,6 @@
 import 'package:melodix/core/config/theme/app_accent.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 
@@ -23,7 +23,7 @@ class FavouritesCollapsedBar extends StatelessWidget {
           height: kToolbarHeight,
           child: Center(
             child: Text(
-              AppStrings.favourites,
+              context.l10n.favourites,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: AppTextSizes.lg,

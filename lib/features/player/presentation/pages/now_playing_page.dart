@@ -8,7 +8,6 @@ import 'package:melodix/features/player/presentation/logic/playback_progress_cub
 import 'package:melodix/features/player/presentation/logic/player_lyrics_clock.dart';
 import 'package:melodix/features/player/presentation/widgets/drag_to_dismiss.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
-import 'package:melodix/features/lyrics/domain/repositories/lyrics_repository.dart';
 import 'package:melodix/features/lyrics/presentation/logic/lyrics_clock.dart';
 import 'package:melodix/features/lyrics/presentation/logic/lyrics_cubit.dart';
 import 'package:melodix/features/player/presentation/widgets/now_playing_backdrop.dart';
@@ -52,7 +51,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
           ),
           child: BlocProvider(
             // Made the first time lyrics are shown.
-            create: (_) => LyricsCubit(getIt<LyricsRepository>()),
+            create: (_) => getIt<LyricsCubit>(),
             child: Scaffold(
               body: BlocBuilder<PlayerCubit, NowPlaying>(
                 builder: (context, state) {

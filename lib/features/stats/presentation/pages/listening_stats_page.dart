@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_artwork.dart';
 import 'package:melodix/core/widgets/settings/settings_section.dart';
@@ -27,26 +27,26 @@ class ListeningStatsPage extends StatelessWidget {
       child: BlocBuilder<ListeningStatsCubit, ListeningStats?>(
         builder: (context, loaded) {
           if (loaded == null) {
-            return const SettingsSubpage(
-              title: AppStrings.yourMelodix,
+            return SettingsSubpage(
+              title: context.l10n.yourMelodix,
               children: [Center(child: CircularProgressIndicator())],
             );
           }
           final stats = loaded;
           return SettingsSubpage(
-            title: AppStrings.yourMelodix,
+            title: context.l10n.yourMelodix,
             children: [
               StatsHeroCard(stats: stats),
               if (stats.isEmpty)
-                const SettingsSection(
+                SettingsSection(
                   icon: Icons.music_note_rounded,
-                  title: AppStrings.yourMelodix,
-                  children: [SettingRow(title: AppStrings.statsEmpty)],
+                  title: context.l10n.yourMelodix,
+                  children: [SettingRow(title: context.l10n.statsEmpty)],
                 )
               else ...[
                 SettingsSection(
                   icon: Icons.emoji_events_rounded,
-                  title: AppStrings.statsTopSongs,
+                  title: context.l10n.statsTopSongs,
                   children: [
                     for (var i = 0; i < stats.topSongs.length; i++)
                       StatsRankRow(
@@ -65,7 +65,7 @@ class ListeningStatsPage extends StatelessWidget {
                 if (stats.topArtists.isNotEmpty)
                   SettingsSection(
                     icon: Icons.mic_external_on_rounded,
-                    title: AppStrings.statsTopArtists,
+                    title: context.l10n.statsTopArtists,
                     children: [
                       for (var i = 0; i < stats.topArtists.length; i++)
                         StatsRankRow(

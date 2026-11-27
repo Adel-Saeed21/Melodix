@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:go_router/go_router.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/routing/routes.dart';
 import 'package:melodix/core/service/onboarding_service.dart';
 import 'package:melodix/core/widgets/glow_background.dart';
@@ -41,30 +41,33 @@ class _OnboardingPageState extends State<OnboardingPage>
   int _index = 0;
   bool _finishing = false;
 
-  static final List<OnboardingSlide> _slides = [
+  static List<OnboardingSlide> _slidesFor(AppLocalizations l10n) => [
     OnboardingSlide(
-      AppStrings.onboardingMusicTitle,
-      AppStrings.onboardingMusicBody,
+      l10n.onboardingMusicTitle,
+      l10n.onboardingMusicBody,
       (t) => MusicIllustration(time: t),
     ),
     OnboardingSlide(
-      AppStrings.onboardingVideoTitle,
-      AppStrings.onboardingVideoBody,
+      l10n.onboardingVideoTitle,
+      l10n.onboardingVideoBody,
       (t) => VideoIllustration(time: t),
     ),
     OnboardingSlide(
-      AppStrings.onboardingSubtitlesTitle,
-      AppStrings.onboardingSubtitlesBody,
+      l10n.onboardingSubtitlesTitle,
+      l10n.onboardingSubtitlesBody,
       (t) => SubtitlesIllustration(time: t),
     ),
     OnboardingSlide(
-      AppStrings.onboardingThemeTitle,
-      AppStrings.onboardingThemeBody,
+      l10n.onboardingThemeTitle,
+      l10n.onboardingThemeBody,
       (_) => const ThemeModePicker(),
     ),
   ];
 
-  int get _last => _slides.length - 1;
+  /// The slides' count (the same in every language).
+  static final int _count = _slidesFor(const AppLocalizations()).length;
+
+  int get _last => _count - 1;
 
   @override
   void initState() {
@@ -146,10 +149,10 @@ class _OnboardingPageState extends State<OnboardingPage>
                   Expanded(
                     child: PageView.builder(
                       controller: _pages,
-                      itemCount: _slides.length,
+                      itemCount: _count,
                       onPageChanged: (i) => setState(() => _index = i),
                       itemBuilder: (context, i) => OnboardingSlideView(
-                        slide: _slides[i],
+                        slide: _slidesFor(context.l10n)[i],
                         index: i,
                         position: _position,
                         time: _time,
@@ -157,7 +160,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                     ),
                   ),
                   OnboardingBottomBar(
-                    count: _slides.length,
+                    count: _count,
                     position: _position,
                     isLast: _index == _last,
                     onNext: _index == _last ? _finish : () => _goTo(_index + 1),

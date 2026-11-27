@@ -4,7 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/widgets/whole_pixel_height.dart';
 import 'package:melodix/core/widgets/app_snack_bar.dart';
 import 'package:melodix/features/music_library/domain/entities/playlist.dart';
@@ -69,7 +69,7 @@ class SongListBody extends StatelessWidget {
         listenWhen: (p, c) => c.reorderFailures > p.reorderFailures,
         listener: (context, _) => AppSnackBar.show(
           context,
-          AppStrings.reorderFailed,
+          context.l10n.reorderFailed,
           kind: AppSnackBarKind.error,
         ),
         builder: (context, state) {
@@ -79,9 +79,9 @@ class SongListBody extends StatelessWidget {
           if (state.status == LoadStatus.failure && state.songs.isEmpty) {
             return LibraryStatusView(
               icon: Icons.error_outline_rounded,
-              title: AppStrings.libraryErrorTitle,
-              message: state.errorMessage ?? '',
-              actionLabel: AppStrings.tryAgain,
+              title: context.l10n.libraryErrorTitle,
+              message: context.l10n.failure(state.errorMessage ?? ''),
+              actionLabel: context.l10n.tryAgain,
               onAction: cubit.load,
             );
           }

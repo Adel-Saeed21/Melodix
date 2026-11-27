@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
@@ -50,12 +50,12 @@ class NowPlayingBody extends StatelessWidget {
       children: [
         NowPlayingCircleButton(
           icon: Icons.keyboard_arrow_down_rounded,
-          tooltip: AppStrings.closePlayer,
+          tooltip: context.l10n.closePlayer,
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         Expanded(
           child: Text(
-            AppStrings.nowPlaying,
+            context.l10n.nowPlaying,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: onSurface,
@@ -115,13 +115,13 @@ class NowPlayingBody extends StatelessWidget {
           onPressed: cubit.togglePlayPause,
         ),
         IconButton(
-          tooltip: AppStrings.next,
+          tooltip: context.l10n.next,
           iconSize: 36.r,
           onPressed: state.hasNext ? cubit.next : null,
           icon: const Icon(Icons.skip_next_rounded),
         ),
         IconButton(
-          tooltip: AppStrings.shuffle,
+          tooltip: context.l10n.shuffle,
           onPressed: cubit.toggleShuffle,
           icon: Icon(
             Icons.shuffle_rounded,
@@ -162,7 +162,7 @@ class NowPlayingBody extends StatelessWidget {
       // Phone on its side: the cover on the left, as tall as the screen;
       // everything else beside it.
       return Padding(
-        padding: EdgeInsets.fromLTRB(24.w, 12.h, 24.w, 8.h),
+        padding: EdgeInsetsDirectional.fromSTEB(24.w, 12.h, 24.w, 8.h),
         child: Row(
           children: [
             AspectRatio(

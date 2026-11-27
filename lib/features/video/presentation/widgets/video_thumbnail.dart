@@ -49,8 +49,8 @@ class VideoThumbnail extends StatelessWidget {
             placeholderIcon: Icons.movie_rounded,
           ),
           if (showDuration && video.duration > Duration.zero)
-            Positioned(
-              right: 4.r,
+            PositionedDirectional(
+              end: 4.r,
               bottom: 4.r,
               child: DecoratedBox(
                 decoration: BoxDecoration(
@@ -72,9 +72,9 @@ class VideoThumbnail extends StatelessWidget {
               ),
             ),
           if (progress != null && progress!.canResume(video.duration))
-            Positioned(
-              left: 0,
-              right: 0,
+            PositionedDirectional(
+              start: 0,
+              end: 0,
               bottom: 0,
               child: ClipRRect(
                 borderRadius: BorderRadius.vertical(

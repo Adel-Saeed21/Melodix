@@ -1,6 +1,6 @@
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
@@ -43,7 +43,7 @@ class VideoTile extends StatelessWidget {
       onTap: onTap,
       onLongPress: onLongPress,
       child: Padding(
-        padding: EdgeInsets.fromLTRB(
+        padding: EdgeInsetsDirectional.fromSTEB(
           20.w,
           8.h,
           trailing == null ? 20.w : 4.w,
@@ -70,7 +70,7 @@ class VideoTile extends StatelessWidget {
                   ),
                   verticalSpace(3),
                   Text(
-                    _details(video, progress),
+                    _details(video, progress, context.l10n),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
@@ -90,18 +90,22 @@ class VideoTile extends StatelessWidget {
 
   /// "Resume at 3:12" for a video started but not finished, else its
   /// quality ("1080p", "4K").
-  static String _details(Video video, VideoProgress? progress) {
+  static String _details(
+    Video video,
+    VideoProgress? progress,
+    AppLocalizations l10n,
+  ) {
     if (progress != null && progress.canResume(video.duration)) {
-      return AppStrings.resumeAt(formatDuration(progress.position));
+      return l10n.resumeAt(formatDuration(progress.position));
     }
-    return qualityLabel(video.width, video.height);
+    return qualityLabel(video.width, video.height, l10n);
   }
 
   /// "4K", "1080p", "720p"… from the shorter side (so portrait videos read
   /// the same as landscape ones).
-  static String qualityLabel(int width, int height) {
+  static String qualityLabel(int width, int height, AppLocalizations l10n) {
     final short = width < height ? width : height;
-    if (short <= 0) return AppStrings.video;
+    if (short <= 0) return l10n.video;
     if (short >= 2160) return '4K';
     return '${short}p';
   }

@@ -3,7 +3,7 @@ import 'package:melodix/features/player/domain/entities/playback_progress.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
@@ -36,7 +36,7 @@ class CapsuleMiniPlayer extends StatelessWidget {
     final ring = 50.r;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 0, 20.w, 8.h),
+      padding: EdgeInsetsDirectional.fromSTEB(20.w, 0, 20.w, 8.h),
       child: Material(
         color: isDark
             ? theme.colorScheme.surfaceContainerHigh
@@ -51,11 +51,11 @@ class CapsuleMiniPlayer extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: Semantics(
           button: true,
-          label: AppStrings.openPlayer,
+          label: context.l10n.openPlayer,
           child: InkWell(
             onTap: onExpand,
             child: Padding(
-              padding: EdgeInsets.fromLTRB(6.r, 6.r, 8.r, 6.r),
+              padding: EdgeInsetsDirectional.fromSTEB(6.r, 6.r, 8.r, 6.r),
               child: Row(
                 children: [
                   SizedBox.square(
@@ -130,7 +130,7 @@ class CapsuleMiniPlayer extends StatelessWidget {
                     onPressed: cubit.togglePlayPause,
                   ),
                   IconButton(
-                    tooltip: AppStrings.next,
+                    tooltip: context.l10n.next,
                     onPressed: state.hasNext ? cubit.next : null,
                     icon: Icon(Icons.skip_next_rounded, size: 28.r),
                   ),

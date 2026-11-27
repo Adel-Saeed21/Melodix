@@ -2,7 +2,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
 import 'package:melodix/core/config/theme/app_theme.dart';
 import 'package:melodix/core/search/search_history.dart';
@@ -15,6 +14,7 @@ import 'package:melodix/features/player/domain/usecases/play_queue_usecase.dart'
 import 'package:mocktail/mocktail.dart';
 
 import '../../player/player_fixtures.dart';
+import '../../../support/l10n_support.dart';
 
 class _Artwork extends Mock implements GetSongArtworkUseCase {}
 
@@ -23,7 +23,7 @@ class _Clips extends ChangeNotifier implements SearchSource {
   List<String> items = const [];
 
   @override
-  SearchSection? search(String query) {
+  SearchSection? search(BuildContext context, String query) {
     final hits = [
       for (final i in items)
         if (i.toLowerCase().contains(query.toLowerCase())) i,
@@ -128,8 +128,8 @@ void main() {
   group('the empty search', () {
     testWidgets('the first time: the usual prompt', (tester) async {
       await pump(tester);
-      expect(find.text(AppStrings.searchPromptTitle), findsOneWidget);
-      expect(find.text(AppStrings.recentSearches), findsNothing);
+      expect(find.text(english.searchPromptTitle), findsOneWidget);
+      expect(find.text(english.recentSearches), findsNothing);
     });
 
     testWidgets('a song opened from search: it and the search show', (
@@ -142,10 +142,10 @@ void main() {
       verify(() => player.playQueue(any())).called(1);
 
       await type(tester, ''); // back to the empty search
-      expect(find.text(AppStrings.searchPromptTitle), findsNothing);
-      expect(find.text(AppStrings.recentSearches), findsOneWidget);
+      expect(find.text(english.searchPromptTitle), findsNothing);
+      expect(find.text(english.recentSearches), findsOneWidget);
       expect(find.text('sun'), findsOneWidget);
-      expect(find.text(AppStrings.openedFromSearch), findsOneWidget);
+      expect(find.text(english.openedFromSearch), findsOneWidget);
       expect(find.text('Sunset'), findsOneWidget);
       expect(find.text('Sunrise'), findsNothing, reason: 'not opened');
     });
@@ -156,7 +156,7 @@ void main() {
       await type(tester, 'su');
       await type(tester, 'sun');
       await type(tester, '');
-      expect(find.text(AppStrings.searchPromptTitle), findsOneWidget);
+      expect(find.text(english.searchPromptTitle), findsOneWidget);
     });
 
     testWidgets('an album, artist or playlist opened: only the search', (
@@ -165,7 +165,7 @@ void main() {
       history.searched('moon');
       await pump(tester);
       expect(find.text('moon'), findsOneWidget);
-      expect(find.text(AppStrings.openedFromSearch), findsNothing);
+      expect(find.text(english.openedFromSearch), findsNothing);
     });
 
     testWidgets('a recent search tapped is searched again', (tester) async {
@@ -188,14 +188,14 @@ void main() {
         ..opened(const OpenedFromSearch.song(1));
       await pump(tester);
 
-      await tester.tap(find.byTooltip(AppStrings.removeRecentSearch).first);
+      await tester.tap(find.byTooltip(english.removeRecentSearch).first);
       await tester.pump();
       expect(find.text('sun'), findsNothing);
       expect(find.text('moon'), findsOneWidget);
 
-      await tester.tap(find.text(AppStrings.clearSearchHistory));
+      await tester.tap(find.text(english.clearSearchHistory));
       await tester.pump();
-      expect(find.text(AppStrings.searchPromptTitle), findsOneWidget);
+      expect(find.text(english.searchPromptTitle), findsOneWidget);
     });
 
     testWidgets("another feature's item (a video) shows with its own row", (
@@ -218,7 +218,7 @@ void main() {
         ..opened(const OpenedFromSearch(kind: 'unknown', id: '1'));
       await pump(tester);
       // Nothing left to show, and no searches: the usual prompt.
-      expect(find.text(AppStrings.searchPromptTitle), findsOneWidget);
+      expect(find.text(english.searchPromptTitle), findsOneWidget);
     });
 
     testWidgets('an opened song plays the opened songs, from it', (

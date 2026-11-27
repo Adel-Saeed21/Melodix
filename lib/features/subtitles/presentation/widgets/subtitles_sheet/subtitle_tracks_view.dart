@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/features/subtitles/domain/entities/subtitle_track.dart';
 import 'package:melodix/features/subtitles/presentation/logic/subtitles_cubit.dart';
 import 'package:melodix/features/subtitles/presentation/widgets/subtitles_sheet/subtitle_sheet_title.dart';
@@ -23,7 +23,7 @@ class SubtitleTracksView extends StatelessWidget {
           shrinkWrap: true,
           padding: EdgeInsets.only(bottom: 16.h),
           children: [
-            SubtitleSheetTitle(AppStrings.subtitles),
+            SubtitleSheetTitle(context.l10n.subtitles),
             RadioGroup<String?>(
               groupValue: selected,
               onChanged: (id) => cubit.select(
@@ -31,9 +31,9 @@ class SubtitleTracksView extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  const RadioListTile<String?>(
+                  RadioListTile<String?>(
                     value: null,
-                    title: Text(AppStrings.subtitlesOff),
+                    title: Text(context.l10n.subtitlesOff),
                   ),
                   for (final track in state.tracks)
                     RadioListTile<String?>(
@@ -43,7 +43,7 @@ class SubtitleTracksView extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      subtitle: Text(_trackDetails(track)),
+                      subtitle: Text(_trackDetails(track, context.l10n)),
                       secondary:
                           state.status == SubtitlesStatus.loading &&
                               track.id == selected
@@ -59,7 +59,7 @@ class SubtitleTracksView extends StatelessWidget {
               ),
             ),
             if (state.tracks.isEmpty && state.status != SubtitlesStatus.loading)
-              SubtitleNote(AppStrings.subtitlesNone),
+              SubtitleNote(context.l10n.subtitlesNone),
             if (state.failure case final failure?)
               SubtitleNote(failure.message, error: true),
             const Divider(),
@@ -71,15 +71,15 @@ class SubtitleTracksView extends StatelessWidget {
                         child: const CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Icon(Icons.file_open_rounded),
-                title: const Text(AppStrings.subtitlesAddFromDevice),
-                subtitle: const Text(AppStrings.subtitlesAddFromDeviceHint),
+                title: Text(context.l10n.subtitlesAddFromDevice),
+                subtitle: Text(context.l10n.subtitlesAddFromDeviceHint),
                 onTap: state.importing ? null : cubit.importFromDevice,
               ),
             if (canSearch)
               ListTile(
                 leading: const Icon(Icons.travel_explore_rounded),
-                title: const Text(AppStrings.subtitlesSearchOnline),
-                subtitle: const Text(AppStrings.subtitlesSearchOnlineHint),
+                title: Text(context.l10n.subtitlesSearchOnline),
+                subtitle: Text(context.l10n.subtitlesSearchOnlineHint),
                 trailing: const Icon(Icons.chevron_right_rounded),
                 onTap: onSearch,
               ),
@@ -89,11 +89,11 @@ class SubtitleTracksView extends StatelessWidget {
     );
   }
 
-  static String _trackDetails(SubtitleTrack track) => [
+  static String _trackDetails(SubtitleTrack track, AppLocalizations l10n) => [
     switch (track.source) {
-      SubtitleSource.nearby => AppStrings.subtitlesFromDevice,
-      SubtitleSource.imported => AppStrings.subtitlesImported,
-      SubtitleSource.downloaded => AppStrings.subtitlesDownloaded,
+      SubtitleSource.nearby => l10n.subtitlesFromDevice,
+      SubtitleSource.imported => l10n.subtitlesImported,
+      SubtitleSource.downloaded => l10n.subtitlesDownloaded,
     },
     if (track.language case final language?) language.toUpperCase(),
   ].join(' · ');

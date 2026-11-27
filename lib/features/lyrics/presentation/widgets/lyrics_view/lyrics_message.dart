@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/features/lyrics/presentation/logic/lyrics_cubit.dart';
 
@@ -56,11 +56,11 @@ class LyricsMessage extends StatelessWidget {
               FilledButton.icon(
                 onPressed: context.read<LyricsCubit>().searchOnline,
                 icon: const Icon(Icons.travel_explore_rounded),
-                label: const Text(AppStrings.lyricsSearchOnline),
+                label: Text(context.l10n.lyricsSearchOnline),
               ),
               SizedBox(height: 8.h),
               Text(
-                AppStrings.lyricsSearchHint,
+                context.l10n.lyricsSearchHint,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: onSurface.withValues(alpha: 0.45),

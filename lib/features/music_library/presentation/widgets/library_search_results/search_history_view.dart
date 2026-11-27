@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/search/search_history.dart';
 import 'package:melodix/core/search/search_sources.dart';
 import 'package:melodix/core/widgets/library_status_view.dart';
@@ -30,10 +30,10 @@ class SearchHistoryView extends StatelessWidget {
         final cubit = context.read<SearchHistoryCubit>();
         final opened = _openedRows(context, history, sources);
         if (history.queries.isEmpty && opened.isEmpty) {
-          return const LibraryStatusView(
+          return LibraryStatusView(
             icon: Icons.manage_search_rounded,
-            title: AppStrings.searchPromptTitle,
-            message: AppStrings.searchPromptSubtitle,
+            title: context.l10n.searchPromptTitle,
+            message: context.l10n.searchPromptSubtitle,
           );
         }
         return ListView(
@@ -45,8 +45,8 @@ class SearchHistoryView extends StatelessWidget {
           children: [
             if (history.queries.isNotEmpty) ...[
               SearchHistoryHeader(
-                title: AppStrings.recentSearches,
-                actionLabel: AppStrings.clearSearchHistory,
+                title: context.l10n.recentSearches,
+                actionLabel: context.l10n.clearSearchHistory,
                 onAction: cubit.clearHistory,
               ),
               for (final query in history.queries)
@@ -58,10 +58,10 @@ class SearchHistoryView extends StatelessWidget {
             ],
             if (opened.isNotEmpty) ...[
               SearchHistoryHeader(
-                title: AppStrings.openedFromSearch,
+                title: context.l10n.openedFromSearch,
                 // The one "Clear" sits on the first section shown.
                 actionLabel: history.queries.isEmpty
-                    ? AppStrings.clearSearchHistory
+                    ? context.l10n.clearSearchHistory
                     : null,
                 onAction: cubit.clearHistory,
               ),
@@ -117,7 +117,7 @@ class SearchHistoryView extends StatelessWidget {
           context.read<PlayerCubit>().playSongs(
             songs,
             songs.indexOf(song),
-            title: AppStrings.openedFromSearch,
+            title: context.l10n.openedFromSearch,
           );
         },
       );

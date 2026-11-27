@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_accent.dart';
 import 'package:melodix/features/settings/presentation/widgets/accent_swatches/accent_swatch.dart';
 
@@ -32,7 +32,7 @@ class AccentSwatches extends StatelessWidget {
       runSpacing: 12.r,
       children: [
         AccentSwatch(
-          label: AppStrings.coverColours,
+          label: context.l10n.coverColours,
           gradient: SweepGradient(
             colors: [
               for (final a in AppAccent.values) a.color,
@@ -63,8 +63,8 @@ class AccentSwatches extends StatelessWidget {
   static Gradient _gloss(Color color) {
     final hsl = HSLColor.fromColor(color);
     return LinearGradient(
-      begin: Alignment.topLeft,
-      end: Alignment.bottomRight,
+      begin: AlignmentDirectional.topStart,
+      end: AlignmentDirectional.bottomEnd,
       colors: [
         hsl.withLightness((hsl.lightness + 0.15).clamp(0.0, 1.0)).toColor(),
         color,

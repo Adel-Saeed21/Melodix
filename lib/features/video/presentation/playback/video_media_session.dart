@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/service/media_session_guest.dart';
 import 'package:melodix/features/video/presentation/logic/video_player_cubit.dart';
 import 'package:melodix/features/video/presentation/playback/video_engine.dart';
@@ -22,7 +22,8 @@ class VideoMediaSession implements MediaSessionGuest {
     required Stream<void> musicStarted,
     required this._seekStep,
     required this._thumbnail,
-  }) {
+    AppLocalizations Function()? strings,
+  }) : _strings = strings ?? (() => const AppLocalizations()) {
     _sessionSubscription = _session.stream.listen(_onSession);
     _musicSubscription = musicStarted.listen((_) => _setOwner(false));
     _onSession(_session.state);
@@ -35,6 +36,9 @@ class VideoMediaSession implements MediaSessionGuest {
 
   /// A video's thumbnail bytes, for the notification's picture.
   final Future<Uint8List?> Function(String videoId) _thumbnail;
+
+  /// The texts in the app's language now.
+  final AppLocalizations Function() _strings;
 
   late final StreamSubscription<VideoPlayerState> _sessionSubscription;
   late final StreamSubscription<void> _musicSubscription;
@@ -87,14 +91,14 @@ class VideoMediaSession implements MediaSessionGuest {
     _changes.add(next);
   }
 
-  static GuestMedia _media(VideoPlayerState state, VideoEngine? engine) {
+  GuestMedia _media(VideoPlayerState state, VideoEngine? engine) {
     final video = state.video;
     final value = engine?.value;
     final ready = value != null && value.isInitialized;
     return GuestMedia(
       id: '$idPrefix${video.id}',
       title: video.title,
-      subtitle: AppStrings.mediaVideoSubtitle,
+      subtitle: _strings().mediaVideoSubtitle,
       duration: ready && value.duration > Duration.zero
           ? value.duration
           : video.duration,

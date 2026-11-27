@@ -1,6 +1,6 @@
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/widgets/melodix_mark.dart';
 
@@ -18,13 +18,13 @@ class OnboardingTopBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
-      padding: EdgeInsets.fromLTRB(24.w, 12.h, 12.w, 0),
+      padding: EdgeInsetsDirectional.fromSTEB(24.w, 12.h, 12.w, 0),
       child: Row(
         children: [
           MelodixMark(size: 26.r, color: theme.primaryColor),
           SizedBox(width: 10.w),
           Text(
-            AppStrings.appName,
+            context.l10n.appName,
             style: TextStyle(
               fontSize: 20.sp,
               fontWeight: FontWeightHelper.bold,
@@ -39,7 +39,7 @@ class OnboardingTopBar extends StatelessWidget {
             child: TextButton(
               onPressed: showSkip ? onSkip : null,
               child: Text(
-                AppStrings.onboardingSkip,
+                context.l10n.onboardingSkip,
                 style: TextStyle(
                   fontSize: 15.sp,
                   fontWeight: FontWeightHelper.semiBold,

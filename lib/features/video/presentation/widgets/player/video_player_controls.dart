@@ -1,4 +1,4 @@
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 
 import 'dart:async';
 
@@ -228,7 +228,7 @@ class _VideoPlayerControlsState extends State<VideoPlayerControls> {
                     foregroundColor: Colors.white,
                   ),
                   icon: const Icon(Icons.lock_open_rounded),
-                  label: const Text(AppStrings.unlockControls),
+                  label: Text(context.l10n.unlockControls),
                 ),
               ),
             ),

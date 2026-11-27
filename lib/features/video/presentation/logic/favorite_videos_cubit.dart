@@ -4,7 +4,7 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/errors/error_messages.dart';
 import 'package:melodix/features/video/domain/entities/video.dart';
 import 'package:melodix/features/video/domain/usecases/toggle_video_favorite_usecase.dart';
 import 'package:melodix/features/video/domain/usecases/video_bulk_usecases.dart';
@@ -51,7 +51,7 @@ class FavoriteVideosCubit extends Cubit<FavoriteVideosState> {
           status: LoadStatus.failure,
           videos: state.videos,
           ids: state.ids,
-          errorMessage: AppStrings.videoScanFailed,
+          errorMessage: ErrorMessages.videosSync,
         ),
       ),
     );

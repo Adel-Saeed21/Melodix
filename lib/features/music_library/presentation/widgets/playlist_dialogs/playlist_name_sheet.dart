@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/service/spacing.dart';
@@ -67,7 +67,7 @@ class _PlaylistNameSheetState extends State<PlaylistNameSheet> {
       // Rise above the keyboard.
       padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(24.w, 0, 24.w, 24.h),
+        padding: EdgeInsetsDirectional.fromSTEB(24.w, 0, 24.w, 24.h),
         child: ValueListenableBuilder<TextEditingValue>(
           valueListenable: _controller,
           builder: (context, value, _) {
@@ -95,8 +95,8 @@ class _PlaylistNameSheetState extends State<PlaylistNameSheet> {
                           verticalSpace(2),
                           Text(
                             widget.isRename
-                                ? AppStrings.renamePlaylistSubtitle
-                                : AppStrings.newPlaylistSubtitle,
+                                ? context.l10n.renamePlaylistSubtitle
+                                : context.l10n.newPlaylistSubtitle,
                             style: TextStyle(
                               color: onSurface.withValues(alpha: 0.6),
                               fontSize: AppTextSizes.sm,
@@ -122,8 +122,8 @@ class _PlaylistNameSheetState extends State<PlaylistNameSheet> {
                     fontWeight: FontWeightHelper.semiBold,
                   ),
                   decoration: InputDecoration(
-                    labelText: AppStrings.playlistName,
-                    hintText: AppStrings.playlistNameHint,
+                    labelText: context.l10n.playlistName,
+                    hintText: context.l10n.playlistNameHint,
                     floatingLabelStyle: TextStyle(color: primary),
                     filled: true,
                     fillColor: onSurface.withValues(alpha: 0.06),
@@ -135,7 +135,7 @@ class _PlaylistNameSheetState extends State<PlaylistNameSheet> {
                     suffixIcon: value.text.isEmpty
                         ? null
                         : IconButton(
-                            tooltip: AppStrings.clearName,
+                            tooltip: context.l10n.clearName,
                             icon: Icon(
                               Icons.close_rounded,
                               size: 20.r,
@@ -163,7 +163,7 @@ class _PlaylistNameSheetState extends State<PlaylistNameSheet> {
                     spacing: 8.w,
                     runSpacing: 8.h,
                     children: [
-                      for (final name in AppStrings.playlistNameSuggestions)
+                      for (final name in context.l10n.playlistNameSuggestions)
                         PlaylistSuggestionChip(
                           label: name,
                           selected: value.text.trim() == name,
@@ -186,7 +186,7 @@ class _PlaylistNameSheetState extends State<PlaylistNameSheet> {
                           padding: EdgeInsets.symmetric(vertical: 14.h),
                           shape: const StadiumBorder(),
                         ),
-                        child: const Text(AppStrings.cancel),
+                        child: Text(context.l10n.cancel),
                       ),
                     ),
                     horizontalSpace(12),

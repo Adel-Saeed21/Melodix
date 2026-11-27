@@ -31,10 +31,12 @@ class SongListState extends Equatable {
 /// followed live (an album's or artist's songs, see [SongListCubit.live]).
 class SongListCubit extends Cubit<SongListState> {
   SongListCubit(this._loadSongs, {this.saveOrder})
-    : super(const SongListState());
+    : clearAll = null,
+      super(const SongListState());
 
-  /// Shows every list [songs] emits; nothing to load or reload.
-  SongListCubit.live(Stream<List<Song>> songs)
+  /// Shows every list [songs] emits; nothing to load or reload. With
+  /// [clearAll], the list can be emptied (e.g. the play history).
+  SongListCubit.live(Stream<List<Song>> songs, {this.clearAll})
     : _loadSongs = null,
       saveOrder = null,
       super(const SongListState()) {
@@ -55,6 +57,10 @@ class SongListCubit extends Cubit<SongListState> {
   final Future<Either<Failure, Unit>> Function(List<Song> songs)? saveOrder;
 
   bool get canReorder => saveOrder != null;
+
+  /// Empties the list at its source (a live list then shows it empty by
+  /// itself). When null, the list can't be cleared.
+  final Future<Either<Failure, Unit>> Function()? clearAll;
 
   Future<void> load() async {
     final loadSongs = _loadSongs;

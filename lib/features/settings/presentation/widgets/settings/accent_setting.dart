@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/preferences/ui_preferences.dart';
 import 'package:melodix/features/settings/presentation/widgets/accent_swatches.dart';
 import 'package:melodix/core/widgets/settings/settings_section.dart';
@@ -13,9 +13,9 @@ class AccentSetting extends StatelessWidget {
     final preferences = context.watch<UiPreferencesCubit>();
     final state = preferences.state;
     return SettingRow(
-      title: AppStrings.accentColour,
+      title: context.l10n.accentColour,
       subtitle: state.dynamicAccent
-          ? AppStrings.coverColoursHint
+          ? context.l10n.coverColoursHint
           : state.accent.label,
       below: AccentSwatches(
         value: state.accent,

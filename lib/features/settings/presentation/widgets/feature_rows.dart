@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/routing/routes.dart';
 import 'package:melodix/core/preferences/ui_preferences.dart';
 import 'package:melodix/core/service/app_icon_service.dart';
@@ -27,9 +27,9 @@ class AppIconRow extends StatelessWidget {
     if (!context.read<AppIconCubit>().isSupported) {
       return const SizedBox.shrink();
     }
-    return const SettingRow(
-      title: AppStrings.appIcon,
-      subtitle: AppStrings.appIconHint,
+    return SettingRow(
+      title: context.l10n.appIcon,
+      subtitle: context.l10n.appIconHint,
       below: AppIconPicker(),
     );
   }
@@ -42,27 +42,27 @@ class NowPlayingBackgroundChoice extends StatelessWidget {
   Widget build(BuildContext context) {
     final preferences = context.watch<UiPreferencesCubit>();
     return SettingRow(
-      title: AppStrings.nowPlayingBackground,
+      title: context.l10n.nowPlayingBackground,
       below: PreviewChoices<NowPlayingBackground>(
         value: preferences.state.nowPlayingBackground,
         onChanged: preferences.setNowPlayingBackground,
         previewHeight: 52,
         options: [
-          for (final (value, icon, name) in const [
+          for (final (value, icon, name) in [
             (
               NowPlayingBackground.plain,
               Icons.crop_square_rounded,
-              AppStrings.backgroundPlain,
+              context.l10n.backgroundPlain,
             ),
             (
               NowPlayingBackground.cover,
               Icons.album_rounded,
-              AppStrings.backgroundCover,
+              context.l10n.backgroundCover,
             ),
             (
               NowPlayingBackground.glow,
               Icons.blur_on_rounded,
-              AppStrings.backgroundGlow,
+              context.l10n.backgroundGlow,
             ),
           ])
             PreviewOption(
@@ -85,14 +85,14 @@ class SpeedChoice extends StatelessWidget {
   Widget build(BuildContext context) {
     final settings = context.watch<AudioSettingsCubit>();
     return SettingRow(
-      title: AppStrings.speed,
-      subtitle: AppStrings.speedHint,
+      title: context.l10n.speed,
+      subtitle: context.l10n.speedHint,
       below: PillChoices<double>(
         value: settings.state.speed,
         onChanged: settings.setSpeed,
         options: [
           for (final speed in AudioSettings.speeds)
-            (speed, AppStrings.speedValue(speed)),
+            (speed, context.l10n.speedValue(speed)),
         ],
       ),
     );
@@ -107,8 +107,8 @@ class SkipSilenceRow extends StatelessWidget {
     final settings = context.watch<AudioSettingsCubit>();
     return SettingRow(
       leading: Icons.graphic_eq_rounded,
-      title: AppStrings.skipSilence,
-      subtitle: AppStrings.skipSilenceHint,
+      title: context.l10n.skipSilence,
+      subtitle: context.l10n.skipSilenceHint,
       onTap: () => settings.setSkipSilence(!settings.state.skipSilence),
       trailing: Switch(
         value: settings.state.skipSilence,
@@ -126,10 +126,10 @@ class EqualizerRow extends StatelessWidget {
     final state = context.watch<AudioSettingsCubit>().state;
     return SettingRow(
       leading: Icons.equalizer_rounded,
-      title: AppStrings.equalizer,
+      title: context.l10n.equalizer,
       subtitle: state.equalizerOn
           ? state.preset.label
-          : AppStrings.equalizerHint,
+          : context.l10n.equalizerHint,
       trailing: const RowChevron(),
       onTap: () => context.pushNamed(Routes.equalizer),
     );
@@ -144,13 +144,13 @@ class SleepTimerRow extends StatelessWidget {
     final state = context.watch<SleepTimerCubit>().state;
     return SettingRow(
       leading: Icons.bedtime_rounded,
-      title: AppStrings.sleepTimer,
+      title: context.l10n.sleepTimer,
       subtitle: switch (state) {
-        SleepTimerState(:final remaining?) => AppStrings.sleepTimerLeft(
+        SleepTimerState(:final remaining?) => context.l10n.sleepTimerLeft(
           formatDuration(remaining),
         ),
-        SleepTimerState(endOfSong: true) => AppStrings.sleepTimerStopsAtEnd,
-        _ => AppStrings.sleepTimerHint,
+        SleepTimerState(endOfSong: true) => context.l10n.sleepTimerStopsAtEnd,
+        _ => context.l10n.sleepTimerHint,
       },
       trailing: const RowChevron(),
       onTap: () => showSleepTimerSheet(context),
@@ -181,7 +181,7 @@ class SubtitleStyleChoice extends StatelessWidget {
       ),
     );
     return SettingRow(
-      title: AppStrings.subtitleStyle,
+      title: context.l10n.subtitleStyle,
       below: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -192,8 +192,8 @@ class SubtitleStyleChoice extends StatelessWidget {
               height: 110.h,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  begin: AlignmentDirectional.topStart,
+                  end: AlignmentDirectional.bottomEnd,
                   colors: [
                     Color.lerp(accent, Colors.black, 0.55)!,
                     Color.lerp(second, Colors.black, 0.75)!,
@@ -201,40 +201,40 @@ class SubtitleStyleChoice extends StatelessWidget {
                 ),
               ),
               child: SubtitleText(
-                text: AppStrings.subtitlePreview,
+                text: context.l10n.subtitlePreview,
                 style: state,
-                padding: EdgeInsets.fromLTRB(12.w, 0, 12.w, 14.h),
+                padding: EdgeInsetsDirectional.fromSTEB(12.w, 0, 12.w, 14.h),
               ),
             ),
           ),
-          label(AppStrings.subtitleSize),
+          label(context.l10n.subtitleSize),
           PillChoices<SubtitleSize>(
             value: state.subtitleSize,
             onChanged: preferences.setSubtitleSize,
-            options: const [
-              (SubtitleSize.small, AppStrings.subtitleSmall),
-              (SubtitleSize.medium, AppStrings.subtitleMedium),
-              (SubtitleSize.large, AppStrings.subtitleLarge),
-              (SubtitleSize.huge, AppStrings.subtitleHuge),
+            options: [
+              (SubtitleSize.small, context.l10n.subtitleSmall),
+              (SubtitleSize.medium, context.l10n.subtitleMedium),
+              (SubtitleSize.large, context.l10n.subtitleLarge),
+              (SubtitleSize.huge, context.l10n.subtitleHuge),
             ],
           ),
-          label(AppStrings.subtitleLook),
+          label(context.l10n.subtitleLook),
           PillChoices<SubtitleLook>(
             value: state.subtitleLook,
             onChanged: preferences.setSubtitleLook,
-            options: const [
-              (SubtitleLook.box, AppStrings.subtitleBox),
-              (SubtitleLook.outline, AppStrings.subtitleOutline),
+            options: [
+              (SubtitleLook.box, context.l10n.subtitleBox),
+              (SubtitleLook.outline, context.l10n.subtitleOutline),
             ],
           ),
-          label(AppStrings.subtitleColour),
+          label(context.l10n.subtitleColour),
           PillChoices<SubtitleColor>(
             value: state.subtitleColor,
             onChanged: preferences.setSubtitleColor,
-            options: const [
-              (SubtitleColor.white, AppStrings.subtitleWhite),
-              (SubtitleColor.yellow, AppStrings.subtitleYellow),
-              (SubtitleColor.accent, AppStrings.subtitleAccent),
+            options: [
+              (SubtitleColor.white, context.l10n.subtitleWhite),
+              (SubtitleColor.yellow, context.l10n.subtitleYellow),
+              (SubtitleColor.accent, context.l10n.subtitleAccent),
             ],
           ),
         ],
@@ -251,8 +251,8 @@ class ListeningStatsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SettingRow(
     leading: Icons.insights_rounded,
-    title: AppStrings.yourMelodix,
-    subtitle: AppStrings.yourMelodixHint,
+    title: context.l10n.yourMelodix,
+    subtitle: context.l10n.yourMelodixHint,
     trailing: const RowChevron(),
     onTap: () => context.pushNamed(Routes.listeningStats),
   );
@@ -264,8 +264,8 @@ class LibraryFiltersRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SettingRow(
     leading: Icons.filter_alt_rounded,
-    title: AppStrings.libraryFilters,
-    subtitle: AppStrings.libraryFiltersHint,
+    title: context.l10n.libraryFilters,
+    subtitle: context.l10n.libraryFiltersHint,
     trailing: const RowChevron(),
     onTap: () => context.pushNamed(Routes.libraryFilters),
   );

@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 
 class SearchShowAllButton extends StatelessWidget {
   const SearchShowAllButton({
@@ -21,7 +21,7 @@ class SearchShowAllButton extends StatelessWidget {
         child: TextButton(
           onPressed: onTap,
           child: Text(
-            AppStrings.showAll(count),
+            context.l10n.showAll(count),
             style: TextStyle(color: Theme.of(context).primaryColor),
           ),
         ),

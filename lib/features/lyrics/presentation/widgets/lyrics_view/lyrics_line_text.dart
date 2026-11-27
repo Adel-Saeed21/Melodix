@@ -39,7 +39,10 @@ class LyricsLineText extends StatelessWidget {
         padding: EdgeInsets.symmetric(vertical: 7.h, horizontal: 4.w),
         child: AnimatedScale(
           scale: now ? 1.04 : 1,
-          alignment: Alignment.centerLeft,
+          // Grows from the line's own start (right in Arabic).
+          alignment: Directionality.of(context) == TextDirection.rtl
+              ? Alignment.centerRight
+              : Alignment.centerLeft,
           duration: const Duration(milliseconds: 250),
           child: AnimatedDefaultTextStyle(
             duration: const Duration(milliseconds: 250),

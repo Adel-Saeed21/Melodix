@@ -2,12 +2,14 @@ import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:melodix/core/errors/failures.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 
 /// A message to show after a user action (see `ActionFeedbackListener`).
 class ActionFeedback extends Equatable {
   const ActionFeedback(this.message, this.sequence, {this.isError = false});
 
-  final String message;
+  /// Put into words when shown, in the language in use then.
+  final LocalizedText message;
   final bool isError;
 
   /// Makes repeated identical messages distinct so each one is shown.
@@ -26,7 +28,7 @@ mixin ActionFeedbackReporter<S> on BlocBase<S> {
   S withFeedback(ActionFeedback feedback);
 
   /// Shows [message] (ignored once the cubit is closed).
-  void report(String message, {bool isError = false}) {
+  void report(LocalizedText message, {bool isError = false}) {
     if (isClosed) return;
     emit(
       withFeedback(
@@ -39,10 +41,10 @@ mixin ActionFeedbackReporter<S> on BlocBase<S> {
   /// returns null). Returns whether the action succeeded.
   bool reportResult<T>(
     Either<Failure, T> result,
-    String? Function(T value) onSuccess,
+    LocalizedText? Function(T value) onSuccess,
   ) => result.fold(
     (failure) {
-      report(failure.message, isError: true);
+      report((l) => l.failure(failure.message), isError: true);
       return false;
     },
     (value) {

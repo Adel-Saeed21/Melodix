@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
 import 'package:melodix/features/music_library/domain/entities/playlist.dart';
 import 'package:melodix/features/music_library/domain/usecases/create_playlist_usecase.dart';
 import 'package:melodix/features/music_library/domain/usecases/delete_playlist_usecase.dart';
@@ -79,28 +78,31 @@ class PlaylistsCubit extends Cubit<PlaylistsState>
     addError(error, stackTrace);
     if (isClosed) return;
     if (state.isLoading) emit(state.copyWith(isLoading: false));
-    report(AppStrings.playlistsLoadFailed, isError: true);
+    report((l) => l.playlistsLoadFailed, isError: true);
   }
 
   Future<void> create(String name) async {
     final trimmed = name.trim();
     reportResult(
       await _createPlaylist(CreatePlaylistParams(trimmed)),
-      (_) => AppStrings.playlistCreated(trimmed),
+      (_) =>
+          (l) => l.playlistCreated(trimmed),
     );
   }
 
   Future<void> rename(Playlist playlist, String name) async {
     reportResult(
       await _renamePlaylist(RenamePlaylistParams(playlist.id, name.trim())),
-      (_) => AppStrings.playlistRenamed,
+      (_) =>
+          (l) => l.playlistRenamed,
     );
   }
 
   Future<void> delete(Playlist playlist) async {
     reportResult(
       await _deletePlaylist(playlist.id),
-      (_) => AppStrings.playlistDeleted,
+      (_) =>
+          (l) => l.playlistDeleted,
     );
   }
 
@@ -108,8 +110,8 @@ class PlaylistsCubit extends Cubit<PlaylistsState>
     reportResult(
       await _toggleFavorite(playlist.id),
       (isFavorite) => isFavorite
-          ? AppStrings.playlistAddedToFavourites
-          : AppStrings.playlistRemovedFromFavourites,
+          ? ((l) => l.playlistAddedToFavourites)
+          : ((l) => l.playlistRemovedFromFavourites),
     );
   }
 

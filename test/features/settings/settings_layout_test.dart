@@ -1,3 +1,5 @@
+import 'package:melodix/core/l10n/l10n.dart';
+import 'package:melodix/core/preferences/app_language.dart';
 import 'package:melodix/core/config/theme/app_accent.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +16,11 @@ import 'package:melodix/features/player/presentation/logic/sleep_timer_cubit.dar
 import 'package:melodix/core/widgets/app_screen_util_init.dart';
 import 'package:melodix/features/settings/presentation/pages/settings_page.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:easy_localization/easy_localization.dart' hide TextDirection;
+import 'package:melodix/core/l10n/app_translations.dart';
+import 'package:melodix/core/l10n/language_switcher.dart';
+
+import '../../support/l10n_support.dart';
 
 class MockStorage extends Mock implements Storage {}
 
@@ -55,19 +62,34 @@ void main() {
       MultiBlocProvider(
         providers: [
           BlocProvider(create: (_) => ThemeCubit()),
+          BlocProvider(create: (_) => AppLanguageCubit()),
           BlocProvider.value(value: preferences),
           BlocProvider.value(value: audio),
           BlocProvider.value(value: sleep),
           BlocProvider.value(value: icons),
         ],
-        child: AppScreenUtilInit(
-          child: MaterialApp(
-            theme: AppTheme.darkTheme,
-            home: const SettingsPage(),
+        // Like the app: easy_localization in English to start, and the
+        // language switch over every page.
+        child: AppTranslations(
+          startLocale: const Locale('en'),
+          assetLoader: const FileTranslationsLoader(),
+          child: AppScreenUtilInit(
+            child: Builder(
+              builder: (context) => MaterialApp(
+                theme: AppTheme.darkTheme,
+                locale: context.locale,
+                supportedLocales: context.supportedLocales,
+                localizationsDelegates: appLocalizationsDelegates(context),
+                builder: (context, child) => LanguageSwitcher(child: child!),
+                home: const SettingsPage(),
+              ),
+            ),
           ),
         ),
       ),
     );
+    await tester.pump(); // the translations load
+    await tester.pump();
   }
 
   bool isSelected(WidgetTester tester, Finder finder) => tester
@@ -247,6 +269,50 @@ void main() {
     await settle(tester);
     expect(find.text('Theme'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('language: a smooth switch to Arabic (right to left), and back', (
+    tester,
+  ) async {
+    addTearDown(() => useLanguage('en')); // the next tests read English
+    await pump(tester);
+    expect(find.text('Language'), findsWidgets);
+    TextDirection direction() =>
+        Directionality.of(tester.element(find.byType(SettingsPage)));
+    expect(direction(), TextDirection.ltr);
+    double veil() => tester
+        .widget<FadeTransition>(find.byKey(LanguageSwitcher.veilKey))
+        .opacity
+        .value;
+    expect(veil(), 0);
+
+    await tester.tap(find.text('العربية'));
+    await tester.pump(); // the fade starts
+    await tester.pump(const Duration(milliseconds: 100));
+    // Mid-switch: the page is fading out (no jump), still in English.
+    expect(veil(), greaterThan(0));
+    expect(find.text('Language'), findsWidgets);
+
+    await settle(tester);
+    // All at once, no restart, and the veil is gone.
+    expect(veil(), 0);
+    expect(find.text('اللغة'), findsWidgets);
+    expect(find.text('Language'), findsNothing);
+    expect(direction(), TextDirection.rtl);
+    // Every row lays out in Arabic without overflowing.
+    await reveal(tester, find.text('فلاتر الموسيقى'));
+    expect(tester.takeException(), isNull);
+
+    // The language names stay in their own language: English is findable.
+    await tester.scrollUntilVisible(
+      find.text('English'),
+      -200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('English'));
+    await settle(tester);
+    expect(find.text('Language'), findsWidgets);
+    expect(direction(), TextDirection.ltr);
   });
 }
 

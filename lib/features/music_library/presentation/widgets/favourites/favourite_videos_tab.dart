@@ -3,7 +3,7 @@ import 'package:melodix/core/models/load_status.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/widgets/whole_pixel_height.dart';
 import 'package:melodix/core/widgets/library_status_view.dart';
 import 'package:melodix/features/video/domain/entities/video.dart';
@@ -34,13 +34,13 @@ class FavouriteVideosTab extends StatelessWidget {
               child: state.status == LoadStatus.failure
                   ? LibraryStatusView(
                       icon: Icons.error_outline_rounded,
-                      title: AppStrings.libraryErrorTitle,
-                      message: state.errorMessage ?? '',
+                      title: context.l10n.libraryErrorTitle,
+                      message: context.l10n.failure(state.errorMessage ?? ''),
                     )
-                  : const LibraryStatusView(
+                  : LibraryStatusView(
                       icon: Icons.favorite_border_rounded,
-                      title: AppStrings.noFavouriteVideosTitle,
-                      message: AppStrings.noFavouriteVideosSubtitle,
+                      title: context.l10n.noFavouriteVideosTitle,
+                      message: context.l10n.noFavouriteVideosSubtitle,
                     ),
             ),
           );

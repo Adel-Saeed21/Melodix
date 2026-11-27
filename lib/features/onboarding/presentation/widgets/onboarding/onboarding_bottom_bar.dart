@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 
 /// The dots (the current one stretched into a pill, following the swipe)
@@ -27,7 +27,7 @@ class OnboardingBottomBar extends StatelessWidget {
     final accent = theme.primaryColor;
     final onAccent = theme.colorScheme.onPrimary;
     return Padding(
-      padding: EdgeInsets.fromLTRB(28.w, 8.h, 28.w, 24.h),
+      padding: EdgeInsetsDirectional.fromSTEB(28.w, 8.h, 28.w, 24.h),
       child: Row(
         children: [
           ValueListenableBuilder<double>(
@@ -39,7 +39,7 @@ class OnboardingBottomBar extends StatelessWidget {
                     builder: (context) {
                       final near = (1 - (page - i).abs()).clamp(0.0, 1.0);
                       return Container(
-                        margin: EdgeInsets.only(right: 6.w),
+                        margin: EdgeInsetsDirectional.only(end: 6.w),
                         width: 8.r + 20.r * near,
                         height: 8.r,
                         decoration: BoxDecoration(
@@ -60,10 +60,10 @@ class OnboardingBottomBar extends StatelessWidget {
           // Shrinks rather than overflows (large text, narrow screens).
           Expanded(
             child: Align(
-              alignment: Alignment.centerRight,
+              alignment: AlignmentDirectional.centerEnd,
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: _nextButton(accent, onAccent),
+                child: _nextButton(context, accent, onAccent),
               ),
             ),
           ),
@@ -72,10 +72,12 @@ class OnboardingBottomBar extends StatelessWidget {
     );
   }
 
-  Widget _nextButton(Color accent, Color onAccent) {
+  Widget _nextButton(BuildContext context, Color accent, Color onAccent) {
     return Semantics(
       button: true,
-      label: isLast ? AppStrings.onboardingStart : AppStrings.onboardingNext,
+      label: isLast
+          ? context.l10n.onboardingStart
+          : context.l10n.onboardingNext,
       excludeSemantics: true,
       child: Material(
         color: accent,
@@ -98,7 +100,7 @@ class OnboardingBottomBar extends StatelessWidget {
                 children: [
                   if (isLast) ...[
                     Text(
-                      AppStrings.onboardingStart,
+                      context.l10n.onboardingStart,
                       style: TextStyle(
                         color: onAccent,
                         fontSize: 16.sp,

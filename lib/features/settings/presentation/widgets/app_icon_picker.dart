@@ -1,7 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/service/app_icon_service.dart';
 import 'package:melodix/core/widgets/app_snack_bar.dart';
 import 'package:melodix/features/settings/presentation/widgets/app_icon_picker/app_icon_tile.dart';
@@ -31,7 +31,7 @@ class AppIconPicker extends StatelessWidget {
               if (!context.mounted) return;
               AppSnackBar.show(
                 context,
-                ok ? AppStrings.appIconChanged : AppStrings.appIconFailed,
+                ok ? context.l10n.appIconChanged : context.l10n.appIconFailed,
                 kind: ok ? AppSnackBarKind.success : AppSnackBarKind.error,
               );
             },

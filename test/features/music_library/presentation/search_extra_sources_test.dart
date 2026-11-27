@@ -24,7 +24,7 @@ class FakeSource extends ChangeNotifier implements SearchSource {
   }
 
   @override
-  SearchSection? search(String query) {
+  SearchSection? search(BuildContext context, String query) {
     final hits = [
       for (final i in items)
         if (i.toLowerCase().contains(query.toLowerCase())) i,

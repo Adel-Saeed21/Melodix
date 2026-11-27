@@ -56,7 +56,7 @@ class SnackBarCard extends StatelessWidget {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
           child: Container(
-            padding: EdgeInsets.fromLTRB(
+            padding: EdgeInsetsDirectional.fromSTEB(
               10.w,
               10.h,
               label == null ? 16.w : 8.w,

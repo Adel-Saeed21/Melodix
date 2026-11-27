@@ -1,7 +1,7 @@
 import 'package:melodix/core/models/load_status.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/routing/routes.dart';
 import 'package:melodix/core/service/navigation_extension.dart';
 import 'package:melodix/features/music_library/presentation/logic/library_collections_cubit.dart';
@@ -20,10 +20,10 @@ class ArtistsTab extends StatelessWidget {
           return const Center(child: CircularProgressIndicator());
         }
         if (state.artists.isEmpty) {
-          return const LibraryStatusView(
+          return LibraryStatusView(
             icon: Icons.person_rounded,
-            title: AppStrings.noArtists,
-            message: AppStrings.noMusicSubtitle,
+            title: context.l10n.noArtists,
+            message: context.l10n.noMusicSubtitle,
           );
         }
         return ListView.builder(

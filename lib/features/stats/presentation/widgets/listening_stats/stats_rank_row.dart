@@ -1,6 +1,6 @@
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 
@@ -84,7 +84,7 @@ class StatsRankRow extends StatelessWidget {
           ),
           SizedBox(width: 12.w),
           Text(
-            AppStrings.statsTimes(plays),
+            context.l10n.statsTimes(plays),
             style: TextStyle(
               color: onSurface.withValues(alpha: 0.6),
               fontSize: AppTextSizes.sm,

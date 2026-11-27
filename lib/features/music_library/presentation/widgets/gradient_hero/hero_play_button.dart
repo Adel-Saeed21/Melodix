@@ -1,6 +1,6 @@
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 
 class HeroPlayButton extends StatelessWidget {
   const HeroPlayButton({
@@ -16,7 +16,7 @@ class HeroPlayButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final size = 58.r;
     return Tooltip(
-      message: AppStrings.playAll,
+      message: context.l10n.playAll,
       child: Material(
         color: onPressed == null
             ? Colors.white.withValues(alpha: 0.4)

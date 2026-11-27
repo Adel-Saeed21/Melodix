@@ -4,7 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_colors.dart';
 import 'package:melodix/core/widgets/app_snack_bar.dart';
 import 'package:melodix/features/music_library/domain/entities/library_sync_stage.dart';
@@ -169,8 +169,8 @@ class _ScanCardState extends State<ScanShortcutCard>
     AppSnackBar.show(
       context,
       added == 0 && removed == 0
-          ? AppStrings.libraryUpToDate
-          : AppStrings.scanResult(added: added, removed: removed),
+          ? context.l10n.libraryUpToDate
+          : context.l10n.scanResult(added: added, removed: removed),
     );
   }
 
@@ -182,12 +182,12 @@ class _ScanCardState extends State<ScanShortcutCard>
       colors: AppColors.scanGradient,
       icon: done ? Icons.check_rounded : Icons.radar_rounded,
       iconColor: Theme.of(context).primaryColor,
-      title: AppStrings.scan,
+      title: context.l10n.scan,
       caption: idle
-          ? AppStrings.findNewMusic
+          ? context.l10n.findNewMusic
           : done
-          ? AppStrings.scanDone
-          : AppStrings.scanningPercent(_percent),
+          ? context.l10n.scanDone
+          : context.l10n.scanningPercent(_percent),
       progress: idle ? null : _ring,
       onTap: idle && !widget.isScanning ? _scan : null,
       compact: widget.compact,

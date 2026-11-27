@@ -1,3 +1,4 @@
+import 'package:melodix/features/lyrics/presentation/logic/lyrics_cubit.dart';
 import 'package:melodix/core/preferences/ui_preferences.dart';
 import 'package:melodix/features/music_library/presentation/widgets/song_artwork.dart';
 
@@ -71,6 +72,10 @@ void main() {
     getIt
       ..registerSingleton<GetSongArtworkUseCase>(artwork)
       ..registerSingleton<MusicLibraryBloc>(library)
+      // As in the app (the lyrics tests register their LyricsRepository).
+      ..registerFactory<LyricsCubit>(
+        () => LyricsCubit(getIt<LyricsRepository>()),
+      )
       ..registerFactory<SongActionsCubit>(() {
         final actions = MockActions();
         when(() => actions.state).thenReturn(null);

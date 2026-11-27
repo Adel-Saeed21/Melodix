@@ -1,3 +1,7 @@
+import 'package:melodix/core/l10n/language_switcher.dart';
+import 'package:easy_localization/easy_localization.dart';
+import 'package:melodix/core/l10n/l10n.dart';
+import 'package:melodix/core/preferences/app_language.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -44,7 +48,9 @@ class MelodixApp extends StatelessWidget {
         BlocProvider<LibraryFilterCubit>.value(
           value: getIt<LibraryFilterCubit>(),
         ),
-        BlocProvider<AppIconCubit>.value(value: getIt<AppIconCubit>()),
+        // Lazy (created on first use, unlike the `.value` ones): it asks the
+        // phone for the current icon, which only Settings shows.
+        BlocProvider<AppIconCubit>(create: (_) => getIt<AppIconCubit>()),
         // Speed, skip silence, equalizer; the sleep timer.
         BlocProvider<AudioSettingsCubit>.value(
           value: getIt<AudioSettingsCubit>(),
@@ -60,15 +66,19 @@ class MelodixApp extends StatelessWidget {
         // App-wide video session: the full player and the small window.
         BlocProvider<VideoPlayerCubit>.value(value: getIt<VideoPlayerCubit>()),
         // The open video's subtitles (follows the video session).
-        BlocProvider<SubtitlesCubit>.value(value: getIt<SubtitlesCubit>()),
+        // Lazy: made when a video first opens (it picks up the open one).
+        BlocProvider<SubtitlesCubit>(create: (_) => getIt<SubtitlesCubit>()),
         // Deleting videos from the phone (a row's ⋮ anywhere, a selection).
         RepositoryProvider<DeleteVideosUseCase>.value(
           value: getIt<DeleteVideosUseCase>(),
         ),
         // App-wide favourite videos (♥ in the Video tab, Favourites, player).
-        BlocProvider<FavoriteVideosCubit>.value(
-          value: getIt<FavoriteVideosCubit>(),
+        // Lazy: its database query waits for a screen that shows videos.
+        BlocProvider<FavoriteVideosCubit>(
+          create: (_) => getIt<FavoriteVideosCubit>(),
         ),
+        // The app's language (Settings), or the phone's.
+        BlocProvider<AppLanguageCubit>.value(value: getIt<AppLanguageCubit>()),
       ],
       child: AppScreenUtilInit(
         child: BlocBuilder<ThemeCubit, ThemeMode>(
@@ -89,25 +99,32 @@ class MelodixApp extends StatelessWidget {
                         ? AppTheme.dark(preferences.accent)
                         : AppTheme.forColor(cover, Brightness.dark),
                     themeMode: mode,
+                    // English or Arabic (right to left), from
+                    // easy_localization (see AppTranslations, LanguageSwitcher).
+                    locale: context.locale,
+                    supportedLocales: context.supportedLocales,
+                    localizationsDelegates: appLocalizationsDelegates(context),
                     routerConfig: AppRoute.router,
-                    // Over every page: the small video window.
-                    builder: (context, child) =>
-                        BlocSelector<PlayerCubit, NowPlaying, bool>(
-                          selector: (music) => music.hasSong,
-                          // The small video window keeps clear of the music bar.
-                          builder: (context, hasSong) => VideoSessionHost(
-                            clearance: MiniVideoWindow.clearanceFor(
-                              landscape:
-                                  MediaQuery.orientationOf(context) ==
-                                  Orientation.landscape,
-                              musicBar: hasSong,
-                            ),
-                            pictureInPicture: getIt<PictureInPictureService>(),
-                            onExpand: () =>
-                                AppRoute.router.push<void>(Routes.videoPlayer),
-                            child: child ?? const SizedBox.shrink(),
+                    // Over every page: the language switch's fade and the
+                    // small video window.
+                    builder: (context, child) => LanguageSwitcher(
+                      child: BlocSelector<PlayerCubit, NowPlaying, bool>(
+                        selector: (music) => music.hasSong,
+                        // The small video window keeps clear of the music bar.
+                        builder: (context, hasSong) => VideoSessionHost(
+                          clearance: MiniVideoWindow.clearanceFor(
+                            landscape:
+                                MediaQuery.orientationOf(context) ==
+                                Orientation.landscape,
+                            musicBar: hasSong,
                           ),
+                          pictureInPicture: getIt<PictureInPictureService>(),
+                          onExpand: () =>
+                              AppRoute.router.push<void>(Routes.videoPlayer),
+                          child: child ?? const SizedBox.shrink(),
                         ),
+                      ),
+                    ),
                   ),
                 ),
               ),

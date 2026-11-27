@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:audio_service/audio_service.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/service/media_session_guest.dart';
 import 'package:melodix/core/service/local_song_builder.dart';
 import 'package:melodix/features/music_library/domain/entities/song.dart';
@@ -48,8 +48,10 @@ class MelodixAudioHandler extends BaseAudioHandler {
     required this._toggleFavorite,
     MediaSessionGuest? guest,
     DateTime Function()? clock,
+    AppLocalizations Function()? strings,
   }) : _guest = guest,
-       _clock = clock ?? DateTime.now {
+       _clock = clock ?? DateTime.now,
+       _strings = strings ?? (() => const AppLocalizations()) {
     _subscription = _player.watch().listen(_onNowPlaying);
     _progressSubscription = _player.watchProgress().listen(_onProgress);
     _guestSubscription = guest?.changes.listen(_onGuest);
@@ -60,6 +62,10 @@ class MelodixAudioHandler extends BaseAudioHandler {
   final WatchSongFavoriteUseCase _watchFavorite;
   final ToggleSongFavoriteUseCase _toggleFavorite;
   final DateTime Function() _clock;
+
+  /// The texts in the app's language now (the buttons' labels follow a
+  /// language change at the next update).
+  final AppLocalizations Function() _strings;
   final MediaSessionGuest? _guest;
   late final StreamSubscription<NowPlaying> _subscription;
   StreamSubscription<GuestMedia?>? _guestSubscription;
@@ -430,6 +436,7 @@ class MelodixAudioHandler extends BaseAudioHandler {
       mediaItemFor(
         song,
         duration: duration,
+        strings: _strings(),
         // Keep the cover while only the duration is corrected.
         artUri: sameSong ? current?.artUri : null,
       ),
@@ -453,9 +460,10 @@ class MelodixAudioHandler extends BaseAudioHandler {
     Song song, {
     required Duration duration,
     Uri? artUri,
+    AppLocalizations? strings,
   }) {
     final title = song.title.trim().isEmpty
-        ? AppStrings.unknownSong
+        ? (strings ?? const AppLocalizations()).unknownSong
         : song.title;
     final artist = _known(song.artist, unknownArtist);
     final album = _known(song.album, unknownAlbum);
@@ -480,55 +488,55 @@ class MelodixAudioHandler extends BaseAudioHandler {
 
   // Buttons (icons in android/app/src/main/res/drawable)
 
-  static const _previous = MediaControl(
+  MediaControl get _previous => MediaControl(
     androidIcon: 'drawable/ic_media_previous',
-    label: AppStrings.previous,
+    label: _strings().previous,
     action: MediaAction.skipToPrevious,
   );
-  static const _play = MediaControl(
+  MediaControl get _play => MediaControl(
     androidIcon: 'drawable/ic_media_play',
-    label: AppStrings.play,
+    label: _strings().play,
     action: MediaAction.play,
   );
-  static const _pause = MediaControl(
+  MediaControl get _pause => MediaControl(
     androidIcon: 'drawable/ic_media_pause',
-    label: AppStrings.pause,
+    label: _strings().pause,
     action: MediaAction.pause,
   );
-  static const _next = MediaControl(
+  MediaControl get _next => MediaControl(
     androidIcon: 'drawable/ic_media_next',
-    label: AppStrings.next,
+    label: _strings().next,
     action: MediaAction.skipToNext,
   );
 
-  static const _rewindControl = MediaControl(
+  MediaControl get _rewindControl => MediaControl(
     androidIcon: 'drawable/ic_media_rewind',
-    label: AppStrings.mediaRewind,
+    label: _strings().mediaRewind,
     action: MediaAction.custom,
-    customAction: CustomMediaAction(name: rewindAction),
+    customAction: const CustomMediaAction(name: rewindAction),
   );
-  static const _forwardControl = MediaControl(
+  MediaControl get _forwardControl => MediaControl(
     androidIcon: 'drawable/ic_media_forward',
-    label: AppStrings.mediaForward,
+    label: _strings().mediaForward,
     action: MediaAction.custom,
-    customAction: CustomMediaAction(name: forwardAction),
+    customAction: const CustomMediaAction(name: forwardAction),
   );
 
-  static MediaControl _favoriteControl(bool favorite) => MediaControl.custom(
+  MediaControl _favoriteControl(bool favorite) => MediaControl.custom(
     androidIcon: favorite
         ? 'drawable/ic_media_favorite'
         : 'drawable/ic_media_favorite_border',
     label: favorite
-        ? AppStrings.removeFromFavourites
-        : AppStrings.addToFavourites,
+        ? _strings().removeFromFavourites
+        : _strings().addToFavourites,
     name: favoriteAction,
   );
 
-  static MediaControl _shuffleControl(bool shuffle) => MediaControl.custom(
+  MediaControl _shuffleControl(bool shuffle) => MediaControl.custom(
     androidIcon: shuffle
         ? 'drawable/ic_media_shuffle_on'
         : 'drawable/ic_media_shuffle',
-    label: shuffle ? AppStrings.turnShuffleOff : AppStrings.turnShuffleOn,
+    label: shuffle ? _strings().turnShuffleOff : _strings().turnShuffleOn,
     name: shuffleAction,
   );
 }

@@ -1,4 +1,5 @@
 import 'package:dartz/dartz.dart';
+import 'package:melodix/core/errors/error_messages.dart';
 import 'package:melodix/core/errors/failures.dart';
 
 /// Runs a repository operation and turns any error into a [LibraryFailure]
@@ -17,10 +18,9 @@ Future<Either<Failure, T>> guardRepositoryCall<T>(
 
 /// User-facing messages shared by the music library repositories.
 abstract final class LibraryErrors {
-  static const String sync = 'Could not read your music library';
-  static const String read = 'Could not load your music';
-  static const String write = 'Could not save your change';
-  static const String delete = 'Could not delete the songs';
-  static const String permission =
-      'Allow access to your music to see your library';
+  static const String sync = ErrorMessages.librarySync;
+  static const String read = ErrorMessages.libraryRead;
+  static const String write = ErrorMessages.write;
+  static const String delete = ErrorMessages.songsDelete;
+  static const String permission = ErrorMessages.libraryPermission;
 }

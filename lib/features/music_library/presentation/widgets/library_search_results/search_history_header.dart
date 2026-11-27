@@ -22,7 +22,7 @@ class SearchHistoryHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final label = actionLabel;
     return Padding(
-      padding: EdgeInsets.fromLTRB(20.w, 12.h, 8.w, 0),
+      padding: EdgeInsetsDirectional.fromSTEB(20.w, 12.h, 8.w, 0),
       child: Row(
         children: [
           Expanded(

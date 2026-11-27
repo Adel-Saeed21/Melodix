@@ -1,6 +1,6 @@
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/app_text_sizes.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/widgets/melodix_mark.dart';
@@ -49,8 +49,8 @@ class StatsHeroCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(26.r),
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: AlignmentDirectional.topStart,
+          end: AlignmentDirectional.bottomEnd,
           colors: [accent, second],
         ),
         boxShadow: [
@@ -69,7 +69,7 @@ class StatsHeroCard extends StatelessWidget {
               MelodixMark(size: 26.r, color: on),
               SizedBox(width: 10.w),
               Text(
-                AppStrings.yourMelodix,
+                context.l10n.yourMelodix,
                 style: TextStyle(
                   color: on,
                   fontSize: AppTextSizes.lg,
@@ -80,14 +80,14 @@ class StatsHeroCard extends StatelessWidget {
           ),
           SizedBox(height: 18.h),
           Text(
-            AppStrings.statsListened,
+            context.l10n.statsListened,
             style: TextStyle(color: on.withValues(alpha: 0.8)),
           ),
           FittedBox(
             fit: BoxFit.scaleDown,
-            alignment: Alignment.centerLeft,
+            alignment: AlignmentDirectional.centerStart,
             child: Text(
-              AppStrings.statsHours(hours, minutes),
+              context.l10n.statsHours(hours, minutes),
               style: TextStyle(
                 color: on,
                 fontSize: 40.sp,
@@ -99,7 +99,7 @@ class StatsHeroCard extends StatelessWidget {
           if (stats.topArtists.isNotEmpty) ...[
             SizedBox(height: 10.h),
             Text(
-              '${AppStrings.statsTopArtistLabel}: '
+              '${context.l10n.statsTopArtistLabel}: '
               '${stats.topArtists.first.artist}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -112,9 +112,9 @@ class StatsHeroCard extends StatelessWidget {
           SizedBox(height: 18.h),
           Row(
             children: [
-              tile('${stats.plays}', AppStrings.statsPlays),
-              tile('${stats.songCount}', AppStrings.statsSongs),
-              tile('${stats.favourites}', AppStrings.statsFavourites),
+              tile('${stats.plays}', context.l10n.statsPlays),
+              tile('${stats.songCount}', context.l10n.statsSongs),
+              tile('${stats.favourites}', context.l10n.statsFavourites),
             ],
           ),
         ],

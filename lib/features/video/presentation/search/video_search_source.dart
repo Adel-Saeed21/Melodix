@@ -4,7 +4,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/search/search_history.dart';
 import 'package:melodix/core/search/search_sources.dart';
 import 'package:melodix/features/video/domain/entities/video.dart';
@@ -39,7 +39,7 @@ class VideoSearchSource extends ChangeNotifier implements SearchSource {
   }
 
   @override
-  SearchSection? search(String query) {
+  SearchSection? search(BuildContext context, String query) {
     _load();
     final q = query.trim().toLowerCase();
     if (q.isEmpty) return null;
@@ -49,7 +49,7 @@ class VideoSearchSource extends ChangeNotifier implements SearchSource {
     ];
     if (hits.isEmpty) return null;
     return SearchSection(
-      title: AppStrings.videos,
+      title: context.l10n.videos,
       count: hits.length,
       itemBuilder: (context, index) => VideoTile(
         video: hits[index],

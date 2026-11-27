@@ -4,7 +4,7 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/dependency_injection/get_it.dart';
 import 'package:melodix/core/entities/library_permission.dart';
 import 'package:melodix/features/music_library/presentation/logic/library_collections_cubit.dart';
@@ -116,13 +116,13 @@ class MusicHomeView extends StatelessWidget {
         final blocked = state.permission == LibraryPermission.permanentlyDenied;
         return LibraryStatusView(
           icon: Icons.library_music_rounded,
-          title: AppStrings.allowMusicAccessTitle,
+          title: context.l10n.allowMusicAccessTitle,
           message: blocked
-              ? AppStrings.musicAccessBlockedSubtitle
-              : AppStrings.allowMusicAccessSubtitle,
+              ? context.l10n.musicAccessBlockedSubtitle
+              : context.l10n.allowMusicAccessSubtitle,
           actionLabel: blocked
-              ? AppStrings.openSettings
-              : AppStrings.allowAccess,
+              ? context.l10n.openSettings
+              : context.l10n.allowAccess,
           onAction: () => bloc.add(
             blocked
                 ? const MusicLibraryOpenSettingsRequested()
@@ -131,18 +131,18 @@ class MusicHomeView extends StatelessWidget {
         );
 
       case MusicLibraryStatus.scanning:
-        return const LibraryStatusView(
+        return LibraryStatusView(
           showProgress: true,
-          title: AppStrings.scanningLibraryTitle,
-          message: AppStrings.scanningLibrarySubtitle,
+          title: context.l10n.scanningLibraryTitle,
+          message: context.l10n.scanningLibrarySubtitle,
         );
 
       case MusicLibraryStatus.failure:
         return LibraryStatusView(
           icon: Icons.error_outline_rounded,
-          title: AppStrings.libraryErrorTitle,
-          message: state.errorMessage ?? '',
-          actionLabel: AppStrings.tryAgain,
+          title: context.l10n.libraryErrorTitle,
+          message: context.l10n.failure(state.errorMessage ?? ''),
+          actionLabel: context.l10n.tryAgain,
           onAction: () => bloc.add(const MusicLibraryRefreshRequested()),
         );
 
@@ -150,9 +150,9 @@ class MusicHomeView extends StatelessWidget {
         if (state.songs.isEmpty && !state.isSyncing) {
           return LibraryStatusView(
             icon: Icons.music_off_rounded,
-            title: AppStrings.noMusicTitle,
-            message: AppStrings.noMusicSubtitle,
-            actionLabel: AppStrings.tryAgain,
+            title: context.l10n.noMusicTitle,
+            message: context.l10n.noMusicSubtitle,
+            actionLabel: context.l10n.tryAgain,
             onAction: () => bloc.add(const MusicLibraryRefreshRequested()),
           );
         }

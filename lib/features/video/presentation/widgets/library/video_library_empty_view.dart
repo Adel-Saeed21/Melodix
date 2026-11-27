@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/widgets/library_status_view.dart';
 import 'package:melodix/features/video/presentation/widgets/library/scan_videos.dart';
 
@@ -15,9 +15,9 @@ class VideoLibraryEmptyView extends StatelessWidget {
     if (isScanning) return const Center(child: CircularProgressIndicator());
     return LibraryStatusView(
       icon: Icons.video_library_outlined,
-      title: AppStrings.noVideosTitle,
-      message: AppStrings.noVideosSubtitle,
-      actionLabel: AppStrings.scanVideos,
+      title: context.l10n.noVideosTitle,
+      message: context.l10n.noVideosSubtitle,
+      actionLabel: context.l10n.scanVideos,
       onAction: () => scanVideos(context),
     );
   }

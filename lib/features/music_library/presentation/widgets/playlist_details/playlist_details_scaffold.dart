@@ -1,5 +1,5 @@
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/features/music_library/domain/entities/playlist.dart';
 import 'package:melodix/features/music_library/presentation/widgets/collection_page_scaffold.dart';
 import 'package:melodix/core/widgets/library_status_view.dart';
@@ -26,12 +26,12 @@ class PlaylistDetailsScaffold extends StatelessWidget {
             (sum, song) => sum + song.duration,
           ),
         ),
-        emptyView: const Padding(
+        emptyView: Padding(
           padding: EdgeInsets.only(top: 24),
           child: LibraryStatusView(
             icon: Icons.library_add_rounded,
-            title: AppStrings.emptyPlaylistTitle,
-            message: AppStrings.emptyPlaylistSubtitle,
+            title: context.l10n.emptyPlaylistTitle,
+            message: context.l10n.emptyPlaylistSubtitle,
           ),
         ),
       ),

@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/widgets/app_snack_bar.dart';
 import 'package:melodix/core/widgets/options_menu.dart';
 import 'package:melodix/features/video/domain/entities/video.dart';
@@ -32,7 +32,7 @@ class VideoOptionsButton extends StatelessWidget {
         } else {
           AppSnackBar.show(
             context,
-            next ? AppStrings.playsNext(1) : AppStrings.addedToQueue(1),
+            next ? context.l10n.playsNext(1) : context.l10n.addedToQueue(1),
           );
         }
       case _VideoOption.delete:
@@ -43,7 +43,7 @@ class VideoOptionsButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return OptionsMenuButton<_VideoOption>(
-      tooltip: AppStrings.videoOptions,
+      tooltip: context.l10n.videoOptions,
       padding: EdgeInsets.zero,
       onSelected: (option) => _onSelected(context, option),
       itemBuilder: (context) => [
@@ -51,20 +51,20 @@ class VideoOptionsButton extends StatelessWidget {
           context,
           value: _VideoOption.playNext,
           icon: Icons.playlist_play_rounded,
-          label: AppStrings.playNext,
+          label: context.l10n.playNext,
         ),
         optionsMenuItem(
           context,
           value: _VideoOption.addToQueue,
           icon: Icons.queue_play_next_rounded,
-          label: AppStrings.addToQueue,
+          label: context.l10n.addToQueue,
         ),
         const PopupMenuDivider(),
         optionsMenuItem(
           context,
           value: _VideoOption.delete,
           icon: Icons.delete_outline_rounded,
-          label: AppStrings.deleteFromPhone,
+          label: context.l10n.deleteFromPhone,
           color: Theme.of(context).colorScheme.error,
         ),
       ],

@@ -1,6 +1,6 @@
 import 'package:material_ui/material_ui.dart';
 
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/routing/routes.dart';
 import 'package:melodix/core/service/navigation_extension.dart';
 import 'package:melodix/features/player/presentation/widgets/mini_player.dart';
@@ -40,21 +40,21 @@ class _MainNavShellState extends State<MainNavShell> {
 
   List<Widget> get _pages => widget.pages;
 
-  static const List<GlassNavItem> _items = [
+  static List<GlassNavItem> _items(AppLocalizations l10n) => [
     GlassNavItem(
       icon: Icons.library_music_outlined,
       activeIcon: Icons.library_music_rounded,
-      label: AppStrings.music,
+      label: l10n.music,
     ),
     GlassNavItem(
       icon: Icons.video_library_outlined,
       activeIcon: Icons.video_library_rounded,
-      label: AppStrings.video,
+      label: l10n.video,
     ),
     GlassNavItem(
       icon: Icons.settings_outlined,
       activeIcon: Icons.settings_rounded,
-      label: AppStrings.settings,
+      label: l10n.settings,
     ),
   ];
 
@@ -86,7 +86,7 @@ class _MainNavShellState extends State<MainNavShell> {
       ],
     );
     final nav = GlassNavBar(
-      items: _items,
+      items: _items(context.l10n),
       currentIndex: _currentIndex,
       onTap: _onTap,
       axis: landscape ? Axis.vertical : Axis.horizontal,
@@ -104,10 +104,13 @@ class _MainNavShellState extends State<MainNavShell> {
               children: [
                 Center(child: nav),
                 Expanded(
-                  // The rail already keeps clear of the left edge (notch).
+                  // The rail already keeps clear of its edge (notch): the
+                  // left one, or the right one in Arabic (the Row mirrors).
                   child: MediaQuery.removePadding(
                     context: context,
-                    removeLeft: true,
+                    removeLeft: Directionality.of(context) == TextDirection.ltr,
+                    removeRight:
+                        Directionality.of(context) == TextDirection.rtl,
                     child: KeyedSubtree(key: _pagesKey, child: pages),
                   ),
                 ),

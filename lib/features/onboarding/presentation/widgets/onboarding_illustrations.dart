@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter_screenutil_plus/flutter_screenutil_plus.dart';
 import 'package:material_ui/material_ui.dart';
-import 'package:melodix/core/config/assets/app_strings.dart';
+import 'package:melodix/core/l10n/l10n.dart';
 import 'package:melodix/core/config/theme/font_weight_helper.dart';
 import 'package:melodix/core/widgets/melodix_mark.dart';
 import 'package:melodix/features/onboarding/presentation/widgets/onboarding_illustrations/onboarding_glass_card.dart';
@@ -148,7 +148,7 @@ class VideoIllustration extends StatelessWidget {
                       child: Opacity(
                         opacity: (1 - bubble).clamp(0, 1),
                         child: Text(
-                          AppStrings.seekSeconds(10),
+                          context.l10n.seekSeconds(10),
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeightHelper.bold,
@@ -214,10 +214,10 @@ class SubtitlesIllustration extends StatelessWidget {
 
   final Animation<double> time;
 
-  static const List<String> captions = [
-    AppStrings.onboardingCaption1,
-    AppStrings.onboardingCaption2,
-    AppStrings.onboardingCaption3,
+  static List<String> captions(AppLocalizations l10n) => [
+    l10n.onboardingCaption1,
+    l10n.onboardingCaption2,
+    l10n.onboardingCaption3,
   ];
 
   @override
@@ -226,7 +226,8 @@ class SubtitlesIllustration extends StatelessWidget {
     return AnimatedBuilder(
       animation: time,
       builder: (context, _) {
-        final index = (time.value * captions.length).floor() % captions.length;
+        final lines = captions(context.l10n);
+        final index = (time.value * lines.length).floor() % lines.length;
         return Stack(
           alignment: Alignment.center,
           clipBehavior: Clip.none,
@@ -277,7 +278,7 @@ class SubtitlesIllustration extends StatelessWidget {
                               borderRadius: BorderRadius.circular(6.r),
                             ),
                             child: Text(
-                              captions[index],
+                              lines[index],
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 13.sp,
@@ -306,7 +307,7 @@ class SubtitlesIllustration extends StatelessWidget {
               right: -6.r,
               child: OnboardingBadge(
                 icon: Icons.cloud_off_rounded,
-                label: AppStrings.onboardingOffline,
+                label: context.l10n.onboardingOffline,
                 color: accent,
                 filled: true,
               ),

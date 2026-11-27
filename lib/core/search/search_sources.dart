@@ -22,8 +22,9 @@ class SearchSection {
 /// changes, so open results update.
 abstract interface class SearchSource implements Listenable {
   /// The results for [query] (trimmed, not empty), or null for none. Runs
-  /// as the user types: must be quick (in memory).
-  SearchSection? search(String query);
+  /// as the user types: must be quick (in memory). [context] gives the
+  /// texts in the app's language (e.g. the section's title).
+  SearchSection? search(BuildContext context, String query);
 
   /// The `OpenedFromSearch.kind` this source records when one of its
   /// results is opened (e.g. 'video').
