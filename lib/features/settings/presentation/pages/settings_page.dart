@@ -61,6 +61,7 @@ class SettingsPage extends StatelessWidget {
                   children: [
                     SpeedChoice(),
                     SkipSilenceRow(),
+                    FadeChoice(),
                     EqualizerRow(),
                     SleepTimerRow(),
                   ],

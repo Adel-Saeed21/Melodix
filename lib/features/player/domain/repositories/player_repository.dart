@@ -63,6 +63,10 @@ abstract interface class PlayerRepository {
   /// the phone's volume is untouched.
   Future<void> setVolume(double volume);
 
+  /// Fades each song out over its last [length] and the next one in
+  /// (zero: off). The songs don't overlap; the app volume is kept.
+  Future<void> setFade(Duration length);
+
   /// Loads the last session (queue, song, position), paused. Does nothing
   /// if there's none or something is already playing.
   Future<void> restoreLastSession();

@@ -144,6 +144,9 @@ class AppLocalizations {
     'speedHint',
     'skipSilence',
     'skipSilenceHint',
+    'fadeSongs',
+    'fadeSongsHint',
+    'fadeOff',
     'equalizer',
     'equalizerHint',
     'equalizerOn',
@@ -514,6 +517,9 @@ class AppLocalizations {
   String get speedHint => tr('speedHint');
   String get skipSilence => tr('skipSilence');
   String get skipSilenceHint => tr('skipSilenceHint');
+  String get fadeSongs => tr('fadeSongs');
+  String get fadeSongsHint => tr('fadeSongsHint');
+  String get fadeOff => tr('fadeOff');
   String get equalizer => tr('equalizer');
   String get equalizerHint => tr('equalizerHint');
   String get equalizerOn => tr('equalizerOn');

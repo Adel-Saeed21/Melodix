@@ -16,6 +16,7 @@ import 'package:melodix/features/player/data/session/audio_focus.dart';
 import 'package:melodix/features/player/data/session/broken_song_streak.dart';
 import 'package:melodix/features/player/data/session/listening_tracker.dart';
 import 'package:melodix/features/player/data/session/playback_session_saver.dart';
+import 'package:melodix/features/player/data/session/track_fader.dart';
 import 'package:melodix/features/player/domain/entities/now_playing.dart';
 import 'package:melodix/features/player/domain/entities/playback_error.dart';
 import 'package:melodix/features/player/domain/entities/playback_progress.dart';
@@ -35,7 +36,8 @@ import 'package:melodix/features/player/domain/repositories/player_repository.da
 /// * [BrokenSongStreak]: when to stop skipping broken songs;
 /// * [ListeningTracker]: plays and listening time, from what is really
 ///   heard ("Most played", listening stats);
-/// * [PlaybackSessionSaver]: the session saved for a restart.
+/// * [PlaybackSessionSaver]: the session saved for a restart;
+/// * [TrackFader]: fades between songs, on top of the app volume.
 ///
 /// All playlist changes run one at a time ([_serial]): a tap, Next or a
 /// window update never overlaps another.
@@ -54,6 +56,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
        _listening = ListeningTracker(playRecorder),
        _audioFocus = audioFocus ?? AudioFocus(),
        _random = random ?? Random() {
+    _fader = TrackFader(_player.setVolume);
     _subscriptions.addAll([
       _player.playerStateStream.listen((_) => _onPlayerChanged()),
       _player.currentIndexStream.listen((_) => _onIndexChanged()),
@@ -71,6 +74,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
   final AudioFocus _audioFocus;
   final SongMapper _mapper;
   final Random _random;
+  late final TrackFader _fader;
 
   /// Songs kept loaded after / before the current one.
   final int windowAhead;
@@ -312,8 +316,10 @@ class PlayerRepositoryImpl implements PlayerRepository {
   }
 
   @override
-  Future<void> setVolume(double volume) =>
-      _player.setVolume(volume.clamp(0.0, 1.0));
+  Future<void> setVolume(double volume) => _fader.setVolume(volume);
+
+  @override
+  Future<void> setFade(Duration length) => _fader.setLength(length);
 
   @override
   Future<void> setShuffle(bool enabled) async {
@@ -392,6 +398,7 @@ class PlayerRepositoryImpl implements PlayerRepository {
 
   void _onPosition(Duration position) {
     _brokenSongs.reached(position);
+    unawaited(_fader.update(position: position, duration: _player.duration));
     _trackListening();
     _publishProgress();
   }

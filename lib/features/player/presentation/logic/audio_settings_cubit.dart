@@ -2,11 +2,13 @@ import 'package:equatable/equatable.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:melodix/features/player/domain/entities/equalizer_preset.dart';
 
-/// How the music sounds: speed, skipping silence and the equalizer.
+/// How the music sounds: speed, skipping silence, fades between songs and
+/// the equalizer.
 class AudioSettings extends Equatable {
   const AudioSettings({
     this.speed = 1,
     this.skipSilence = false,
+    this.fadeSeconds = 0,
     this.equalizerOn = false,
     this.preset = EqualizerPreset.flat,
     this.customGains = const [0, 0, 0, 0, 0],
@@ -15,10 +17,16 @@ class AudioSettings extends Equatable {
   /// The speeds to pick from.
   static const List<double> speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
+  /// The fade lengths to pick from (seconds; 0 is off).
+  static const List<int> fades = [0, 2, 4, 6, 8, 12];
+
   static const defaults = AudioSettings();
 
   final double speed;
   final bool skipSilence;
+
+  /// How long songs fade out and in (0: no fade, gapless).
+  final int fadeSeconds;
   final bool equalizerOn;
   final EqualizerPreset preset;
 
@@ -32,12 +40,14 @@ class AudioSettings extends Equatable {
   AudioSettings copyWith({
     double? speed,
     bool? skipSilence,
+    int? fadeSeconds,
     bool? equalizerOn,
     EqualizerPreset? preset,
     List<double>? customGains,
   }) => AudioSettings(
     speed: speed ?? this.speed,
     skipSilence: skipSilence ?? this.skipSilence,
+    fadeSeconds: fadeSeconds ?? this.fadeSeconds,
     equalizerOn: equalizerOn ?? this.equalizerOn,
     preset: preset ?? this.preset,
     customGains: customGains ?? this.customGains,
@@ -47,6 +57,7 @@ class AudioSettings extends Equatable {
   List<Object?> get props => [
     speed,
     skipSilence,
+    fadeSeconds,
     equalizerOn,
     preset,
     customGains,
@@ -66,6 +77,12 @@ class AudioSettingsCubit extends HydratedCubit<AudioSettings> {
 
   void setSkipSilence(bool enabled) =>
       emit(state.copyWith(skipSilence: enabled));
+
+  void setFade(int seconds) {
+    if (AudioSettings.fades.contains(seconds)) {
+      emit(state.copyWith(fadeSeconds: seconds));
+    }
+  }
 
   void setEqualizerOn(bool on) => emit(state.copyWith(equalizerOn: on));
 
@@ -92,9 +109,13 @@ class AudioSettingsCubit extends HydratedCubit<AudioSettings> {
   AudioSettings? fromJson(Map<String, dynamic> json) {
     final speed = (json['speed'] as num?)?.toDouble();
     final gains = json['customGains'];
+    final fade = json['fadeSeconds'];
     return AudioSettings(
       speed: AudioSettings.speeds.contains(speed) ? speed! : 1,
       skipSilence: json['skipSilence'] == true,
+      fadeSeconds: fade is num && AudioSettings.fades.contains(fade.toInt())
+          ? fade.toInt()
+          : 0,
       equalizerOn: json['equalizerOn'] == true,
       preset: EqualizerPreset.values.firstWhere(
         (p) => p.name == json['preset'],
@@ -119,6 +140,7 @@ class AudioSettingsCubit extends HydratedCubit<AudioSettings> {
   Map<String, dynamic>? toJson(AudioSettings state) => {
     'speed': state.speed,
     'skipSilence': state.skipSilence,
+    'fadeSeconds': state.fadeSeconds,
     'equalizerOn': state.equalizerOn,
     'preset': state.preset.name,
     'customGains': state.customGains,

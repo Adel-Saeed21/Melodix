@@ -157,6 +157,7 @@ void main() {
       final cubit = AudioSettingsCubit()
         ..setSpeed(1.5)
         ..setSkipSilence(true)
+        ..setFade(6)
         ..setBand(1, -3);
       final restored = cubit.fromJson(cubit.toJson(cubit.state)!);
       expect(restored, cubit.state);
@@ -172,6 +173,7 @@ void main() {
         final player = _Player();
         when(() => player.setSpeed(any())).thenAnswer((_) async {});
         when(() => player.setSkipSilence(any())).thenAnswer((_) async {});
+        when(() => player.setFade(any())).thenAnswer((_) async {});
         final equalizer = _Equalizer();
         final cubit = AudioSettingsCubit();
         final binder = AudioSettingsBinder(
@@ -181,13 +183,18 @@ void main() {
           equalizer: equalizer,
         );
         verify(() => player.setSpeed(1)).called(1);
+        // No fade is the player's own start: not sent.
+        verifyNever(() => player.setFade(any()));
         expect(equalizer.enabled, isFalse);
 
         cubit
           ..setSpeed(1.25)
+          ..setFade(4)
+          ..setFade(5) // not a choice: ignored
           ..setPreset(EqualizerPreset.bassBoost);
         await pumpEventQueue();
         verify(() => player.setSpeed(1.25)).called(1);
+        verify(() => player.setFade(const Duration(seconds: 4))).called(1);
         expect(equalizer.enabled, isTrue);
         expect(equalizer.gains!(60), 6);
         await binder.dispose();

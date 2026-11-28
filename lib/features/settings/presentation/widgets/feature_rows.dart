@@ -118,6 +118,33 @@ class SkipSilenceRow extends StatelessWidget {
   }
 }
 
+/// Fades each song out and the next one in (off keeps albums gapless).
+class FadeChoice extends StatelessWidget {
+  const FadeChoice({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final settings = context.watch<AudioSettingsCubit>();
+    return SettingRow(
+      title: context.l10n.fadeSongs,
+      subtitle: context.l10n.fadeSongsHint,
+      below: PillChoices<int>(
+        value: settings.state.fadeSeconds,
+        onChanged: settings.setFade,
+        options: [
+          for (final seconds in AudioSettings.fades)
+            (
+              seconds,
+              seconds == 0
+                  ? context.l10n.fadeOff
+                  : context.l10n.secondsValue(seconds),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 class EqualizerRow extends StatelessWidget {
   const EqualizerRow({super.key});
 

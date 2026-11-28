@@ -331,6 +331,9 @@ void main() {
       -200,
       scrollable: find.byType(Scrollable).first,
     );
+    // Built isn't on screen: bring it fully into view before tapping.
+    await tester.ensureVisible(find.text('English'));
+    await settle(tester);
     await tester.tap(find.text('English'));
     await settle(tester);
     expect(find.text('Language'), findsWidgets);

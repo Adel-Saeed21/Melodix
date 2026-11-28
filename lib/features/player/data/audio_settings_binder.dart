@@ -31,6 +31,12 @@ class AudioSettingsBinder {
     if (before?.skipSilence != now.skipSilence) {
       unawaited(_player.setSkipSilence(now.skipSilence));
     }
+    // Off is the player's own start: nothing to send then.
+    if (before == null
+        ? now.fadeSeconds != 0
+        : before.fadeSeconds != now.fadeSeconds) {
+      unawaited(_player.setFade(Duration(seconds: now.fadeSeconds)));
+    }
     if (!_equalizer.isSupported) return;
     if (before == null || before.gains != now.gains) {
       final gains = now.gains;
